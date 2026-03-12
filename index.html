@@ -16,7 +16,17 @@
     <img class="sf" src="assets/images/start_frog.png" alt="ABC Frog">
     <h1>ABC Frog</h1>
     <div class="sub">I'm hungry~</div>
-    <button class="sbtn" onclick="go()">START</button>
+    <div class="mode-buttons">
+      <button class="mbtn mbtn-abc" onclick="go('ABC')">
+        <span class="mbtn-label">ABC</span>
+      </button>
+      <button class="mbtn mbtn-lower" onclick="go('abc')">
+        <span class="mbtn-label">abc</span>
+      </button>
+      <button class="mbtn mbtn-mix" onclick="go('ABc')">
+        <span class="mbtn-label">ABc</span>
+      </button>
+    </div>
   </div>
   <div class="sc" id="sc">🌟 0</div>
   <div class="cb" id="cb"></div>
@@ -25,14 +35,27 @@
   <div class="lilypad"><img src="assets/images/lilypad.png" alt="lilypad"></div>
 
   <div class="frog" id="frog">
-    <!-- 정면 애니메이션 4장 -->
-    <img id="fa_base" class="active" src="assets/images/frog_base.png" alt="base">
-    <img id="fa_half" src="assets/images/frog_half.png" alt="halfblink">
-    <img id="fa_blink" src="assets/images/frog_blink.png" alt="blink">
-    <img id="fa_breathe" src="assets/images/frog_breathe.png" alt="breathe">
-    <!-- 옆면 (혀 쏘기용) -->
-    <img id="fa_side" src="assets/images/frog_side.png" alt="side">
-    <img id="fa_open" src="assets/images/frog_open.png" alt="open">
+    <!-- 5단계 개구리 (각 단계: a=숨쉬기A, b=숨쉬기B, open=입벌림) -->
+    <!-- 1단계 (홀쭉) -->
+    <img id="fs1a" class="frog-img active" src="assets/images/frog_1a.png" alt="frog1a" data-stage="1" data-pose="a">
+    <img id="fs1b" class="frog-img" src="assets/images/frog_1b.png" alt="frog1b" data-stage="1" data-pose="b">
+    <img id="fs1o" class="frog-img" src="assets/images/frog_1_open.png" alt="frog1open" data-stage="1" data-pose="open">
+    <!-- 2단계 (조금) -->
+    <img id="fs2a" class="frog-img" src="assets/images/frog_2a.png" alt="frog2a" data-stage="2" data-pose="a">
+    <img id="fs2b" class="frog-img" src="assets/images/frog_2b.png" alt="frog2b" data-stage="2" data-pose="b">
+    <img id="fs2o" class="frog-img" src="assets/images/frog_2b_open.png" alt="frog2open" data-stage="2" data-pose="open">
+    <!-- 3단계 (통통) -->
+    <img id="fs3a" class="frog-img" src="assets/images/frog_3a.png" alt="frog3a" data-stage="3" data-pose="a">
+    <img id="fs3b" class="frog-img" src="assets/images/frog_3b.png" alt="frog3b" data-stage="3" data-pose="b">
+    <img id="fs3o" class="frog-img" src="assets/images/frog_3_open.png" alt="frog3open" data-stage="3" data-pose="open">
+    <!-- 4단계 (뚜뚜) -->
+    <img id="fs4a" class="frog-img" src="assets/images/frog_4a.png" alt="frog4a" data-stage="4" data-pose="a">
+    <img id="fs4b" class="frog-img" src="assets/images/frog_4b.png" alt="frog4b" data-stage="4" data-pose="b">
+    <img id="fs4o" class="frog-img" src="assets/images/frog_4_open.png" alt="frog4open" data-stage="4" data-pose="open">
+    <!-- 5단계 (만삭) -->
+    <img id="fs5a" class="frog-img" src="assets/images/frog_5a.png" alt="frog5a" data-stage="5" data-pose="a">
+    <img id="fs5b" class="frog-img" src="assets/images/frog_5b.png" alt="frog5b" data-stage="5" data-pose="b">
+    <img id="fs5o" class="frog-img" src="assets/images/frog_5_open.png" alt="frog5open" data-stage="5" data-pose="open">
   </div>
 
   <div class="tongue" id="tng"></div>
@@ -42,3 +65,4 @@
 
 <script src="script.js"></script>
 </body>
+</html>

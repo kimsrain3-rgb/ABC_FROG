@@ -130,7 +130,7 @@ function initButterfly(){
   
   bfEl.addEventListener('pointerdown',function(e){
     e.stopPropagation();
-    if(typeof isShooting!=='undefined'&&isShooting) return;
+    if(isShooting) return;
     bfTapCount++;
     
     var gcRect=gc.getBoundingClientRect();
@@ -144,8 +144,8 @@ function initButterfly(){
     var startY=frogRect.top-gcRect.top+frogRect.height*0.38;
     
     isShooting=true;
-    if(typeof setFrame==='function') setFrame('fa_open');
-    if(typeof pauseAnim==='function') pauseAnim();
+    setFrame('open');
+    pauseAnim();
     
     var tongue=document.getElementById('tng');
     var gcH=gc.offsetHeight;
@@ -183,8 +183,8 @@ function initButterfly(){
       setTimeout(function(){
         tongue.style.opacity='0';
         isShooting=false;
-        if(typeof setFrame==='function') setFrame('fa_base');
-        if(typeof resumeAnim==='function') resumeAnim();
+        setFrame('a');
+        resumeAnim();
       },200);
       
       setTimeout(function(){
@@ -373,13 +373,13 @@ function initCaterpillar(){
   // 터치 이벤트
   cDiv.addEventListener('pointerdown',function(e){
     e.stopPropagation();
-    if(typeof isShooting!=='undefined'&&isShooting) return;
+    if(isShooting) return;
     caterpillarTapCount++;
     
     // 혀 발사
     isShooting=true;
-    if(typeof setFrame==='function') setFrame('fa_open');
-    if(typeof pauseAnim==='function') pauseAnim();
+    setFrame('open');
+    pauseAnim();
     
     var gcRect=gc.getBoundingClientRect();
     var bugRect=cDiv.getBoundingClientRect();
@@ -430,8 +430,8 @@ function initCaterpillar(){
       setTimeout(function(){
         tongue.style.opacity='0';
         isShooting=false;
-        if(typeof setFrame==='function') setFrame('fa_base');
-        if(typeof resumeAnim==='function') resumeAnim();
+        setFrame('a');
+        resumeAnim();
       },200);
       
       // 1.2초 후 떨림 해제 + 도망
@@ -495,17 +495,18 @@ const LETTER_AUDIO={
 // 알파벳 mp3 재생 함수
 let letterPlayers={};
 function playLetter(l,cb){
-  const src=LETTER_AUDIO[l];
+  const key=l.toUpperCase();
+  const src=LETTER_AUDIO[key];
   if(!src)return;
-  if(!letterPlayers[l]){letterPlayers[l]=new Audio(src);}
-  const a=letterPlayers[l];
+  if(!letterPlayers[key]){letterPlayers[key]=new Audio(src);}
+  const a=letterPlayers[key];
   a.currentTime=0;
   a.volume=1;
   if(cb)a.onended=cb;
   a.play().catch(()=>{});
 }
 
-function spLetter(l,r=0.7){sp(LETTER_SOUND[l]||l,r);}
+function spLetter(l,r=0.7){sp(LETTER_SOUND[l.toUpperCase()]||l,r);}
 
 const CHEERS=[
   {t:'Good job!',vk:'good_job'},{t:'Nice!',vk:'nice'},{t:'Awesome!',vk:'awesome'},
@@ -554,6 +555,10 @@ function psu(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>pt(f,.2,'sine',.
 function sp(t,r=1.1,onStart){if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=r;u.pitch=1.8;u.volume=1;if(onStart)u.onstart=onStart;speechSynthesis.speak(u)}}
 
 const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const L_LOWER='abcdefghijklmnopqrstuvwxyz';
+let gameMode='ABC';
+let frogStage=1;
+let isShooting=false;
 let col=new Set(),sc=0,cm=0,fl=[],ct='';
 let gp='start',ia=false,fid=0,rc=0,it=null;
 let animPaused=false;
@@ -572,10 +577,43 @@ let fs=false;
 setInterval(()=>{fs=!fs;document.querySelectorAll('.fly').forEach(e=>{const d=e.dataset.dir||'front';const img=e.querySelector('.fly-sprite');if(img)img.src=FLY_IMGS[d][fs?1:0]})},120);
 
 // === 개구리 프레임 전환 ===
-const allFrogImgs = document.querySelectorAll('.frog img');
-function setFrame(id){
+// === mode display helpers ===
+function displayLetter(l){
+  const upper=l.toUpperCase();
+  if(gameMode==='abc') return upper.toLowerCase();
+  if(gameMode==='ABc') return Math.random()<0.5 ? upper : upper.toLowerCase();
+  return upper;
+}
+function displayTarget(){
+  if(gameMode==='abc') return ct.toLowerCase();
+  return ct;
+}
+
+// === 5-stage frog ===
+function getStageFromCount(){
+  const n=col.size;
+  if(n<=5) return 1;
+  if(n<=10) return 2;
+  if(n<=15) return 3;
+  if(n<=20) return 4;
+  return 5;
+}
+function updateFrogStage(){
+  const newStage=getStageFromCount();
+  if(newStage!==frogStage){
+    frogStage=newStage;
+    setFrame('a');
+  }
+}
+
+const allFrogImgs = document.querySelectorAll('.frog-img');
+function setFrame(pose){
+  // pose: 'a', 'b', 'open'
+  const suffix = pose==='open' ? 'o' : pose;
+  const targetId = 'fs'+frogStage+suffix;
   allFrogImgs.forEach(img=>img.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+  const el=document.getElementById(targetId);
+  if(el) el.classList.add('active');
 }
 
 // === 숨쉬기 애니메이션 (2초 주기) ===
@@ -584,9 +622,9 @@ function startBreathe(){
   breatheInterval = setInterval(()=>{
     if(animPaused || ia) return;
     // base → breathe → base
-    setFrame('fa_breathe');
+    setFrame('b');
     setTimeout(()=>{
-      if(!animPaused && !ia) setFrame('fa_base');
+      if(!animPaused && !ia) setFrame('a');
     }, 800);
   }, 2000);
 }
@@ -597,24 +635,36 @@ function scheduleBlink(){
   const delay = 3000 + Math.random() * 4000;
   blinkTimeout = setTimeout(()=>{
     if(animPaused || ia) { scheduleBlink(); return; }
-    setFrame('fa_half');
+    const cur = document.querySelector('.frog-img.active');
+    if(!cur){scheduleBlink();return;}
+    cur.style.opacity='0.3';
     setTimeout(()=>{
-      setFrame('fa_blink');
+      cur.style.opacity='1';
       setTimeout(()=>{
-        setFrame('fa_half');
+        cur.style.opacity='0.3';
         setTimeout(()=>{
-          if(!animPaused && !ia) setFrame('fa_base');
+          cur.style.opacity='1';
           scheduleBlink();
-        }, 100);
-      }, 180);
-    }, 100);
+        },100);
+      },180);
+    },100);
   }, delay);
 }
 
 function pauseAnim(){ animPaused = true; frog.style.animation='none'; }
-function resumeAnim(){ animPaused = false; setFrame('fa_base'); frog.style.animation='breatheCSS 2.5s ease-in-out infinite'; }
+function resumeAnim(){ animPaused = false; setFrame('a'); frog.style.animation='breatheCSS 2.5s ease-in-out infinite'; }
 
-function icb(){cb2.innerHTML='';for(let i=0;i<26;i++){const s=document.createElement('div');s.className='slot';s.id='s'+L[i];s.textContent=L[i];cb2.appendChild(s)}}
+function icb(){
+  cb2.innerHTML='';
+  const letters = (gameMode==='abc') ? L_LOWER : L;
+  for(let i=0;i<26;i++){
+    const s=document.createElement('div');
+    s.className='slot';
+    s.id='s'+L[i];
+    s.textContent=letters[i];
+    cb2.appendChild(s);
+  }
+}
 
 function grl(n,m){
   const used=new Set(fl.map(f=>f.letter));
@@ -693,7 +743,7 @@ function bs(x,y,n=6){const em=['⭐','✨','🌟','💫','🎉','🎵'];for(let 
 function slp(l,x,y){const p=document.createElement('div');p.className='lpop';p.textContent=l;p.style.left=x+'px';p.style.top=y+'px';p.style.color='#FFD700';p.style.textShadow='3px 3px 0 #FF6F00';gc.appendChild(p);setTimeout(()=>p.remove(),1000)}
 
 function shoot(tx,ty,cb){
-  ia=true;pauseAnim();ptg();setFrame('fa_open');
+  ia=true;pauseAnim();ptg();setFrame('open');
   const fr=frog.getBoundingClientRect(),cr=gc.getBoundingClientRect();
   // 입 중앙 위치 (gc 기준)
   const sx=fr.left+fr.width*0.5-cr.left;
@@ -724,7 +774,7 @@ function shoot(tx,ty,cb){
     setTimeout(()=>{
       tng.style.transition='height 0.1s ease-in';
       tng.style.height='0px';
-      setTimeout(()=>{tng.style.opacity='0';ia=false;setFrame('fa_base');resumeAnim();},120);
+      setTimeout(()=>{tng.style.opacity='0';ia=false;setFrame('a');resumeAnim();},120);
     },80);
   },180);
 }
@@ -734,7 +784,8 @@ function occ(f){
   cm++;sc+=10*cm;scd.textContent='🌟 '+sc;
   var fx=f.x+f.el.offsetWidth/2,fy=f.y+f.el.offsetHeight/2;
   col.add(f.letter);var s=document.getElementById('s'+f.letter);if(s)s.classList.add('got');
-  bs(fx,fy,8);slp(f.letter,fx,fy);py();setFrame('fa_open');
+  updateFrogStage();
+  bs(fx,fy,8);slp(displayLetter(f.letter),fx,fy);py();setFrame('open');
   
   // 파리를 개구리 입으로 끌고가기
   var fr=frog.getBoundingClientRect(),cr=gc.getBoundingClientRect();
@@ -759,7 +810,7 @@ function occ(f){
 }
 
 function owc(f){
-  cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');SND_WOOWECK.currentTime=0;SND_WOOWECK.volume=1.0;SND_WOOWECK.play().catch(function(){});setFrame('fa_open');
+  cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');SND_WOOWECK.currentTime=0;SND_WOOWECK.volume=1.0;SND_WOOWECK.play().catch(function(){});setFrame('open');
   frog.className='frog shaking';
   setTimeout(()=>{frog.className='frog';resumeAnim()},800);
   f.slimy=true;f.el.classList.remove('sparkle');f.el.classList.add('slimy');
@@ -769,13 +820,15 @@ function owc(f){
 function oft(id){
   if(ia)return;ea();rit();
   const f=fl.find(x=>x.id===id);if(!f)return;
-  pauseAnim();setFrame('fa_open');
-  setTimeout(()=>shoot(f.x+f.el.offsetWidth/2,f.y+f.el.offsetHeight/2,()=>{if(f.isTarget)occ(f);else owc(f)}),150);
+  const isMatch = f.letter.toUpperCase()===ct.toUpperCase();
+  pauseAnim();setFrame('open');
+  setTimeout(()=>shoot(f.x+f.el.offsetWidth/2,f.y+f.el.offsetHeight/2,()=>{if(isMatch)occ(f);else owc(f)}),150);
 }
 
 function snr(){raf();rc++;ct=pnt();if(!ct)return;
-pauseAnim();setFrame('fa_base');
-const phrase=getPhrase(ct);
+pauseAnim();setFrame('a');
+const dTarget=displayTarget();
+const phrase=getPhrase(dTarget);
 sb('🐸 '+phrase.text,2500,'#2E7D32');
 playVoice(phrase.vk);
 // MP3 끝난 후 알파벳 재생
@@ -801,7 +854,7 @@ setTimeout(()=>{
   setTimeout(()=>{
     if(gp==='playing'&&!ia&&ct){
       const ls2=LETTER_SOUND[ct]||ct;
-      psg();sb('🐸 '+ct,1500,'#E65100');playLetter(ct);
+      psg();sb('🐸 '+displayTarget(),1500,'#E65100');playLetter(ct);
     }
     rit();
   },1500);
@@ -817,7 +870,7 @@ function rit(){clearRit();it=setTimeout(()=>{if(gp!=='playing'||ia||!ct)return;
     for(let i=0;i<3;i++){
       ritTimers.push(setTimeout(()=>{
         if(gp!=='playing'||ia||!ct)return;
-        psg();sb('🐸 '+ct,1500,'#E65100');playLetter(ct);
+        psg();sb('🐸 '+displayTarget(),1500,'#E65100');playLetter(ct);
       },i*2000));
     }
     // 3번(0,2,4초) 끝난 후 4초 뒤 반복
@@ -936,12 +989,12 @@ function tut(){
   setTimeout(()=>{
     // 인트로 데모: 파리 자동 잡아먹기 (수집 안 함)
     const df=cf('A',true,gc.offsetWidth*0.35,gc.offsetHeight*0.2);
-    setTimeout(()=>{pauseAnim();setFrame('fa_open');setTimeout(()=>{
+    setTimeout(()=>{pauseAnim();setFrame('open');setTimeout(()=>{
       shoot(df.x+df.el.offsetWidth/2,df.y+df.el.offsetHeight/2,()=>{
         // 데모라서 occ 대신 직접 효과만
         rf(df.id);bs(df.x+55,df.y+55,6);
         sb('😋 Yummy!',1200,'#FF8F00');playVoice('yummy');
-        setFrame('fa_open');py();
+        setFrame('open');py();
         setTimeout(()=>{
           resumeAnim();
           sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');
@@ -955,7 +1008,8 @@ function tut(){
 }
 
 function gl(){uf();requestAnimationFrame(gl)}
-function go(){
+function go(mode){
+  gameMode=mode||'ABC';
   ea();
   // 오디오 시작
   SND_BGM.volume=0.25;SND_BGM.loop=true;
