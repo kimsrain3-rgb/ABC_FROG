@@ -734,9 +734,10 @@ function slp(l,x,y){const p=document.createElement('div');p.className='lpop';p.t
 function shoot(tx,ty,cb){
   ia=true;pauseAnim();ptg();setFrame('open');
   const fr=frog.getBoundingClientRect(),cr=gc.getBoundingClientRect();
-  // 입 중앙 위치 (gc 기준) - 단계별 입 높이 비율 조정
+  // 입 중앙 위치 (gc 기준) - 단계별 입 위치 비율 조정
+  const mouthX=[0,0.50,0.50,0.50,0.52,0.53][frogStage]||0.50;
   const mouthY=[0,0.38,0.36,0.34,0.30,0.28][frogStage]||0.38;
-  const sx=fr.left+fr.width*0.5-cr.left;
+  const sx=fr.left+fr.width*mouthX-cr.left;
   const sy=fr.top+fr.height*mouthY-cr.top;
   // 파리까지 벡터
   const dx=tx-sx,dy=ty-sy;
