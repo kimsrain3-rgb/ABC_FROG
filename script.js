@@ -640,7 +640,8 @@ function updateFrogStage(){
 
 const allFrogImgs = document.querySelectorAll('.frog-img');
 allFrogImgs.forEach(img=>{img.style.display='none';img.classList.remove('active');});
-const initFrog=document.getElementById('fs1a');
+frogStage=4;
+const initFrog=document.getElementById('fs4a');
 if(initFrog){initFrog.style.display='block';initFrog.classList.add('active');}
 let currentFrogEl=initFrog||null;
 function setFrame(pose){
@@ -1031,6 +1032,7 @@ function tut(){
 function gl(){uf();requestAnimationFrame(gl)}
 function go(mode){
   gameMode=mode||'ABC';
+  frogStage=1;setFrame('a');
   ea();
   // 오디오 시작
   SND_BGM.volume=0.25;SND_BGM.loop=true;
