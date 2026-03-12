@@ -172,8 +172,8 @@ function initButterfly(){
     
     var frogDiv=document.querySelector('.frog');
     var frogRect=frogDiv.getBoundingClientRect();
-    var startX=frogRect.left-gcRect.left+frogRect.width*0.5;
-    var startY=frogRect.top-gcRect.top+frogRect.height*0.38;
+    var startX=frogRect.left-gcRect.left+frogRect.width*_mouthX[frogStage];
+    var startY=frogRect.top-gcRect.top+frogRect.height*_mouthY[frogStage];
     
     isShooting=true;
     setFrame('open');
@@ -420,8 +420,8 @@ function initCaterpillar(){
     
     var frogDiv=document.querySelector('.frog');
     var frogRect=frogDiv.getBoundingClientRect();
-    var startX=frogRect.left-gcRect.left+frogRect.width*0.5;
-    var startY=frogRect.top-gcRect.top+frogRect.height*0.38;
+    var startX=frogRect.left-gcRect.left+frogRect.width*_mouthX[frogStage];
+    var startY=frogRect.top-gcRect.top+frogRect.height*_mouthY[frogStage];
     
     var tongue=document.getElementById('tng');
     var gcH=gc.offsetHeight;
