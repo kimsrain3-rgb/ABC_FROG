@@ -636,27 +636,9 @@ function startBreathe(){
   }, 1000);
 }
 
-// === 눈 깜빡임 (3~5초 랜덤) ===
+// === 눈 깜빡임 (비활성화 - 새 스프라이트에 깜빡임 프레임 없음) ===
 let blinkTimeout;
-function scheduleBlink(){
-  const delay = 3000 + Math.random() * 4000;
-  blinkTimeout = setTimeout(()=>{
-    if(animPaused || ia) { scheduleBlink(); return; }
-    const cur = document.querySelector('.frog-img.active');
-    if(!cur){scheduleBlink();return;}
-    cur.style.opacity='0.3';
-    setTimeout(()=>{
-      cur.style.opacity='1';
-      setTimeout(()=>{
-        cur.style.opacity='0.3';
-        setTimeout(()=>{
-          cur.style.opacity='1';
-          scheduleBlink();
-        },100);
-      },180);
-    },100);
-  }, delay);
-}
+function scheduleBlink(){}
 
 function pauseAnim(){ animPaused = true;  }
 function resumeAnim(){ animPaused = false; setFrame('a');  }
