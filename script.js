@@ -3,8 +3,8 @@
 // debugStage(4) → 4단계로 점프
 // debugMouth() → 입 위치에 빨간점 표시
 // debugSet(x,y) → 현재 단계의 입 위치 비율 변경 (예: debugSet(0.50, 0.25))
-const _mouthX=[0,0.50,0.50,0.50,0.55,0.58];
-const _mouthY=[0,0.38,0.36,0.34,0.45,0.37];
+const _mouthX=[0,0.50,0.50,0.50,0.55,0.48];
+const _mouthY=[0,0.38,0.36,0.34,0.45,0.33];
 window.debugStage=function(stage){
   if(stage<1||stage>5){console.log('1~5 사이 숫자');return;}
   const counts=[0,0,6,11,16,21];
