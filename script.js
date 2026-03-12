@@ -607,13 +607,17 @@ function updateFrogStage(){
 }
 
 const allFrogImgs = document.querySelectorAll('.frog-img');
+allFrogImgs.forEach(img=>{img.style.display='none';img.classList.remove('active');});
+const initFrog=document.getElementById('fs1a');
+if(initFrog){initFrog.style.display='block';initFrog.classList.add('active');}
+let currentFrogEl=initFrog||null;
 function setFrame(pose){
   // pose: 'a', 'b', 'open'
   const suffix = pose==='open' ? 'o' : pose;
   const targetId = 'fs'+frogStage+suffix;
-  allFrogImgs.forEach(img=>img.classList.remove('active'));
+  if(currentFrogEl){currentFrogEl.style.display='none';currentFrogEl.classList.remove('active');}
   const el=document.getElementById(targetId);
-  if(el) el.classList.add('active');
+  if(el){el.style.display='block';el.classList.add('active');currentFrogEl=el;}
 }
 
 // === 숨쉬기 애니메이션 (2초 주기) ===
