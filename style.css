@@ -5,7 +5,7 @@ body{background:url('data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX
 .lilypad{position:absolute;bottom:6%;left:50%;transform:translateX(-50%);width:45vmin;z-index:8;pointer-events:none}
 .lilypad img{width:100%;height:auto}
 
-.frog{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:35vmin;aspect-ratio:1/1;z-index:10;transform-origin:bottom center;overflow:visible}
+.frog{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:49vmin;aspect-ratio:1/1;z-index:10;transform-origin:bottom center;overflow:visible}
 .frog img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;opacity:0;transition:opacity 0.03s}
 .frog img.active{opacity:1}
 
