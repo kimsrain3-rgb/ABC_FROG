@@ -620,7 +620,7 @@ function setFrame(pose){
   if(el){el.style.display='block';el.classList.add('active');currentFrogEl=el;}
 }
 
-// === 숨쉬기 애니메이션 (2초 주기) ===
+// === 숨쉬기 애니메이션 (1초 주기) ===
 let breatheInterval;
 function startBreathe(){
   breatheInterval = setInterval(()=>{
@@ -629,8 +629,8 @@ function startBreathe(){
     setFrame('b');
     setTimeout(()=>{
       if(!animPaused && !ia) setFrame('a');
-    }, 800);
-  }, 2000);
+    }, 400);
+  }, 1000);
 }
 
 // === 눈 깜빡임 (3~5초 랜덤) ===
