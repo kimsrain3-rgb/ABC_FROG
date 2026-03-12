@@ -1,4 +1,16 @@
 
+// === 디버그: 콘솔에서 debugStage(4) 치면 4단계로 점프 ===
+window.debugStage=function(stage){
+  if(stage<1||stage>5){console.log('1~5 사이 숫자');return;}
+  const counts=[0,0,6,11,16,21];
+  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  col.clear();
+  for(let i=0;i<counts[stage];i++) col.add(letters[i]);
+  frogStage=stage;
+  setFrame('a');
+  console.log('단계 '+stage+'로 이동 (먹은 글자: '+col.size+'개)');
+};
+
 // === 사운드 에셋 ===
 const SND_FLY1=new Audio('assets/sounds/fly_buzz1.mp3');
 const SND_FLY2=new Audio('assets/sounds/fly_buzz2.mp3');
