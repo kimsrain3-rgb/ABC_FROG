@@ -1,5 +1,10 @@
 
-// === 디버그: 콘솔에서 debugStage(4) 치면 4단계로 점프 ===
+// === 디버그 도구 ===
+// debugStage(4) → 4단계로 점프
+// debugMouth() → 입 위치에 빨간점 표시
+// debugSet(x,y) → 현재 단계의 입 위치 비율 변경 (예: debugSet(0.50, 0.25))
+const _mouthX=[0,0.50,0.50,0.50,0.52,0.53];
+const _mouthY=[0,0.38,0.36,0.34,0.30,0.28];
 window.debugStage=function(stage){
   if(stage<1||stage>5){console.log('1~5 사이 숫자');return;}
   const counts=[0,0,6,11,16,21];
@@ -7,8 +12,23 @@ window.debugStage=function(stage){
   col.clear();
   for(let i=0;i<counts[stage];i++) col.add(letters[i]);
   frogStage=stage;
-  setFrame('a');
-  console.log('단계 '+stage+'로 이동 (먹은 글자: '+col.size+'개)');
+  setFrame('open');
+  console.log('단계 '+stage+' (open 포즈) | mouthX='+_mouthX[stage]+' mouthY='+_mouthY[stage]);
+  debugMouth();
+};
+window.debugMouth=function(){
+  let dot=document.getElementById('debug-dot');
+  if(!dot){dot=document.createElement('div');dot.id='debug-dot';dot.style.cssText='position:absolute;width:12px;height:12px;background:red;border-radius:50%;z-index:9999;pointer-events:none;border:2px solid white';gc.appendChild(dot);}
+  const fr=frog.getBoundingClientRect(),cr=gc.getBoundingClientRect();
+  const sx=fr.left+fr.width*_mouthX[frogStage]-cr.left;
+  const sy=fr.top+fr.height*_mouthY[frogStage]-cr.top;
+  dot.style.left=(sx-6)+'px';dot.style.top=(sy-6)+'px';dot.style.display='block';
+  console.log('빨간점 위치: X='+_mouthX[frogStage]+' Y='+_mouthY[frogStage]);
+};
+window.debugSet=function(x,y){
+  _mouthX[frogStage]=x;_mouthY[frogStage]=y;
+  debugMouth();
+  console.log('단계 '+frogStage+' 입 위치 → X='+x+' Y='+y);
 };
 
 // === 사운드 에셋 ===
@@ -746,11 +766,9 @@ function slp(l,x,y){const p=document.createElement('div');p.className='lpop';p.t
 function shoot(tx,ty,cb){
   ia=true;pauseAnim();ptg();setFrame('open');
   const fr=frog.getBoundingClientRect(),cr=gc.getBoundingClientRect();
-  // 입 중앙 위치 (gc 기준) - 단계별 입 위치 비율 조정
-  const mouthX=[0,0.50,0.50,0.50,0.52,0.53][frogStage]||0.50;
-  const mouthY=[0,0.38,0.36,0.34,0.30,0.28][frogStage]||0.38;
-  const sx=fr.left+fr.width*mouthX-cr.left;
-  const sy=fr.top+fr.height*mouthY-cr.top;
+  // 입 중앙 위치 (gc 기준) - 단계별 입 위치 비율 (debugSet으로 조정 가능)
+  const sx=fr.left+fr.width*_mouthX[frogStage]-cr.left;
+  const sy=fr.top+fr.height*_mouthY[frogStage]-cr.top;
   // 파리까지 벡터
   const dx=tx-sx,dy=ty-sy;
   const dist=Math.sqrt(dx*dx+dy*dy);
