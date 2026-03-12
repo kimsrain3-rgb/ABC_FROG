@@ -615,9 +615,12 @@ function setFrame(pose){
   // pose: 'a', 'b', 'open'
   const suffix = pose==='open' ? 'o' : pose;
   const targetId = 'fs'+frogStage+suffix;
-  if(currentFrogEl){currentFrogEl.style.display='none';currentFrogEl.classList.remove('active');}
   const el=document.getElementById(targetId);
-  if(el){el.style.display='block';el.classList.add('active');currentFrogEl=el;}
+  if(!el) return;
+  const prev=currentFrogEl;
+  el.style.display='block';el.classList.add('active');
+  currentFrogEl=el;
+  if(prev && prev!==el){prev.style.display='none';prev.classList.remove('active');}
 }
 
 // === 숨쉬기 애니메이션 (1초 주기) ===
