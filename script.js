@@ -651,8 +651,8 @@ function scheduleBlink(){
   }, delay);
 }
 
-function pauseAnim(){ animPaused = true; frog.style.animation='none'; }
-function resumeAnim(){ animPaused = false; setFrame('a'); frog.style.animation='breatheCSS 2.5s ease-in-out infinite'; }
+function pauseAnim(){ animPaused = true;  }
+function resumeAnim(){ animPaused = false; setFrame('a');  }
 
 function icb(){
   cb2.innerHTML='';
