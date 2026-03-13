@@ -19,6 +19,7 @@ body{background:url('data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX
 .fly.slimy{filter:brightness(.7) saturate(.5)}.fly.slimy .fly-slime{display:block!important}
 .fly-slime{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:16px;z-index:3;animation:drip 1s ease-in infinite}
 .fly-letter{position:absolute;top:65%;left:50%;transform:translateX(-50%);font-size:7vmin;font-weight:900;color:#FF6F00;text-shadow:2px 2px 0 #E65100,-1px -1px 0 #FFA000;z-index:3}
+.fly-letter.lower{font-size:14vmin}
 
 .cbar{position:absolute;bottom:0;left:0;right:0;height:auto;min-height:40px;padding-bottom:env(safe-area-inset-bottom,0px);background:linear-gradient(180deg,rgba(30,60,40,.9),rgba(20,40,30,.95));display:flex;align-items:center;justify-content:center;gap:2px;padding:5px 8px;z-index:30}
 .slot{width:calc((100% - 52px)/26);max-width:3.2vw;aspect-ratio:1;background:rgba(255,255,255,.1);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:2vw;color:rgba(255,255,255,.3);font-weight:bold;transition:all .5s;border:1px solid rgba(255,255,255,.05)}
