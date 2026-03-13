@@ -706,7 +706,7 @@ function cf(l,t,sx,sy){
   if(fl.some(f=>f.letter===l))return fl.find(f=>f.letter===l);
   const id=fid++;const e=document.createElement('div');
   e.className='fly';
-  const dir=DIRS[Math.floor(Math.random()*3)];e.dataset.dir=dir;e.innerHTML='<img class="fly-sprite" src="'+FLY_IMGS[dir][0]+'"><div class="fly-letter">'+l+'</div><div class="fly-slime">💧</div>';
+  const dir=DIRS[Math.floor(Math.random()*3)];e.dataset.dir=dir;e.innerHTML='<img class="fly-sprite" src="'+FLY_IMGS[dir][0]+'"><div class="fly-letter">'+displayLetter(l)+'</div><div class="fly-slime">💧</div>';
   const cW=gc.offsetWidth||400,cH=gc.offsetHeight||700;
   const x=sx||(cW*0.02+Math.random()*(cW*0.55)),y=sy||(cH*0.05+Math.random()*(cH*0.25));
   e.style.left=x+'px';e.style.top=y+'px';
