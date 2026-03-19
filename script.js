@@ -835,7 +835,7 @@ function owc(f){
   cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');SND_WOOWECK.currentTime=0;SND_WOOWECK.volume=1.0;SND_WOOWECK.play().catch(function(){});
   setTimeout(()=>{
     pauseAnim();
-    if(frogStage===1){setFrame('yuck')}else{setFrame('open')}
+    setFrame('yuck')
     frog.className='frog shaking';
     setTimeout(()=>{frog.className='frog';resumeAnim()},1300);
   },220);
