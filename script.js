@@ -645,8 +645,8 @@ const initFrog=document.getElementById('fs4a');
 if(initFrog){initFrog.style.display='block';initFrog.classList.add('active');}
 let currentFrogEl=initFrog||null;
 function setFrame(pose){
-  // pose: 'a', 'b', 'open'
-  const suffix = pose==='open' ? 'o' : pose;
+  // pose: 'a', 'b', 'open', 'yuck'
+  const suffix = pose==='open' ? 'o' : pose==='yuck' ? 'y' : pose;
   const targetId = 'fs'+frogStage+suffix;
   const el=document.getElementById(targetId);
   if(!el) return;
@@ -832,9 +832,13 @@ function occ(f){
 }
 
 function owc(f){
-  cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');SND_WOOWECK.currentTime=0;SND_WOOWECK.volume=1.0;SND_WOOWECK.play().catch(function(){});setFrame('open');
-  frog.className='frog shaking';
-  setTimeout(()=>{frog.className='frog';resumeAnim()},800);
+  cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');SND_WOOWECK.currentTime=0;SND_WOOWECK.volume=1.0;SND_WOOWECK.play().catch(function(){});
+  setTimeout(()=>{
+    pauseAnim();
+    if(frogStage===1){setFrame('yuck')}else{setFrame('open')}
+    frog.className='frog shaking';
+    setTimeout(()=>{frog.className='frog';resumeAnim()},1300);
+  },220);
   f.slimy=true;f.el.classList.remove('sparkle');f.el.classList.add('slimy');
   f.vx=(Math.random()-.5)*5;f.vy=-3-Math.random()*2;rit();
 }
