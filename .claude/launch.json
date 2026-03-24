@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "abc-frog",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "require('child_process').execSync('npx http-server . -p 8080 -c-1',{stdio:'inherit'})"],
+      "port": 8080
+    }
+  ]
+}
