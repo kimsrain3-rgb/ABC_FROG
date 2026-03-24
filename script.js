@@ -1036,6 +1036,17 @@ function tut(){
 function gl(){uf();requestAnimationFrame(gl)}
 function go(mode){
   gameMode=mode||'ABC';
+  // 모드별 배경 + 색감 전환
+  const gc=document.getElementById('gc');
+  if(gameMode==='abc'){
+    document.body.style.background="url('assets/images/bg_3.png') center/cover no-repeat";
+    document.body.style.backgroundColor="#4A2040";
+    gc.classList.add('mode-abc');
+  } else {
+    document.body.style.background="url('assets/images/bg_1.png') center/cover no-repeat";
+    document.body.style.backgroundColor="#2D6B5E";
+    gc.classList.remove('mode-abc');
+  }
   frogStage=1;setFrame('a');
   ea();
   // 오디오 시작
