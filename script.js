@@ -68,6 +68,11 @@ const FLY_IMGS={
   right:["assets/images/fly_right.png","assets/images/fly_right2.png"],
   front:["assets/images/fly_front.png","assets/images/fly_front2.png"]
 };
+const DRAGONFLY_IMGS={
+  left:["assets/images/dregon1.png","assets/images/dregon1-1.png"],
+  right:["assets/images/dregon2.png","assets/images/dregon2-1.png"],
+  front:["assets/images/dregon1.png","assets/images/dregon1-1.png"]
+};
 const DIRS=['left','right','front'];
 
 const PHRASES=[
@@ -606,7 +611,7 @@ const cb2=document.getElementById('cb2');
 
 // 파리 날갯짓
 let fs=false;
-setInterval(()=>{fs=!fs;document.querySelectorAll('.fly').forEach(e=>{const d=e.dataset.dir||'front';const img=e.querySelector('.fly-sprite');if(img)img.src=FLY_IMGS[d][fs?1:0]})},120);
+setInterval(()=>{fs=!fs;document.querySelectorAll('.fly').forEach(e=>{const d=e.dataset.dir||'front';const imgs=gameMode==='abc'?DRAGONFLY_IMGS:FLY_IMGS;const img=e.querySelector('.fly-sprite');if(img)img.src=imgs[d][fs?1:0]})},120);
 
 // === 개구리 프레임 전환 ===
 // === mode display helpers ===
@@ -706,7 +711,7 @@ function cf(l,t,sx,sy){
   if(fl.some(f=>f.letter===l))return fl.find(f=>f.letter===l);
   const id=fid++;const e=document.createElement('div');
   e.className='fly';
-  const dir=DIRS[Math.floor(Math.random()*3)];e.dataset.dir=dir;const dl=displayLetter(l);const lowerCls=dl!==dl.toUpperCase()?' lower':'';const roundCls='acemnorsuvwxz'.includes(dl)?' round':'';e.innerHTML='<img class="fly-sprite" src="'+FLY_IMGS[dir][0]+'"><div class="fly-letter'+lowerCls+roundCls+'">'+dl+'</div><div class="fly-slime">💧</div>';
+  const dir=DIRS[Math.floor(Math.random()*3)];e.dataset.dir=dir;const imgs=gameMode==='abc'?DRAGONFLY_IMGS:FLY_IMGS;const dl=displayLetter(l);const lowerCls=dl!==dl.toUpperCase()?' lower':'';const roundCls='acemnorsuvwxz'.includes(dl)?' round':'';e.innerHTML='<img class="fly-sprite" src="'+imgs[dir][0]+'"><div class="fly-letter'+lowerCls+roundCls+'">'+dl+'</div><div class="fly-slime">💧</div>';
   const cW=gc.offsetWidth||400,cH=gc.offsetHeight||700;
   const x=sx||(cW*0.02+Math.random()*(cW*0.55)),y=sy||(cH*0.05+Math.random()*(cH*0.25));
   e.style.left=x+'px';e.style.top=y+'px';
