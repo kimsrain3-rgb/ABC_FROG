@@ -48,7 +48,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .ss{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .5s}
 .ss h1{font-size:52px;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.2);margin-bottom:10px}
 .ss .sub{font-size:20px;color:rgba(255,255,255,.9);margin-bottom:40px}
-.ss .sf{width:260px;margin-bottom:5px;animation:bi 1.5s ease-in-out infinite;position:relative}.ss .sf img{width:100%;display:block}.ss .sf .sf-b{position:absolute;top:0;left:0;animation:breathe 1.2s ease-in-out infinite}@keyframes breathe{0%,100%{opacity:0}40%,60%{opacity:1}}
+.ss .sf{width:260px;margin-bottom:-30px;animation:bi 1.5s ease-in-out infinite;position:relative}.ss .sf img{width:100%;display:block}.ss .sf .sf-b{position:absolute;top:0;left:0;animation:breathe 1.2s ease-in-out infinite}@keyframes breathe{0%,100%{opacity:0}40%,60%{opacity:1}}
 .sbtn{padding:18px 50px;font-size:26px;font-family:'Fredoka',cursive;font-weight:bold;background:linear-gradient(180deg,#FFEB3B,#FFC107);color:#33691E;border:4px solid #F57F17;border-radius:50px;cursor:pointer;box-shadow:0 6px 0 #F57F17,0 8px 20px rgba(0,0,0,.3);transition:all .1s}
 .sbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #F57F17,0 4px 10px rgba(0,0,0,.3)}
 
@@ -100,7 +100,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 
 @keyframes crownBounce{0%{transform:translateX(-50%) scale(0) translateY(-50px);opacity:0}50%{transform:translateX(-50%) scale(1.3) translateY(0);opacity:1}100%{transform:translateX(-50%) scale(1) translateY(0);opacity:1}}
 
-@keyframes bfShake{0%{margin-left:-2px}25%{margin-left:2px}50%{margin-left:-2px}75%{margin-left:2px}100%{margin-left:0}}@media(max-width:768px){.cbar{flex-wrap:wrap;gap:3px;padding:6px 4px}.slot{width:calc((100% - 39px)/13);max-width:none;font-size:3.8vw;aspect-ratio:1;border-radius:4px}.sc{font-size:15px;top:10px;left:10px}.frog{bottom:10%}.lilypad{bottom:13.6%}.stump{bottom:5%}.ss .sf{margin-top:15vh}}
+@keyframes bfShake{0%{margin-left:-2px}25%{margin-left:2px}50%{margin-left:-2px}75%{margin-left:2px}100%{margin-left:0}}@media(max-width:768px){.cbar{flex-wrap:wrap;gap:3px;padding:6px 4px}.slot{width:calc((100% - 39px)/13);max-width:none;font-size:3.8vw;aspect-ratio:1;border-radius:4px}.sc{font-size:15px;top:10px;left:10px}.frog{bottom:10%}.lilypad{bottom:13.6%}.stump{bottom:5%}}
 
 
 /* === 모드 선택 버튼 === */
