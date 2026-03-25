@@ -1103,7 +1103,7 @@ function go(mode){
   const gc=document.getElementById('gc');
   gc.classList.remove('mode-abc','mode-ABc');
   if(gameMode==='abc'){
-    document.body.style.background="url('assets/images/bg_4.png') center/cover no-repeat";
+    document.body.style.background="url('assets/images/bg_4.png') center bottom/cover no-repeat";
     document.body.style.backgroundColor="#87CEEB";
     gc.classList.add('mode-abc');
   } else if(gameMode==='ABc'){
