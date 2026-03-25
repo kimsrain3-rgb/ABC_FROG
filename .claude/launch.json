@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "abc-frog",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["-e", "require('child_process').execSync('npx http-server . -p 8080 -c-1',{stdio:'inherit'})"],
+      "runtimeExecutable": "C:/Program Files/Git/bin/bash.exe",
+      "runtimeArgs": ["-c", "node /d/1Game_projec/ABC_FROG/serve.js"],
       "port": 8080
     }
   ]

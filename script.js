@@ -73,6 +73,7 @@ const DRAGONFLY_IMGS={
   right:["assets/images/dregon2.png","assets/images/dregon2-1.png"],
   front:["assets/images/dregon1.png","assets/images/dregon1-1.png"]
 };
+const SPIDER_IMGS=["assets/images/spider1.png","assets/images/spider1-1.png"];
 const DIRS=['left','right','front'];
 
 const PHRASES=[
@@ -386,6 +387,7 @@ function initCaterpillar(){
   // 애벌레 전용 연잎 (기존 연잎 이미지 재사용)
   const mainLeaf=document.querySelector('.lilypad img');
   const cLeaf=document.createElement('div');
+  cLeaf.className='caterpillar-leaf';
   cLeaf.style.cssText='position:absolute;bottom:28%;right:3%;width:18vmin;z-index:6;pointer-events:none;';
   const leafImg=document.createElement('img');
   leafImg.src=mainLeaf.src;
@@ -611,18 +613,19 @@ const cb2=document.getElementById('cb2');
 
 // 파리 날갯짓
 let fs=false;
-setInterval(()=>{fs=!fs;document.querySelectorAll('.fly').forEach(e=>{const d=e.dataset.dir||'front';const imgs=gameMode==='abc'?DRAGONFLY_IMGS:FLY_IMGS;const img=e.querySelector('.fly-sprite');if(img)img.src=imgs[d][fs?1:0]})},120);
+setInterval(()=>{fs=!fs;document.querySelectorAll('.fly').forEach(e=>{if(e.classList.contains('spider')){const f1=e.querySelector('.spider-f1'),f2=e.querySelector('.spider-f2');if(f1&&f2){f1.style.display=fs?'none':'block';f2.style.display=fs?'block':'none';}return;}const d=e.dataset.dir||'front';const imgs=gameMode==='abc'?DRAGONFLY_IMGS:FLY_IMGS;const img=e.querySelector('.fly-sprite');if(img)img.src=imgs[d][fs?1:0]})},120);
 
 // === 개구리 프레임 전환 ===
 // === mode display helpers ===
 function displayLetter(l){
   const upper=l.toUpperCase();
   if(gameMode==='abc') return upper.toLowerCase();
-  if(gameMode==='ABc') return Math.random()<0.5 ? upper : upper.toLowerCase();
+  if(gameMode==='ABc' && mixSlotLetters[upper]) return mixSlotLetters[upper];
   return upper;
 }
 function displayTarget(){
   if(gameMode==='abc') return ct.toLowerCase();
+  if(gameMode==='ABc' && mixSlotLetters[ct]) return mixSlotLetters[ct];
   return ct;
 }
 
@@ -681,9 +684,21 @@ function scheduleBlink(){}
 function pauseAnim(){ animPaused = true;  }
 function resumeAnim(){ animPaused = false; setFrame('a');  }
 
+let mixSlotLetters={};
 function icb(){
   cb2.innerHTML='';
-  const letters = (gameMode==='abc') ? L_LOWER : L;
+  mixSlotLetters={};
+  let letters;
+  if(gameMode==='ABc'){
+    // ABc 모드: 각 칸마다 랜덤으로 대/소문자 배정
+    letters=L.split('').map(c=>{
+      const pick=Math.random()<0.5?c:c.toLowerCase();
+      mixSlotLetters[c]=pick;
+      return pick;
+    });
+  } else {
+    letters = ((gameMode==='abc') ? L_LOWER : L).split('');
+  }
   for(let i=0;i<26;i++){
     const s=document.createElement('div');
     s.className='slot';
@@ -711,13 +726,35 @@ function cf(l,t,sx,sy){
   if(fl.some(f=>f.letter===l))return fl.find(f=>f.letter===l);
   const id=fid++;const e=document.createElement('div');
   e.className='fly';
-  const dir=DIRS[Math.floor(Math.random()*3)];e.dataset.dir=dir;const imgs=gameMode==='abc'?DRAGONFLY_IMGS:FLY_IMGS;const dl=displayLetter(l);const lowerCls=dl!==dl.toUpperCase()?' lower':'';const roundCls='acemnorsuvwxz'.includes(dl)?' round':'';e.innerHTML='<img class="fly-sprite" src="'+imgs[dir][0]+'"><div class="fly-letter'+lowerCls+roundCls+'">'+dl+'</div><div class="fly-slime">💧</div>';
+  const dl=displayLetter(l);const lowerCls=dl!==dl.toUpperCase()?' lower':'';const roundCls='acemnorsuvwxzpq'.includes(dl)?' round':'';
+  if(gameMode==='ABc'){
+    e.classList.add('spider');
+    e.innerHTML='<div class="spider-web"></div><img class="fly-sprite spider-sprite spider-f1" src="'+SPIDER_IMGS[0]+'"><img class="fly-sprite spider-sprite spider-f2" src="'+SPIDER_IMGS[1]+'" style="display:none"><div class="fly-letter'+lowerCls+roundCls+'">'+dl+'</div><div class="fly-slime">💧</div>';
+    e.dataset.dir='front';
+  } else {
+    const dir=DIRS[Math.floor(Math.random()*3)];e.dataset.dir=dir;const imgs=gameMode==='abc'?DRAGONFLY_IMGS:FLY_IMGS;
+    e.innerHTML='<img class="fly-sprite" src="'+imgs[dir][0]+'"><div class="fly-letter'+lowerCls+roundCls+'">'+dl+'</div><div class="fly-slime">💧</div>';
+  }
   const cW=gc.offsetWidth||400,cH=gc.offsetHeight||700;
-  const x=sx||(cW*0.02+Math.random()*(cW*0.55)),y=sy||(cH*0.05+Math.random()*(cH*0.25));
+  let x,y;
+  if(gameMode==='ABc'){
+    // 거미: 화면 가로 넓게 퍼뜨리고, 위쪽에서 시작
+    x=sx||(cW*0.05+Math.random()*(cW*0.75));
+    y=sy||(cH*0.02+Math.random()*(cH*0.08));
+  } else {
+    x=sx||(cW*0.02+Math.random()*(cW*0.55));
+    y=sy||(cH*0.05+Math.random()*(cH*0.25));
+  }
   e.style.left=x+'px';e.style.top=y+'px';
   e.addEventListener('click',ev=>{ev.stopPropagation();oft(id)});
   e.addEventListener('touchstart',ev=>{ev.preventDefault();ev.stopPropagation();oft(id)},{passive:false});
   fc.appendChild(e);
+  if(gameMode==='ABc'){
+    // 거미: 상하 움직임 + 좌우 흔들림 파라미터
+    const o={id,letter:l,isTarget:t,el:e,x,y,vx:0,vy:0.8+Math.random()*0.6,slimy:false,
+      spider:true,baseX:x,swayPhase:Math.random()*Math.PI*2,swaySpeed:0.02+Math.random()*0.015,swayAmp:15+Math.random()*20,goingDown:true};
+    fl.push(o);return o;
+  }
   const o={id,letter:l,isTarget:t,el:e,x,y,vx:(Math.random()-.5)*2,vy:(Math.random()-.5)*1.5,slimy:false};
   fl.push(o);return o;
 }
@@ -728,6 +765,27 @@ function uf(){
   fl.forEach(f=>{
     const fw=f.el.offsetWidth||cW*0.2;
     const fh=f.el.offsetHeight||cH*0.15;
+    if(f.spider){
+      // 거미: 상하로 내려왔다 올라감 + 좌우 흔들림
+      if(f.goingDown){
+        f.y+=f.vy;
+        if(f.y>mY){f.goingDown=false;}
+      } else {
+        f.y-=f.vy;
+        if(f.y<5){f.goingDown=true;}
+      }
+      // 좌우 흔들림 (사인파)
+      f.swayPhase+=f.swaySpeed;
+      f.x=f.baseX+Math.sin(f.swayPhase)*f.swayAmp;
+      // 경계 처리
+      if(f.x<0)f.x=0;
+      if(f.x>cW-fw)f.x=cW-fw;
+      f.el.style.left=f.x+'px';f.el.style.top=f.y+'px';
+      // 거미줄 길이 업데이트 (거미 위치까지 줄 늘이기)
+      const web=f.el.querySelector('.spider-web');
+      if(web) web.style.height=f.y+'px';
+      return;
+    }
     f.x+=f.vx;f.y+=f.vy;
     if(f.x<0){f.x=0;f.vx*=-1}
     if(f.x>cW-fw){f.x=cW-fw;f.vx*=-1}
@@ -1043,14 +1101,18 @@ function go(mode){
   gameMode=mode||'ABC';
   // 모드별 배경 + 색감 전환
   const gc=document.getElementById('gc');
+  gc.classList.remove('mode-abc','mode-ABc');
   if(gameMode==='abc'){
-    document.body.style.background="url('assets/images/bg_1.png') center/cover no-repeat";
-    document.body.style.backgroundColor="#2D6B5E";
+    document.body.style.background="url('assets/images/bg_4.png') center/cover no-repeat";
+    document.body.style.backgroundColor="#87CEEB";
     gc.classList.add('mode-abc');
+  } else if(gameMode==='ABc'){
+    document.body.style.background="url('assets/images/bg_5.png') center bottom/cover no-repeat";
+    document.body.style.backgroundColor="#2a3a1a";
+    gc.classList.add('mode-ABc');
   } else {
     document.body.style.background="url('assets/images/bg_1.png') center/cover no-repeat";
     document.body.style.backgroundColor="#2D6B5E";
-    gc.classList.remove('mode-abc');
   }
   frogStage=1;setFrame('a');
   ea();
