@@ -1,4 +1,7 @@
 
+// === 인트로 개구리 숨쉬기 ===
+(function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{t=!t;f.src='assets/images/frog_4'+(t?'b':'a')+'.png'},800);})();
+
 // === 디버그 도구 ===
 // debugStage(4) → 4단계로 점프
 // debugMouth() → 입 위치에 빨간점 표시
