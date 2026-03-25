@@ -1107,7 +1107,7 @@ function go(mode){
     document.body.style.backgroundColor="#87CEEB";
     gc.classList.add('mode-abc');
   } else if(gameMode==='ABc'){
-    document.body.style.background="url('assets/images/bg_5.png') center 75%/cover no-repeat";
+    document.body.style.background="url('assets/images/bg_5.png') center/cover no-repeat";
     document.body.style.backgroundColor="#2a3a1a";
     gc.classList.add('mode-ABc');
   } else {
