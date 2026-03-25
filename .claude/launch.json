@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "abc-frog",
-      "runtimeExecutable": "C:/Program Files/Git/bin/bash.exe",
-      "runtimeArgs": ["-c", "node /d/1Game_projec/ABC_FROG/serve.js"],
-      "port": 8080
+      "name": "dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["serve.js"],
+      "port": 8080,
+      "autoPort": true
     }
   ]
 }

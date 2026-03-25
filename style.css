@@ -20,7 +20,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .fly.slimy{filter:brightness(.7) saturate(.5)}.fly.slimy .fly-slime{display:block!important}
 .fly-slime{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:16px;z-index:3;animation:drip 1s ease-in infinite}
 .fly-letter{position:absolute;top:70%;left:50%;transform:translateX(-50%);font-size:10.5vmin;font-weight:900;color:#FF6F00;text-shadow:2px 2px 0 #E65100,-1px -1px 0 #FFA000;z-index:3}
-.fly-letter.lower{font-size:10.5vmin;top:55%}
+.fly-letter.lower{font-size:14vmin;top:55%}
 .fly-letter.round{top:60%}
 .fly-letter.lower.round{top:48%}
 
