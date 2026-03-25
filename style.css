@@ -31,10 +31,9 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .bubble{position:absolute;background:#fff;padding:3vmin 5vmin;border-radius:5vmin;font-size:6vmin;font-weight:bold;white-space:normal;max-width:55%;box-shadow:0 3px 10px rgba(0,0,0,.2);z-index:40;opacity:0;transition:opacity .3s;line-height:1.4;text-align:center}
 .bubble.bbl-left{left:3%;right:auto;transform:none}
 .bubble.bbl-right{right:3%;left:auto;transform:none}
-.bubble::after{content:'';position:absolute;bottom:-2vmin;width:0;height:0;border-left:2vmin solid transparent;border-right:2vmin solid transparent;border-top:2.5vmin solid #fff}
-.bubble.bbl-left::after{left:25%}
-.bubble.bbl-right::after{right:25%}
-.bubble::after{content:'';position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);border-left:10px solid transparent;border-right:10px solid transparent;border-top:12px solid #fff}
+.bubble::after{content:'';position:absolute;width:0;height:0}
+.bubble.bbl-left::after{right:-12px;top:50%;transform:translateY(-50%);border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:14px solid #fff}
+.bubble.bbl-right::after{left:-12px;top:50%;transform:translateY(-50%);border-top:10px solid transparent;border-bottom:10px solid transparent;border-right:14px solid #fff}
 .bubble.show{opacity:1}
 
 .sc{position:absolute;top:15px;left:15px;font-size:18px;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5);z-index:40}
