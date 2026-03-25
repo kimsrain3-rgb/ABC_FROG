@@ -70,7 +70,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .spider-sprite{transform:none!important}
 
 /* 그루터기 (ABc 모드 전용) */
-.stump{position:absolute;bottom:2%;left:50%;transform:translateX(-50%);width:55vmin;z-index:7;pointer-events:none;display:none}
+.stump{position:absolute;bottom:-2%;left:50%;transform:translateX(-50%);width:55vmin;z-index:7;pointer-events:none;display:none}
 .stump img{width:100%;height:auto}
 
 /* ABc 모드: 연잎 숨기고 그루터기 표시 */
