@@ -817,13 +817,13 @@ function sb(t,d=1500,c){
   
   bbl.classList.add('show');
   bbl.style.color=c||'#333';
-  // 개구리 머리 바로 위에 배치
+  // 개구리 눈 옆에 배치
   const fr=document.getElementById('frog');
   if(fr){
     const frRect=fr.getBoundingClientRect();
     const gcRect=gc.getBoundingClientRect();
-    const frogTop=frRect.top-gcRect.top;
-    bbl.style.bottom=(gc.offsetHeight-frogTop+15)+'px';
+    const frogEyeY=frRect.top+frRect.height*0.3-gcRect.top;
+    bbl.style.bottom=(gc.offsetHeight-frogEyeY)+'px';
   }
   setTimeout(()=>bbl.classList.remove('show'),d);
 }
