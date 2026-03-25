@@ -6,7 +6,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .lilypad img{width:100%;height:auto}
 
 
-.frog{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:49vmin;aspect-ratio:1/1;z-index:25;transform-origin:bottom center;overflow:visible}
+.frog{position:absolute;bottom:4%;left:50%;transform:translateX(-50%);width:49vmin;aspect-ratio:1/1;z-index:22;transform-origin:bottom center;overflow:visible}
 .frog img{display:none}
 .frog img.active{display:block}
 
