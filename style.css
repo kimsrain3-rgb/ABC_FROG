@@ -48,7 +48,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .ss{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .5s}
 .ss h1{font-size:52px;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.2);margin-bottom:10px}
 .ss .sub{font-size:20px;color:rgba(255,255,255,.9);margin-bottom:40px}
-.ss .sf{width:260px;margin-bottom:5px;animation:bi 1.5s ease-in-out infinite}
+.ss .sf{width:260px;margin-bottom:5px;animation:bi 1.5s ease-in-out infinite;position:relative}.ss .sf img{width:100%;display:block}.ss .sf .sf-b{position:absolute;top:0;left:0;animation:breathe 1.2s ease-in-out infinite}@keyframes breathe{0%,100%{opacity:0}40%,60%{opacity:1}}
 .sbtn{padding:18px 50px;font-size:26px;font-family:'Fredoka',cursive;font-weight:bold;background:linear-gradient(180deg,#FFEB3B,#FFC107);color:#33691E;border:4px solid #F57F17;border-radius:50px;cursor:pointer;box-shadow:0 6px 0 #F57F17,0 8px 20px rgba(0,0,0,.3);transition:all .1s}
 .sbtn:active{transform:translateY(4px);box-shadow:0 2px 0 #F57F17,0 4px 10px rgba(0,0,0,.3)}
 
