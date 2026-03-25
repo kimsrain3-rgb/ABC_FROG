@@ -57,9 +57,12 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 @keyframes letterFlash{0%,100%{color:#FF6F00;text-shadow:2px 2px 0 #E65100,-1px -1px 0 #FFA000;transform:translateX(-50%) scale(1)}50%{color:#FFD700;text-shadow:0 0 15px #FFD700,0 0 30px #FFA000,2px 2px 0 #E65100;transform:translateX(-50%) scale(1.15)}}
 
 /* === 거미 (ABc 모드) === */
-.fly.spider{overflow:visible;width:13vmin;height:auto;display:flex;flex-direction:column;align-items:center}
+/* 소문자 모드: 잠자리 20% 확대 */
+.mode-abc .fly{width:18vmin;height:18vmin}
+
+.fly.spider{overflow:visible;width:15.6vmin;height:auto;display:flex;flex-direction:column;align-items:center}
 .fly.spider .fly-sprite{position:relative;width:100%;height:auto}
-.fly.spider .fly-letter{position:relative;top:auto;bottom:auto;left:auto;transform:none;font-size:8vmin;margin-top:-3vmin;text-align:center}
+.fly.spider .fly-letter{position:relative;top:auto;bottom:auto;left:auto;transform:none;font-size:9.6vmin;margin-top:-3.5vmin;text-align:center}
 .fly.spider .fly-letter.lower{margin-top:-1.5vmin}
 .fly.spider .fly-letter.round{margin-top:-3vmin}
 .fly.spider .fly-letter.lower.round{margin-top:-4vmin}
