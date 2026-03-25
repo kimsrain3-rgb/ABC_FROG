@@ -1124,5 +1124,5 @@ function go(mode){
   SND_BGM.play().catch(()=>{});
   bgmStarted=true;
   startFlyBuzz();startFrogBG();initCaterpillar();initButterfly();
-  document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();tut()},500)}
+  document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
 document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
