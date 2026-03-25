@@ -78,7 +78,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .mode-ABc .stump{display:block}
 .mode-ABc .caterpillar-leaf{display:none}
 .mode-ABc #caterpillar{display:none!important}
-.mode-ABc .frog{width:35vmin}
+.mode-ABc .frog{width:49vmin}
 
 
 @keyframes breatheCSS{0%,100%{transform:translateX(-50%) scaleY(1)}50%{transform:translateX(-50%) scaleY(1.02)}}
