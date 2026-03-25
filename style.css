@@ -10,7 +10,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .frog img{display:none}
 .frog img.active{display:block}
 
-.tongue{position:absolute;left:50%;width:3vmin;transform-origin:bottom center;opacity:0;z-index:15;pointer-events:none;background:url('assets/images/bg_2.png') center/100% 100% no-repeat;border-radius:10px}
+.tongue{position:absolute;left:50%;width:3vmin;transform-origin:bottom center;opacity:0;z-index:30;pointer-events:none;background:url('assets/images/bg_2.png') center/100% 100% no-repeat;border-radius:10px}
 
 
 .fly{position:absolute;width:15vmin;height:15vmin;cursor:pointer;z-index:20}
