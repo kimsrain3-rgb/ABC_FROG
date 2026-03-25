@@ -823,7 +823,7 @@ function sb(t,d=1500,c){
     const frRect=fr.getBoundingClientRect();
     const gcRect=gc.getBoundingClientRect();
     const frogTop=frRect.top-gcRect.top;
-    bbl.style.bottom=(gc.offsetHeight-frogTop+40)+'px';
+    bbl.style.bottom=(gc.offsetHeight-frogTop+20)+'px';
   }
   setTimeout(()=>bbl.classList.remove('show'),d);
 }
