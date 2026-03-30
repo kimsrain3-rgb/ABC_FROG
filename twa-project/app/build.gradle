@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.ggomzipapa.abcfrog'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.ggomzipapa.abcfrog"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+
+        // TWA configuration
+        manifestPlaceholders = [
+            hostName    : "kimsrain3-rgb.github.io",
+            defaultUrl  : "https://kimsrain3-rgb.github.io/ABC_FROG/",
+            launcherName: "ABC Frog",
+            assetStatements: '[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "web", "site": "https://kimsrain3-rgb.github.io" } }]'
+        ]
+    }
+
+    signingConfigs {
+        release {
+            storeFile file("release-keystore.jks")
+            storePassword "abcfrog123"
+            keyAlias "abc-frog"
+            keyPassword "abcfrog123"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.browser:browser:1.8.0'
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

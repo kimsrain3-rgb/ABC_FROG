@@ -6,6 +6,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: twa-project
 
     steps:
       - uses: actions/checkout@v4
@@ -16,57 +19,35 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Bubblewrap CLI
-        run: npm install -g @bubblewrap/cli
-
-      - name: Configure Bubblewrap to use existing JDK and SDK
+      - name: Generate signing key
         run: |
-          mkdir -p "$HOME/.bubblewrap"
-          cat > "$HOME/.bubblewrap/config.json" << EOF
-          {
-            "jdkPath": "$JAVA_HOME",
-            "androidSdkPath": "$ANDROID_HOME"
-          }
-          EOF
-          cat "$HOME/.bubblewrap/config.json"
+          keytool -genkeypair \
+            -alias abc-frog \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -keystore app/release-keystore.jks \
+            -storepass abcfrog123 -keypass abcfrog123 \
+            -dname "CN=GgomziPapa, OU=Dev, O=GgomziPapa, L=Seoul, ST=Seoul, C=KR"
 
-      - name: Initialize TWA project
-        run: |
-          mkdir -p twa-build && cd twa-build
-          yes "" | bubblewrap init --manifest="https://kimsrain3-rgb.github.io/ABC_FROG/manifest.json" --packageId="com.ggomzipapa.abcfrog"
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Build AAB
         run: |
-          cd twa-build
-          bubblewrap build --skipPwaValidation --signingMode=new --keyStorePassword=abcfrog123 --keyPassword=abcfrog123 --keyAlias=abc-frog
+          chmod +x gradlew 2>/dev/null || true
+          gradle wrapper
+          ./gradlew bundleRelease
 
-      - name: List output files
-        run: |
-          echo "=== twa-build root ==="
-          ls -la twa-build/*.aab twa-build/*.apk 2>/dev/null || echo "No aab/apk in root"
-          echo "=== app build outputs ==="
-          find twa-build -name "*.aab" -o -name "*.apk" 2>/dev/null || echo "No files found"
+      - name: List outputs
+        run: find . -name "*.aab" -o -name "*.apk" | head -20
 
-      - name: Upload AAB artifact
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: abc-frog-aab
-          path: |
-            twa-build/*.aab
-            twa-build/app/build/outputs/bundle/**/*.aab
-          if-no-files-found: warn
+          path: twa-project/app/build/outputs/bundle/release/*.aab
 
-      - name: Upload signing key (backup)
+      - name: Upload signing key (BACKUP THIS!)
         uses: actions/upload-artifact@v4
         with:
           name: abc-frog-signing-key
-          path: twa-build/android.keystore
-          if-no-files-found: warn
+          path: twa-project/app/release-keystore.jks
