@@ -19,14 +19,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Generate signing key
-        run: |
-          keytool -genkeypair \
-            -alias abc-frog \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -keystore app/release-keystore.jks \
-            -storepass abcfrog123 -keypass abcfrog123 \
-            -dname "CN=GgomziPapa, OU=Dev, O=GgomziPapa, L=Seoul, ST=Seoul, C=KR"
+      - name: Restore signing key from secret
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release-keystore.jks
 
       - name: Create Gradle wrapper
         run: |
@@ -46,9 +40,3 @@ jobs:
         with:
           name: abc-frog-aab
           path: twa-project/app/build/outputs/bundle/release/*.aab
-
-      - name: Upload signing key (BACKUP THIS!)
-        uses: actions/upload-artifact@v4
-        with:
-          name: abc-frog-signing-key
-          path: twa-project/app/release-keystore.jks
