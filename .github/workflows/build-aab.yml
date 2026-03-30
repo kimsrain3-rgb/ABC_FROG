@@ -28,17 +28,18 @@ jobs:
             -storepass abcfrog123 -keypass abcfrog123 \
             -dname "CN=GgomziPapa, OU=Dev, O=GgomziPapa, L=Seoul, ST=Seoul, C=KR"
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Create Gradle wrapper
+        run: |
+          gradle wrapper --gradle-version 8.5
+        env:
+          GRADLE_VERSION: 8.5
 
       - name: Build AAB
-        run: |
-          chmod +x gradlew 2>/dev/null || true
-          gradle wrapper
-          ./gradlew bundleRelease
+        run: ./gradlew bundleRelease --no-daemon
 
       - name: List outputs
-        run: find . -name "*.aab" -o -name "*.apk" | head -20
+        if: always()
+        run: find . -name "*.aab" -o -name "*.apk" 2>/dev/null | head -20
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
