@@ -1,0 +1,39 @@
+{
+  "name": "ABC Frog - Kids Alphabet Game",
+  "short_name": "ABC Frog",
+  "description": "A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.",
+  "start_url": "/ABC_FROG/",
+  "scope": "/ABC_FROG/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "categories": ["education", "games", "kids"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "assets/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-192x192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "assets/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
