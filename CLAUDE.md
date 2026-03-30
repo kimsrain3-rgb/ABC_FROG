@@ -29,6 +29,14 @@ ABC_FROG/
 │   ├── fonts/
 │   ├── images/         ← 이미지 20개 (개구리/파리/나비/애벌레/연잎)
 │   └── sounds/         ← 사운드 75개 (알파벳26+보이스42+효과음7)
+├── manifest.json        ← PWA 매니페스트
+├── service-worker.js    ← 오프라인 캐시
+├── privacy-policy.html  ← 개인정보처리방침
+├── keystore_base64.txt  ← 서명 키 base64 (GitHub에 올리지 말 것!)
+├── twa-project/         ← Android TWA 프로젝트 (Gradle)
+│   ├── app/build.gradle ← 앱 설정 (versionCode 2, targetSdk 35)
+│   └── app/src/main/    ← 매니페스트, 아이콘, 스플래시
+├── .github/workflows/   ← GitHub Actions (build-aab.yml)
 ├── versions/
 └── docs/
 ```
@@ -46,8 +54,15 @@ ABC_FROG/
 - [x] 소문자 글자 크기 35% 확대
 - [x] 튜토리얼 데모: ABC 모드에서만 표시
 - [x] 수집판: ABc 모드 랜덤 대소문자 표시
-- [ ] PWA 설정 (manifest.json + service worker)
-- [ ] 앱 스토어 등록
+- [x] PWA 설정 (manifest.json + service-worker.js + 앱 아이콘 4종)
+- [x] 개인정보처리방침 페이지 (privacy-policy.html, 한/영 토글)
+- [x] TWA 프로젝트 구성 (twa-project/, Gradle 빌드)
+- [x] GitHub Actions AAB 빌드 워크플로우 (.github/workflows/build-aab.yml)
+- [x] 서명 키 관리: GitHub Secret (KEYSTORE_BASE64)으로 고정 키 사용
+- [x] Play Console 비공개 테스트 버전 업로드 (v2, 1.0.1) — Google 검토 중
+- [ ] 테스터 이메일 등록 (비공개 테스트 트랙)
+- [ ] Google 검토 통과 후 테스터 초대
+- [ ] 14일 비공개 테스트 기간 완료 → 프로덕션 출시
 
 ## 핵심 게임 메카닉
 - 정답 파리 → "야미야미!" + 알파벳 발음 + 별 터짐 + 배 빵빵
@@ -74,6 +89,16 @@ ABC_FROG/
 - 그림/소리는 assets/ 폴더에 실제 파일로 관리 (base64 내장 X)
 - 앞으로 그림 추가/교체가 빈번할 예정 (러프스케치 → 깔끔한 라인 업그레이드 등)
 - 파일 이름은 알아보기 쉽게: frog_hungry.png, frog_full.png, fly.png 등
+
+## Google Play 배포 정보
+- **패키지명**: com.ggomzipapa.abcfrog
+- **현재 버전**: versionCode 2, versionName 1.0.1
+- **서명 키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
+- **서명 키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
+- **개발자 계정 ID**: 8921467846864051720
+- **개인정보처리방침 URL**: https://kimsrain3-rgb.github.io/ABC_FROG/privacy-policy.html
+- **연락처 이메일**: ccomzpapa@naver.com
+- **상태**: 비공개 테스트 검토 중 (2026-03-30 제출)
 
 ## 알려진 이슈
 - 파리 경계 처리 — 화면 밖으로 나가는 버그 반복 발생 이력
