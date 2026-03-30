@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABC Frog - Privacy Policy</title>
+<style>
+body { font-family: 'Segoe UI', sans-serif; max-width: 720px; margin: 0 auto; padding: 20px; line-height: 1.8; color: #333; }
+h1 { color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 8px; }
+h2 { color: #388E3C; margin-top: 28px; }
+.date { color: #888; font-size: 14px; }
+.lang-toggle { text-align: right; margin-bottom: 20px; }
+.lang-toggle button { padding: 6px 16px; margin-left: 8px; border: 1px solid #4CAF50; background: white; color: #4CAF50; border-radius: 4px; cursor: pointer; }
+.lang-toggle button.active { background: #4CAF50; color: white; }
+.en { display: none; }
+</style>
+</head>
+<body>
+
+<div class="lang-toggle">
+  <button class="active" onclick="showLang('ko')">한국어</button>
+  <button onclick="showLang('en')">English</button>
+</div>
+
+<!-- 한국어 -->
+<div class="ko">
+<h1>개인정보처리방침</h1>
+<p class="date">시행일: 2026년 3월 30일</p>
+
+<h2>1. 소개</h2>
+<p><strong>ABC Frog</strong>(이하 "앱")은 3~7세 어린이를 위한 알파벳 학습 게임입니다. 꼼지파파(이하 "개발자")는 사용자의 개인정보 보호를 중요하게 생각합니다.</p>
+
+<h2>2. 수집하는 정보</h2>
+<p>본 앱은 <strong>개인정보를 직접 수집하지 않습니다.</strong></p>
+<ul>
+<li>회원가입, 로그인 기능이 없습니다.</li>
+<li>이름, 이메일, 연락처 등 개인 식별 정보를 요구하지 않습니다.</li>
+<li>사진, 위치, 연락처 등 기기 권한에 접근하지 않습니다.</li>
+</ul>
+
+<h2>3. 분석 도구</h2>
+<p>앱 개선을 위해 <strong>Google Analytics</strong>를 사용하여 익명의 사용 통계(페이지 방문 수, 세션 시간 등)를 수집합니다. 이 데이터는 개인을 식별할 수 없으며, Google의 개인정보처리방침에 따라 처리됩니다.</p>
+
+<h2>4. 어린이 개인정보 보호</h2>
+<p>본 앱은 어린이 대상 앱으로서, 어린이로부터 개인정보를 의도적으로 수집하지 않습니다. 만약 개인정보가 수집된 사실을 알게 될 경우 즉시 삭제 조치합니다.</p>
+
+<h2>5. 제3자 제공</h2>
+<p>개인정보를 제3자에게 판매, 거래 또는 전달하지 않습니다.</p>
+
+<h2>6. 데이터 저장</h2>
+<p>게임 진행 데이터(수집한 알파벳 등)는 사용자의 기기에만 저장되며, 외부 서버로 전송되지 않습니다.</p>
+
+<h2>7. 변경 사항</h2>
+<p>본 방침이 변경될 경우 이 페이지에 업데이트됩니다.</p>
+
+<h2>8. 문의</h2>
+<p>개인정보 관련 문의: <strong>kimsrain3@gmail.com</strong></p>
+</div>
+
+<!-- English -->
+<div class="en">
+<h1>Privacy Policy</h1>
+<p class="date">Effective Date: March 30, 2026</p>
+
+<h2>1. Introduction</h2>
+<p><strong>ABC Frog</strong> ("the App") is an alphabet learning game for children ages 3-7. The developer ("GgomziPapa") values your privacy.</p>
+
+<h2>2. Information We Collect</h2>
+<p>This app <strong>does not collect any personal information.</strong></p>
+<ul>
+<li>No account registration or login is required.</li>
+<li>No personal identifiers (name, email, phone) are requested.</li>
+<li>No device permissions (camera, location, contacts) are accessed.</li>
+</ul>
+
+<h2>3. Analytics</h2>
+<p>We use <strong>Google Analytics</strong> to collect anonymous usage statistics (page views, session duration, etc.) to improve the app. This data cannot identify individuals and is processed according to Google's Privacy Policy.</p>
+
+<h2>4. Children's Privacy</h2>
+<p>This app is designed for children. We do not intentionally collect personal information from children. If we become aware that personal information has been collected, we will delete it immediately.</p>
+
+<h2>5. Third-Party Sharing</h2>
+<p>We do not sell, trade, or transfer personal information to third parties.</p>
+
+<h2>6. Data Storage</h2>
+<p>Game progress data (collected alphabets, etc.) is stored only on the user's device and is not transmitted to external servers.</p>
+
+<h2>7. Changes</h2>
+<p>Any changes to this policy will be updated on this page.</p>
+
+<h2>8. Contact</h2>
+<p>For privacy inquiries: <strong>kimsrain3@gmail.com</strong></p>
+</div>
+
+<script>
+function showLang(lang) {
+  document.querySelector('.ko').style.display = lang === 'ko' ? 'block' : 'none';
+  document.querySelector('.en').style.display = lang === 'en' ? 'block' : 'none';
+  document.querySelectorAll('.lang-toggle button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
