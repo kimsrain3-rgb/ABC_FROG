@@ -25,66 +25,46 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Bubblewrap CLI
-        run: npm install -g @nicolo-ribaudo/chokidar-2 && npm install -g @bubblewrap/cli
+        run: npm install -g @bubblewrap/cli
 
-      - name: Create Bubblewrap config
+      - name: Configure Bubblewrap to use existing JDK and SDK
         run: |
-          mkdir -p twa-build && cd twa-build
-          cat > twa-manifest.json << 'EOF'
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" << EOF
           {
-            "packageId": "com.ggomzipapa.abcfrog",
-            "host": "kimsrain3-rgb.github.io",
-            "name": "ABC Frog - Kids Alphabet Game",
-            "launcherName": "ABC Frog",
-            "display": "fullscreen",
-            "themeColor": "#4CAF50",
-            "themeColorDark": "#388E3C",
-            "navigationColor": "#4CAF50",
-            "navigationColorDark": "#388E3C",
-            "navigationDividerColor": "#4CAF50",
-            "navigationDividerColorDark": "#388E3C",
-            "backgroundColor": "#4CAF50",
-            "enableNotifications": false,
-            "startUrl": "/ABC_FROG/",
-            "iconUrl": "https://kimsrain3-rgb.github.io/ABC_FROG/assets/icons/icon-512x512.png",
-            "maskableIconUrl": "https://kimsrain3-rgb.github.io/ABC_FROG/assets/icons/icon-512x512-maskable.png",
-            "shortcuts": [],
-            "signingMode": "new",
-            "signing": {
-              "fullName": "GgomziPapa",
-              "organization": "GgomziPapa",
-              "organizationalUnit": "Dev",
-              "country": "KR"
-            },
-            "generatorApp": "bubblewrap-cli",
-            "fallbackType": "customtabs",
-            "features": {},
-            "alphaDependencies": { "enabled": false },
-            "enableSiteSettingsShortcut": false,
-            "isChromeOSOnly": false,
-            "orientation": "portrait",
-            "fingerprints": [],
-            "appVersion": "1.0.0",
-            "appVersionCode": 1,
-            "splashScreenFadeOutDuration": 300,
-            "enableGooglePlayBilling": false
+            "jdkPath": "$JAVA_HOME",
+            "androidSdkPath": "$ANDROID_HOME"
           }
           EOF
+          cat "$HOME/.bubblewrap/config.json"
 
-      - name: Initialize and build TWA
+      - name: Initialize TWA project
+        run: |
+          mkdir -p twa-build && cd twa-build
+          yes "" | bubblewrap init --manifest="https://kimsrain3-rgb.github.io/ABC_FROG/manifest.json" --packageId="com.ggomzipapa.abcfrog"
+
+      - name: Build AAB
         run: |
           cd twa-build
-          echo "y" | bubblewrap init --manifest="https://kimsrain3-rgb.github.io/ABC_FROG/manifest.json"
-          bubblewrap build --skipPwaValidation
+          bubblewrap build --skipPwaValidation --signingMode=new --keyStorePassword=abcfrog123 --keyPassword=abcfrog123 --keyAlias=abc-frog
+
+      - name: List output files
+        run: |
+          echo "=== twa-build root ==="
+          ls -la twa-build/*.aab twa-build/*.apk 2>/dev/null || echo "No aab/apk in root"
+          echo "=== app build outputs ==="
+          find twa-build -name "*.aab" -o -name "*.apk" 2>/dev/null || echo "No files found"
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
         with:
           name: abc-frog-aab
-          path: twa-build/app-release-bundle.aab
+          path: |
+            twa-build/*.aab
+            twa-build/app/build/outputs/bundle/**/*.aab
           if-no-files-found: warn
 
-      - name: Upload signing key
+      - name: Upload signing key (backup)
         uses: actions/upload-artifact@v4
         with:
           name: abc-frog-signing-key
