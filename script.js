@@ -805,7 +805,7 @@ function sb(t,d=1500,c){
   // 타겟 글자를 오렌지색으로 하이라이트
   const target=typeof ct!=='undefined'?displayTarget():'';
   if(target&&t.length>4&&t.includes(target)){
-    bbl.innerHTML=t.replace(new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),'<span style="color:#FF6F00;font-size:120%">'+target+'</span>');
+    bbl.innerHTML=t.replace(new RegExp('\\b'+target.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','g'),'<span style="color:#FF6F00;font-size:120%">'+target+'</span>');
   }else{
     bbl.textContent=t;
   }
