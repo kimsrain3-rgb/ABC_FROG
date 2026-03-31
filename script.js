@@ -817,13 +817,23 @@ function sb(t,d=1500,c){
   
   bbl.classList.add('show');
   bbl.style.color=c||'#333';
-  // 개구리 머리 위에 배치
+  // 개구리 기준 배치 (PC/태블릿: 옆, 모바일: 머리 위)
   const fr=document.getElementById('frog');
   if(fr){
     const frRect=fr.getBoundingClientRect();
     const gcRect=gc.getBoundingClientRect();
     const frogTop=frRect.top-gcRect.top;
-    bbl.style.bottom=(gc.offsetHeight-frogTop+5)+'px';
+    const isWide=gc.offsetWidth>500||window.innerWidth>768;
+    if(isWide){
+      // PC/태블릿: 개구리 옆 중간에 배치 (파리/개구리와 안 겹치게)
+      const frogBottom=frogTop+frRect.height*0.45;
+      bbl.style.bottom='auto';
+      bbl.style.top=frogBottom+'px';
+    }else{
+      // 모바일: 기존 그대로 개구리 머리 위
+      bbl.style.top='auto';
+      bbl.style.bottom=(gc.offsetHeight-frogTop+5)+'px';
+    }
   }
   setTimeout(()=>bbl.classList.remove('show'),d);
 }

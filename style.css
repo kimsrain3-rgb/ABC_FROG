@@ -34,6 +34,7 @@ body{background:url('assets/images/bg_1.png') center/cover no-repeat;background-
 .bubble::after{content:'';position:absolute;bottom:-12px;width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #fff}
 .bubble.bbl-left::after{left:30%}
 .bubble.bbl-right::after{right:30%}
+@media(min-width:769px){#gc{max-width:768px}.bubble{font-size:3.5vmin;padding:1.5vmin 2.5vmin;max-width:30%}.bubble.bbl-left{left:3%}.bubble.bbl-right{right:3%}.bubble.bbl-left::after{bottom:auto;top:10px;left:auto;right:-18px;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:14px solid #fff;border-right:none}.bubble.bbl-right::after{bottom:auto;top:10px;right:auto;left:-18px;border-top:10px solid transparent;border-bottom:10px solid transparent;border-right:14px solid #fff;border-left:none}}
 .bubble.show{opacity:1}
 
 .sc{position:absolute;top:15px;left:15px;font-size:18px;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5);z-index:40}
