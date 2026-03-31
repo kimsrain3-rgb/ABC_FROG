@@ -32,18 +32,21 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        if (response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        }
-        return response;
-      });
-    }).catch(() => {
-      if (event.request.destination === 'document') {
-        return caches.match('./index.html');
+    fetch(event.request).then((response) => {
+      // 네트워크 성공 → 캐시 업데이트 후 반환
+      if (response.status === 200 && response.type === 'basic') {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
       }
+      return response;
+    }).catch(() => {
+      // 네트워크 실패(오프라인) → 캐시에서 반환
+      return caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        if (event.request.destination === 'document') {
+          return caches.match('./index.html');
+        }
+      });
     })
   );
 });
