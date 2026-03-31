@@ -802,8 +802,16 @@ function uf(){
 }
 
 function sb(t,d=1500,c){
-  bbl.textContent=t;
-  bbl.classList.remove('bbl-left','bbl-right');
+  // 타겟 글자를 오렌지색으로 하이라이트
+  const target=typeof ct!=='undefined'?displayTarget():'';
+  if(target&&t.length>4&&t.includes(target)){
+    bbl.innerHTML=t.replace(new RegExp(target.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g'),'<span style="color:#FF6F00;font-size:120%">'+target+'</span>');
+  }else{
+    bbl.textContent=t;
+  }
+  bbl.classList.remove('bbl-left','bbl-right','bbl-round');
+  // 짧은 텍스트(이모지+글자 4자 이하)면 둥근 모양
+  if(t.length<=4) bbl.classList.add('bbl-round');
   
   // 파리 위치 분석 → 비어있는 쪽에 배치
   const cW=gc.offsetWidth;
@@ -830,9 +838,10 @@ function sb(t,d=1500,c){
       bbl.style.bottom='auto';
       bbl.style.top=frogBottom+'px';
     }else{
-      // 모바일: 기존 그대로 개구리 머리 위
+      // 모바일: 개구리 머리 위
       bbl.style.top='auto';
-      bbl.style.bottom=(gc.offsetHeight-frogTop+5)+'px';
+      const isRound=bbl.classList.contains('bbl-round');
+      bbl.style.bottom=(gc.offsetHeight-frogTop-(isRound?50:5))+'px';
     }
   }
   setTimeout(()=>bbl.classList.remove('show'),d);
@@ -931,7 +940,7 @@ function snr(){raf();rc++;ct=pnt();if(!ct)return;
 pauseAnim();setFrame('a');
 const dTarget=displayTarget();
 const phrase=getPhrase(dTarget);
-sb('🐸 '+phrase.text,2500,'#2E7D32');
+sb(phrase.text,2500,'#2E7D32');
 playVoice(phrase.vk);
 // MP3 끝난 후 알파벳 재생
 var pv=VOICE[phrase.vk];
@@ -956,7 +965,7 @@ setTimeout(()=>{
   setTimeout(()=>{
     if(gp==='playing'&&!ia&&ct){
       const ls2=LETTER_SOUND[ct]||ct;
-      psg();sb('🐸 '+displayTarget(),1500,'#E65100');playLetter(ct);
+      psg();sb(displayTarget(),1500,'#E65100');playLetter(ct);
     }
     rit();
   },1500);
@@ -972,7 +981,7 @@ function rit(){clearRit();it=setTimeout(()=>{if(gp!=='playing'||ia||!ct)return;
     for(let i=0;i<3;i++){
       ritTimers.push(setTimeout(()=>{
         if(gp!=='playing'||ia||!ct)return;
-        psg();sb('🐸 '+displayTarget(),1500,'#E65100');playLetter(ct);
+        psg();sb(displayTarget(),1500,'#E65100');playLetter(ct);
       },i*2000));
     }
     // 3번(0,2,4초) 끝난 후 4초 뒤 반복
