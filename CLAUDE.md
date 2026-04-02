@@ -98,7 +98,7 @@ ABC_FROG/
 - **개발자 계정 ID**: 8921467846864051720
 - **개인정보처리방침 URL**: https://kimsrain3-rgb.github.io/ABC_FROG/privacy-policy.html
 - **연락처 이메일**: ccomzpapa@naver.com
-- **상태**: 비공개 테스트 검토 중 (2026-03-30 제출)
+- **상태**: 안정성 거부 → 수정 후 재제출 대기 (2026-04-02 v1.0.2 빌드)
 
 ## 알려진 이슈
 - 파리 경계 처리 — 화면 밖으로 나가는 버그 반복 발생 이력
@@ -116,6 +116,17 @@ ABC_FROG/
 - 한 번에 하나씩 — 여러 기능을 동시에 바꾸지 말 것
 - 변수명/함수명 바꿀 때 참조하는 곳 모두 확인
 - 파일 분리/수정 후 게임 기능이 100% 동일하게 작동해야 함
+
+### Google Play 안정성 규칙 (TWA 크래시 방지 — 필수 준수)
+이 앱은 TWA로 래핑되어 Google Play에 배포됨. JS 에러 = 앱 크래시 = 심사 거부이므로 **방어적 프로그래밍 필수**.
+
+1. **전역 에러 핸들러 유지** — `window.onerror` + `unhandledrejection`이 script.js 최상단에 있음. 절대 제거하지 말 것
+2. **Audio는 반드시 `safeAudio()` 사용** — `new Audio()` 직접 호출 금지. 로드 실패 시 더미 객체를 반환하는 `safeAudio()` 래퍼를 통해서만 생성
+3. **SpeechSynthesis는 try-catch 필수** — `sp()` 함수 안에서 처리됨. TTS 없는 기기에서 크래시 방지
+4. **AudioContext 사용 전 null 체크** — `ea()` 후 `if(!ax) return;` 패턴 유지. 오실레이터 함수(`pt`, `psg`, `pbr`) 모두 적용됨
+5. **게임 루프(`gl`) try-catch 유지** — `uf()` 호출을 try-catch로 감싸서 한 프레임 에러가 전체 루프를 멈추지 않도록
+6. **브라우저 API 사용 전 존재 확인** — `'speechSynthesis' in window`, `window.AudioContext || window.webkitAudioContext` 등 반드시 체크 후 사용
+7. **새 기능 추가 시** — `.play()`, `.speak()`, DOM API 등 실패 가능한 호출은 항상 `.catch(()=>{})` 또는 try-catch로 감쌀 것
 
 ### 세션 시작 프로토콜
 1. 이 CLAUDE.md 읽기 (자동)
