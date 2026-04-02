@@ -1,4 +1,8 @@
 
+// === 전역 에러 핸들러 (TWA 크래시 방지) ===
+window.onerror=function(msg,src,line,col,err){console.warn('Error caught:',msg);return true;};
+window.addEventListener('unhandledrejection',function(e){e.preventDefault();console.warn('Promise rejected:',e.reason);});
+
 // === 인트로 개구리 숨쉬기 ===
 (function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{t=!t;f.src='assets/images/frog_4'+(t?'b':'a')+'.png'},800);})();
 
@@ -34,11 +38,12 @@ window.debugSet=function(x,y){
   console.log('단계 '+frogStage+' 입 위치 → X='+x+' Y='+y);
 };
 
-// === 사운드 에셋 ===
-const SND_FLY1=new Audio('assets/sounds/fly_buzz1.mp3');
-const SND_FLY2=new Audio('assets/sounds/fly_buzz2.mp3');
-const SND_FROG=new Audio('assets/sounds/frog_tongue.mp3');
-const SND_BGM=new Audio('assets/sounds/bgm.mp3');
+// === 사운드 에셋 (안전 로딩) ===
+function safeAudio(src){try{var a=new Audio(src);a.onerror=function(){};return a;}catch(e){return {play:function(){return Promise.resolve()},pause:function(){},cloneNode:function(){return this},volume:0,currentTime:0,loop:false,onerror:null,onended:null};}}
+const SND_FLY1=safeAudio('assets/sounds/fly_buzz1.mp3');
+const SND_FLY2=safeAudio('assets/sounds/fly_buzz2.mp3');
+const SND_FROG=safeAudio('assets/sounds/frog_tongue.mp3');
+const SND_BGM=safeAudio('assets/sounds/bgm.mp3');
 SND_BGM.loop=true;SND_BGM.volume=0.25;
 SND_FLY1.volume=0.5;SND_FLY2.volume=0.5;
 SND_FROG.volume=0.5;
@@ -305,55 +310,55 @@ function updateButterfly(){
 }
 
 const VOICE={
-  where_is:new Audio('assets/sounds/voice_where_is.mp3'),
-  find_for_me:new Audio('assets/sounds/voice_find_for_me.mp3'),
-  i_see:new Audio('assets/sounds/voice_i_see.mp3'),
-  tap:new Audio('assets/sounds/voice_tap.mp3'),
-  can_you_see:new Audio('assets/sounds/voice_can_you_see.mp3'),
-  help_me_find:new Audio('assets/sounds/voice_help_me_find.mp3'),
-  look:new Audio('assets/sounds/voice_look.mp3'),
-  over_there:new Audio('assets/sounds/voice_over_there.mp3'),
-  catch_v:new Audio('assets/sounds/voice_catch_v.mp3'),
-  congrats:new Audio('assets/sounds/voice_congrats.mp3'),
-  you_did_it:new Audio('assets/sounds/voice_you_did_it.mp3'),
-  hooray:new Audio('assets/sounds/voice_hooray.mp3'),
-  tap_the_letter:new Audio('assets/sounds/voice_tap_the_letter.mp3'),
-  excellent:new Audio('assets/sounds/voice_excellent.mp3'),
-  good_job:new Audio('assets/sounds/voice_good_job.mp3'),
-  nice:new Audio('assets/sounds/voice_nice.mp3'),
-  awesome:new Audio('assets/sounds/voice_awesome.mp3'),
-  great_catch:new Audio('assets/sounds/voice_great_catch.mp3'),
-  youre_a_genius:new Audio('assets/sounds/voice_youre_a_genius.mp3'),
-  thats_right:new Audio('assets/sounds/voice_thats_right.mp3'),
-  amazing:new Audio('assets/sounds/voice_amazing.mp3'),
-  well_done:new Audio('assets/sounds/voice_well_done.mp3'),
-  super:new Audio('assets/sounds/voice_super.mp3'),
-  fantastic:new Audio('assets/sounds/voice_fantastic.mp3'),
-  you_got_it:new Audio('assets/sounds/voice_you_got_it.mp3'),
-  perfect:new Audio('assets/sounds/voice_perfect.mp3'),
-  brilliant:new Audio('assets/sounds/voice_brilliant.mp3'),
-  way_to_go:new Audio('assets/sounds/voice_way_to_go.mp3'),
-  bingo:new Audio('assets/sounds/voice_bingo.mp3'),
-  yummy:new Audio('assets/sounds/voice_yummy.mp3'),
-  yummy_yummy:new Audio('assets/sounds/voice_yummy_yummy.mp3'),
-  i_wanna_eat:new Audio('assets/sounds/voice_i_wanna_eat.mp3'),
-  give_me:new Audio('assets/sounds/voice_give_me.mp3'),
-  i_need:new Audio('assets/sounds/voice_i_need.mp3'),
-  find:new Audio('assets/sounds/voice_find.mp3'),
-  looks_so_yummy:new Audio('assets/sounds/voice_looks_so_yummy.mp3'),
-  gimme:new Audio('assets/sounds/voice_gimme.mp3'),
-  bring_me:new Audio('assets/sounds/voice_bring_me.mp3'),
-  please_v:new Audio('assets/sounds/voice_please_v.mp3'),
-  im_so_hungry:new Audio('assets/sounds/voice_im_so_hungry.mp3'),
-  im_hungry:new Audio('assets/sounds/voice_im_hungry.mp3'),
-  im_so_full:new Audio('assets/sounds/voice_im_so_full.mp3'),
+  where_is:safeAudio('assets/sounds/voice_where_is.mp3'),
+  find_for_me:safeAudio('assets/sounds/voice_find_for_me.mp3'),
+  i_see:safeAudio('assets/sounds/voice_i_see.mp3'),
+  tap:safeAudio('assets/sounds/voice_tap.mp3'),
+  can_you_see:safeAudio('assets/sounds/voice_can_you_see.mp3'),
+  help_me_find:safeAudio('assets/sounds/voice_help_me_find.mp3'),
+  look:safeAudio('assets/sounds/voice_look.mp3'),
+  over_there:safeAudio('assets/sounds/voice_over_there.mp3'),
+  catch_v:safeAudio('assets/sounds/voice_catch_v.mp3'),
+  congrats:safeAudio('assets/sounds/voice_congrats.mp3'),
+  you_did_it:safeAudio('assets/sounds/voice_you_did_it.mp3'),
+  hooray:safeAudio('assets/sounds/voice_hooray.mp3'),
+  tap_the_letter:safeAudio('assets/sounds/voice_tap_the_letter.mp3'),
+  excellent:safeAudio('assets/sounds/voice_excellent.mp3'),
+  good_job:safeAudio('assets/sounds/voice_good_job.mp3'),
+  nice:safeAudio('assets/sounds/voice_nice.mp3'),
+  awesome:safeAudio('assets/sounds/voice_awesome.mp3'),
+  great_catch:safeAudio('assets/sounds/voice_great_catch.mp3'),
+  youre_a_genius:safeAudio('assets/sounds/voice_youre_a_genius.mp3'),
+  thats_right:safeAudio('assets/sounds/voice_thats_right.mp3'),
+  amazing:safeAudio('assets/sounds/voice_amazing.mp3'),
+  well_done:safeAudio('assets/sounds/voice_well_done.mp3'),
+  super:safeAudio('assets/sounds/voice_super.mp3'),
+  fantastic:safeAudio('assets/sounds/voice_fantastic.mp3'),
+  you_got_it:safeAudio('assets/sounds/voice_you_got_it.mp3'),
+  perfect:safeAudio('assets/sounds/voice_perfect.mp3'),
+  brilliant:safeAudio('assets/sounds/voice_brilliant.mp3'),
+  way_to_go:safeAudio('assets/sounds/voice_way_to_go.mp3'),
+  bingo:safeAudio('assets/sounds/voice_bingo.mp3'),
+  yummy:safeAudio('assets/sounds/voice_yummy.mp3'),
+  yummy_yummy:safeAudio('assets/sounds/voice_yummy_yummy.mp3'),
+  i_wanna_eat:safeAudio('assets/sounds/voice_i_wanna_eat.mp3'),
+  give_me:safeAudio('assets/sounds/voice_give_me.mp3'),
+  i_need:safeAudio('assets/sounds/voice_i_need.mp3'),
+  find:safeAudio('assets/sounds/voice_find.mp3'),
+  looks_so_yummy:safeAudio('assets/sounds/voice_looks_so_yummy.mp3'),
+  gimme:safeAudio('assets/sounds/voice_gimme.mp3'),
+  bring_me:safeAudio('assets/sounds/voice_bring_me.mp3'),
+  please_v:safeAudio('assets/sounds/voice_please_v.mp3'),
+  im_so_hungry:safeAudio('assets/sounds/voice_im_so_hungry.mp3'),
+  im_hungry:safeAudio('assets/sounds/voice_im_hungry.mp3'),
+  im_so_full:safeAudio('assets/sounds/voice_im_so_full.mp3'),
 };
 function playVoice(k,vol){var v=VOICE[k];if(!v)return;v.currentTime=0;v.volume=vol||0.8;v.play().catch(function(){});}
 
-const SND_WOOWECK=new Audio('assets/sounds/wooweck.mp3');
+const SND_WOOWECK=safeAudio('assets/sounds/wooweck.mp3');
 const BF_VOICES=[
-  new Audio('assets/sounds/butterfly_voice1.mp3'),
-  new Audio('assets/sounds/butterfly_voice2.mp3')
+  safeAudio('assets/sounds/butterfly_voice1.mp3'),
+  safeAudio('assets/sounds/butterfly_voice2.mp3')
 ];
 let bfVoiceIdx=0;
 function playBfVoice(){
@@ -540,7 +545,7 @@ function playLetter(l,cb){
   const key=l.toUpperCase();
   const src=LETTER_AUDIO[key];
   if(!src)return;
-  if(!letterPlayers[key]){letterPlayers[key]=new Audio(src);}
+  if(!letterPlayers[key]){letterPlayers[key]=safeAudio(src);}
   const a=letterPlayers[key];
   a.currentTime=0;
   a.volume=1;
@@ -586,15 +591,15 @@ function getPhrase(letter){var p=PHRASES[Math.floor(Math.random()*PHRASES.length
 
 const AC=window.AudioContext||window.webkitAudioContext;
 let ax;
-function ea(){if(!ax)ax=new AC();if(ax.state==='suspended')ax.resume()}
-function pt(f,d,t='sine',v=.3){ea();const o=ax.createOscillator(),g=ax.createGain();o.type=t;o.frequency.setValueAtTime(f,ax.currentTime);g.gain.setValueAtTime(v,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+d);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+d)}
-function psg(){ea();const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(80,ax.currentTime);o.frequency.exponentialRampToValueAtTime(40,ax.currentTime+.3);o.frequency.exponentialRampToValueAtTime(90,ax.currentTime+.5);o.frequency.exponentialRampToValueAtTime(35,ax.currentTime+.8);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.8);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.8)}
+function ea(){try{if(!ax&&AC)ax=new AC();if(ax&&ax.state==='suspended')ax.resume();}catch(e){console.warn('AudioContext error:',e);}}
+function pt(f,d,t='sine',v=.3){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type=t;o.frequency.setValueAtTime(f,ax.currentTime);g.gain.setValueAtTime(v,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+d);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+d)}
+function psg(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(80,ax.currentTime);o.frequency.exponentialRampToValueAtTime(40,ax.currentTime+.3);o.frequency.exponentialRampToValueAtTime(90,ax.currentTime+.5);o.frequency.exponentialRampToValueAtTime(35,ax.currentTime+.8);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.8);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.8)}
 function py(){[0,100,200].forEach((d,i)=>setTimeout(()=>pt(523+i*100,.15,'sine',.25),d))}
 function pk(){pt(200,.1,'sawtooth',.2);setTimeout(()=>pt(150,.15,'sawtooth',.25),100);setTimeout(()=>pt(100,.3,'sawtooth',.15),200)}
 function ptg(){ea();const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(800,ax.currentTime);o.frequency.exponentialRampToValueAtTime(200,ax.currentTime+.15);g.gain.setValueAtTime(.15,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.15);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.15)}
-function pbr(){ea();const o=ax.createOscillator(),g=ax.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,ax.currentTime);o.frequency.exponentialRampToValueAtTime(60,ax.currentTime+.4);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.5);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.5)}
+function pbr(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,ax.currentTime);o.frequency.exponentialRampToValueAtTime(60,ax.currentTime+.4);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.5);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.5)}
 function psu(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>pt(f,.2,'sine',.2),i*80))}
-function sp(t,r=1.1,onStart){if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=r;u.pitch=1.8;u.volume=1;if(onStart)u.onstart=onStart;speechSynthesis.speak(u)}}
+function sp(t,r=1.1,onStart){try{if('speechSynthesis'in window&&speechSynthesis){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=r;u.pitch=1.8;u.volume=1;if(onStart)u.onstart=onStart;u.onerror=function(){};speechSynthesis.speak(u)}}catch(e){console.warn('TTS unavailable');}}
 
 const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const L_LOWER='abcdefghijklmnopqrstuvwxyz';
@@ -1118,7 +1123,7 @@ function tut(){
   },2500);
 }
 
-function gl(){uf();requestAnimationFrame(gl)}
+function gl(){try{uf();}catch(e){console.warn('Game loop error:',e);}requestAnimationFrame(gl)}
 function go(mode){
   gameMode=mode||'ABC';
   // 모드별 배경 + 색감 전환
@@ -1144,4 +1149,4 @@ function go(mode){
   bgmStarted=true;
   startFlyBuzz();startFrogBG();initCaterpillar();initButterfly();
   document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
-document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+try{document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});}catch(e){}
