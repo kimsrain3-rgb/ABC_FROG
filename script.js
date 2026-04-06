@@ -1150,3 +1150,18 @@ function go(mode){
   startFlyBuzz();startFrogBG();initCaterpillar();initButterfly();
   document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
 try{document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});}catch(e){}
+
+// === 뒤로가기 버튼 처리 (TWA 안정성) ===
+window.addEventListener('popstate',function(e){
+  var ss=document.getElementById('ss');
+  if(ss&&ss.style.display!=='none'){
+    // 시작 화면에서 뒤로가기 → 아무것도 안 함 (앱 종료 방지)
+    history.pushState(null,null,location.href);
+  } else {
+    // 게임 중 뒤로가기 → 시작 화면으로
+    history.pushState(null,null,location.href);
+    location.reload();
+  }
+});
+// 초기 히스토리 상태 추가
+try{history.pushState(null,null,location.href);}catch(e){}
