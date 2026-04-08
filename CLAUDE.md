@@ -65,8 +65,9 @@ ABC_FROG/
 - [x] 서명 키 관리: GitHub Secret (KEYSTORE_BASE64)으로 고정 키 사용
 - [x] Play Console 비공개 테스트 버전 업로드 (v2, 1.0.1)
 - [x] v1.0.2 안정성 수정 (JS 방어 코딩) — 거부됨
-- [x] v1.0.3 구조적 수정 (WebView폴백, GA4제거, assetlinks, 뒤로가기)
-- [ ] v1.0.3 AAB 빌드 & Play Console 재제출
+- [x] v1.0.3 구조적 수정 (WebView폴백, GA4제거, assetlinks, 뒤로가기) — 거부됨
+- [x] v1.0.4 TWA 완전 제거 → 순수 WebView 앱 전환
+- [ ] v1.0.4 AAB 빌드 & Play Console 재제출
 - [ ] 테스터 이메일 등록 (비공개 테스트 트랙)
 - [ ] Google 검토 통과 후 테스터 초대
 - [ ] 14일 비공개 테스트 기간 완료 → 프로덕션 출시
@@ -99,7 +100,7 @@ ABC_FROG/
 
 ## Google Play 배포 정보
 - **패키지명**: com.ggomzipapa.abcfrog
-- **현재 버전**: versionCode 4, versionName 1.0.3
+- **현재 버전**: versionCode 5, versionName 1.0.4
 - **서명 키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
 - **서명 키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
 - **개발자 계정 ID**: 8921467846864051720
@@ -107,7 +108,7 @@ ABC_FROG/
 - **연락처 이메일**: ccomzpapa@naver.com
 - **서명 키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
 - **assetlinks.json**: .well-known/assetlinks.json (GitHub Pages에서 서빙)
-- **상태**: v1.0.3 안정성 대폭 개선 (WebView폴백+GA4제거+assetlinks+뒤로가기) → 재제출 예정
+- **상태**: v1.0.4 TWA완전제거 → 순수WebView앱 전환 → 재제출 예정
 
 ## 알려진 이슈
 - 파리 경계 처리 — 화면 밖으로 나가는 버그 반복 발생 이력

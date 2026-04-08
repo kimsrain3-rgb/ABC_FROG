@@ -10,16 +10,8 @@ android {
         applicationId "com.ggomzipapa.abcfrog"
         minSdk 24
         targetSdk 35
-        versionCode 4
-        versionName "1.0.3"
-
-        // TWA configuration
-        manifestPlaceholders = [
-            hostName    : "kimsrain3-rgb.github.io",
-            defaultUrl  : "https://kimsrain3-rgb.github.io/ABC_FROG/",
-            launcherName: "ABC Frog",
-            assetStatements: '[{ "relation": ["delegate_permission/common.handle_all_urls"], "target": { "namespace": "web", "site": "https://kimsrain3-rgb.github.io" } }]'
-        ]
+        versionCode 5
+        versionName "1.0.4"
     }
 
     signingConfigs {
@@ -33,9 +25,8 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
+            minifyEnabled false
             signingConfig signingConfigs.release
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
         }
     }
 
@@ -47,6 +38,4 @@ android {
 
 dependencies {
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'androidx.browser:browser:1.8.0'
-    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
 }
