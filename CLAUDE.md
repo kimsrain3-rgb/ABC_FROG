@@ -33,13 +33,11 @@ ABC_FROG/
 ├── service-worker.js    ← 오프라인 캐시
 ├── privacy-policy.html  ← 개인정보처리방침
 ├── keystore_base64.txt  ← 서명 키 base64 (GitHub에 올리지 말 것!)
-├── .well-known/
-│   └── assetlinks.json  ← TWA 인증 (SHA-256 fingerprint)
-├── twa-project/         ← Android TWA 프로젝트 (Gradle)
-│   ├── app/build.gradle ← 앱 설정 (versionCode 4, targetSdk 35)
+├── twa-project/         ← Android WebView 프로젝트 (Gradle, TWA 제거됨)
+│   ├── app/build.gradle ← 앱 설정 (versionCode 5, targetSdk 35)
 │   └── app/src/main/
-│       ├── AndroidManifest.xml ← SafeLauncher + WebView 폴백
-│       └── java/.../SafeLauncherActivity.java + WebViewFallbackActivity.java
+│       ├── AndroidManifest.xml ← MainActivity만 등록
+│       └── java/.../MainActivity.java ← 순수 WebView 앱
 ├── .github/workflows/   ← GitHub Actions (build-aab.yml)
 ├── versions/
 └── docs/
@@ -67,7 +65,10 @@ ABC_FROG/
 - [x] v1.0.2 안정성 수정 (JS 방어 코딩) — 거부됨
 - [x] v1.0.3 구조적 수정 (WebView폴백, GA4제거, assetlinks, 뒤로가기) — 거부됨
 - [x] v1.0.4 TWA 완전 제거 → 순수 WebView 앱 전환
-- [ ] v1.0.4 AAB 빌드 & Play Console 재제출
+- [x] v1.0.4 AAB 빌드 & Play Console 제출 — **비공개 테스트 통과! (2026-04-09)**
+- [ ] 테스터 12명 이상 모집 (현재 0명)
+- [ ] 14일 이상 비공개 테스트 실행
+- [ ] 프로덕션 출시 신청
 - [ ] 테스터 이메일 등록 (비공개 테스트 트랙)
 - [ ] Google 검토 통과 후 테스터 초대
 - [ ] 14일 비공개 테스트 기간 완료 → 프로덕션 출시
@@ -100,7 +101,7 @@ ABC_FROG/
 
 ## Google Play 배포 정보
 - **패키지명**: com.ggomzipapa.abcfrog
-- **현재 버전**: versionCode 5, versionName 1.0.4
+- **현재 버전**: versionCode 6, versionName 1.0.5
 - **서명 키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
 - **서명 키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
 - **개발자 계정 ID**: 8921467846864051720
@@ -108,7 +109,7 @@ ABC_FROG/
 - **연락처 이메일**: ccomzpapa@naver.com
 - **서명 키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
 - **assetlinks.json**: .well-known/assetlinks.json (GitHub Pages에서 서빙)
-- **상태**: v1.0.4 TWA완전제거 → 순수WebView앱 전환 → 재제출 예정
+- **상태**: v1.0.4 비공개 테스트 통과! (2026-04-09) → 프로덕션 출시 준비 중
 
 ## 알려진 이슈
 - 파리 경계 처리 — 화면 밖으로 나가는 버그 반복 발생 이력
@@ -127,8 +128,18 @@ ABC_FROG/
 - 변수명/함수명 바꿀 때 참조하는 곳 모두 확인
 - 파일 분리/수정 후 게임 기능이 100% 동일하게 작동해야 함
 
-### Google Play 안정성 규칙 (TWA 크래시 방지 — 필수 준수)
-이 앱은 TWA로 래핑되어 Google Play에 배포됨. JS 에러 = 앱 크래시 = 심사 거부이므로 **방어적 프로그래밍 필수**.
+### Google Play 제출 규칙 (필수 준수)
+**절대 "검토 시작"을 바로 누르지 말 것!** 반드시 프리 런치 보고서를 먼저 확인한다.
+
+1. AAB 빌드 (GitHub Actions → Build AAB)
+2. Play Console → 비공개 테스트 → AAB 업로드
+3. **"저장"만** 누르기 (❌ "검토 시작" 누르지 말기)
+4. **사전 출시 보고서(프리 런치 보고서)** 결과 확인 (몇 시간~하루)
+5. 크래시 없음 확인 → **그때 "검토 시작"** 누르기
+6. 크래시 있으면 → 로그 확인 → 수정 → 1번부터 다시
+
+### Google Play 안정성 규칙 (WebView 앱 — 필수 준수)
+v1.0.4부터 TWA 제거, 순수 WebView 앱으로 전환됨. JS 에러 = 앱 크래시 = 심사 거부이므로 **방어적 프로그래밍 필수**.
 
 1. **전역 에러 핸들러 유지** — `window.onerror` + `unhandledrejection`이 script.js 최상단에 있음. 절대 제거하지 말 것
 2. **Audio는 반드시 `safeAudio()` 사용** — `new Audio()` 직접 호출 금지. 로드 실패 시 더미 객체를 반환하는 `safeAudio()` 래퍼를 통해서만 생성
