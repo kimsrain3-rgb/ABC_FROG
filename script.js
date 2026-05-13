@@ -679,8 +679,10 @@ function startBreathe(){
     if(animPaused || ia) return;
     // base → breathe → base
     setFrame('b');
+    const cr=document.getElementById('crown');if(cr)cr.style.top='4.5%';
     setTimeout(()=>{
       if(!animPaused && !ia) setFrame('a');
+      const cr2=document.getElementById('crown');if(cr2)cr2.style.top='4%';
     }, 400);
   }, 1000);
 }
@@ -1046,7 +1048,7 @@ function stc(){
   },2500);
   
   setTimeout(()=>{
-    sb('CONGRATULATIONS',4000,'#D500F9');
+    sb('WELL DONE!',4000,'#D500F9');
     playVoice('congrats');
   },3500);
   
@@ -1063,9 +1065,11 @@ function stc(){
   // 5단계: 왕관 + 최종 메시지
   setTimeout(()=>{
     const crown=document.createElement('div');
-    crown.style.cssText='position:absolute;left:50%;bottom:40%;transform:translateX(-50%);font-size:15vmin;z-index:100;pointer-events:none;animation:crownBounce 0.5s ease-out;';
+    crown.style.cssText='position:absolute;left:52%;top:4%;transform:translateX(-50%);font-size:8vmin;z-index:100;pointer-events:none;animation:crownBounce 0.5s ease-out;';
+    crown.id='crown';
+    setTimeout(()=>{crown.style.animation='none';},500);
     crown.textContent='👑';
-    gc.appendChild(crown);
+    frog.appendChild(crown);
     
     sb('🏆 ALPHABET MASTER!! 👑',5000,'#FF6F00');
     playVoice('you_did_it');
