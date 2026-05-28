@@ -1094,6 +1094,10 @@ function stc(){
     playVoice('hooray');
   },9000);
   
+  // GA4 완료 이벤트 + 인앱 리뷰
+  try{gtag('event','game_complete',{game_mode:gameMode});}catch(e){}
+  setTimeout(()=>{try{if(window.AndroidBridge)AndroidBridge.requestReview();}catch(e){}},10000);
+
   // 다시하기 버튼
   setTimeout(()=>{
     const btn=document.createElement('button');
@@ -1130,6 +1134,7 @@ function tut(){
 function gl(){try{uf();}catch(e){console.warn('Game loop error:',e);}requestAnimationFrame(gl)}
 function go(mode){
   gameMode=mode||'ABC';
+  try{gtag('event','game_start',{game_mode:gameMode});}catch(e){}
   // 모드별 배경 + 색감 전환
   const gc=document.getElementById('gc');
   gc.classList.remove('mode-abc','mode-ABc');

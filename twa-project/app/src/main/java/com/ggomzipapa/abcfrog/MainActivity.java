@@ -8,6 +8,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -17,29 +18,33 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
+import com.google.android.play.core.review.ReviewInfo;
+import com.google.android.play.core.review.ReviewManager;
+import com.google.android.play.core.review.ReviewManagerFactory;
+import com.google.android.play.core.tasks.Task;
+
 public class MainActivity extends Activity {
 
     private WebView webView;
+    private ReviewManager reviewManager;
+    private ReviewInfo reviewInfo;
     private static final String GAME_URL = "https://kimsrain3-rgb.github.io/ABC_FROG/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Fullscreen
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(
             WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
 
-        // Status bar & navigation bar color
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setStatusBarColor(Color.parseColor("#4CAF50"));
             getWindow().setNavigationBarColor(Color.parseColor("#4CAF50"));
         }
 
-        // Hide system UI
         getWindow().getDecorView().setSystemUiVisibility(
             View.SYSTEM_UI_FLAG_FULLSCREEN
             | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
@@ -51,8 +56,8 @@ public class MainActivity extends Activity {
             setContentView(webView);
             setupWebView();
             webView.loadUrl(GAME_URL);
+            prepareReview();
         } catch (Exception e) {
-            // WebView not available - show error message
             showErrorScreen();
         }
     }
@@ -69,24 +74,53 @@ public class MainActivity extends Activity {
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
 
+        webView.addJavascriptInterface(new WebAppInterface(), "AndroidBridge");
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request,
                                         WebResourceError error) {
-                // Prevent crash on load errors
             }
 
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                // Keep all navigation inside the WebView
                 return false;
             }
         });
 
         webView.setWebChromeClient(new WebChromeClient());
-
-        // Background color matching the game
         webView.setBackgroundColor(Color.parseColor("#4CAF50"));
+    }
+
+    private void prepareReview() {
+        try {
+            reviewManager = ReviewManagerFactory.create(this);
+            Task<ReviewInfo> request = reviewManager.requestReviewFlow();
+            request.addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    reviewInfo = task.getResult();
+                }
+            });
+        } catch (Exception e) {
+            // Review API not available
+        }
+    }
+
+    private void launchReview() {
+        try {
+            if (reviewManager != null && reviewInfo != null) {
+                reviewManager.launchReviewFlow(this, reviewInfo);
+            }
+        } catch (Exception e) {
+            // Silently fail
+        }
+    }
+
+    public class WebAppInterface {
+        @JavascriptInterface
+        public void requestReview() {
+            runOnUiThread(() -> launchReview());
+        }
     }
 
     private void showErrorScreen() {
