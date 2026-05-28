@@ -21,8 +21,6 @@ import android.widget.TextView;
 import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
 import com.google.android.play.core.review.ReviewManagerFactory;
-import com.google.android.play.core.tasks.Task;
-
 public class MainActivity extends Activity {
 
     private WebView webView;
@@ -95,8 +93,7 @@ public class MainActivity extends Activity {
     private void prepareReview() {
         try {
             reviewManager = ReviewManagerFactory.create(this);
-            Task<ReviewInfo> request = reviewManager.requestReviewFlow();
-            request.addOnCompleteListener(task -> {
+            reviewManager.requestReviewFlow().addOnCompleteListener(task -> {
                 if (task.isSuccessful()) {
                     reviewInfo = task.getResult();
                 }
