@@ -679,10 +679,10 @@ function startBreathe(){
     if(animPaused || ia) return;
     // base → breathe → base
     setFrame('b');
-    const cr=document.getElementById('crown');if(cr)cr.style.top='4.5%';
+    const cr=document.getElementById('crown');if(cr)cr.style.top='1.5%';
     setTimeout(()=>{
       if(!animPaused && !ia) setFrame('a');
-      const cr2=document.getElementById('crown');if(cr2)cr2.style.top='4%';
+      const cr2=document.getElementById('crown');if(cr2)cr2.style.top='1%';
     }, 400);
   }, 1000);
 }
@@ -1065,7 +1065,7 @@ function stc(){
   // 5단계: 왕관 + 최종 메시지
   setTimeout(()=>{
     const crown=document.createElement('div');
-    crown.style.cssText='position:absolute;left:52%;top:4%;transform:translateX(-50%);font-size:8vmin;z-index:100;pointer-events:none;animation:crownBounce 0.5s ease-out;';
+    crown.style.cssText='position:absolute;left:52%;top:1%;transform:translateX(-50%);font-size:8vmin;z-index:100;pointer-events:none;animation:crownBounce 0.5s ease-out;';
     crown.id='crown';
     setTimeout(()=>{crown.style.animation='none';},500);
     crown.textContent='👑';
@@ -1102,7 +1102,7 @@ function stc(){
   setTimeout(()=>{
     const btn=document.createElement('button');
     btn.textContent='PLAY AGAIN';
-    btn.style.cssText='position:absolute;left:50%;bottom:15%;transform:translateX(-50%);padding:3vmin 8vmin;font-size:5vmin;font-weight:bold;color:#fff;background:linear-gradient(135deg,#FF6F00,#FF9800);border:none;border-radius:12vmin;cursor:pointer;z-index:110;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
+    btn.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:3vmin 8vmin;font-size:5vmin;font-weight:bold;color:#fff;background:linear-gradient(135deg,#FF6F00,#FF9800);border:none;border-radius:12vmin;cursor:pointer;z-index:110;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
     btn.onclick=function(){location.reload();};
     gc.appendChild(btn);
   },11000);
