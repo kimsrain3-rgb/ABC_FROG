@@ -1160,8 +1160,399 @@ function go(mode){
   document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
 try{document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});}catch(e){}
 
+// === 단어 퍼즐 (그림 조각 맞추기) ===
+// 그림은 외부 이미지 없이 내장 SVG로 그린다 (단일 소스)
+// 사과 그림(좌표계 200x200, 배경 투명)
+function appleArt(){return `
+  <path d="M104 46 C 120 24, 150 24, 158 36 C 150 58, 120 60, 104 46 Z" fill="#66BB6A"/>
+  <path d="M104 46 C 122 38, 142 34, 156 36" stroke="#43A047" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M100 52 C 98 38, 96 30, 102 22" stroke="#795548" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M100 60 C 86 48, 60 46, 46 62 C 30 80, 30 120, 48 150 C 62 172, 84 178, 100 168 C 116 178, 138 172, 152 150 C 170 120, 170 80, 154 62 C 140 46, 114 48, 100 60 Z" fill="#EF5350"/>
+  <path d="M100 60 C 116 48, 140 46, 154 62 C 170 80, 170 120, 152 150 C 138 172, 116 178, 100 168 Z" fill="#E53935" opacity="0.5"/>
+  <ellipse cx="68" cy="92" rx="12" ry="18" fill="#fff" opacity="0.4" transform="rotate(-20 68 92)"/>`;}
+// 밑그림(연한 실루엣) — 같은 모양을 단색 연한 색으로
+function appleSil(){return `
+  <path d="M104 46 C 120 24, 150 24, 158 36 C 150 58, 120 60, 104 46 Z" fill="#CDBBAC"/>
+  <path d="M100 52 C 98 38, 96 30, 102 22" stroke="#CDBBAC" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M100 60 C 86 48, 60 46, 46 62 C 30 80, 30 120, 48 150 C 62 172, 84 178, 100 168 C 116 178, 138 172, 152 150 C 170 120, 170 80, 154 62 C 140 46, 114 48, 100 60 Z" fill="#CDBBAC"/>`;}
+// 사과 외곽선(점선/클립용)
+const APPLE_BODY='M100 60 C 86 48, 60 46, 46 62 C 30 80, 30 120, 48 150 C 62 172, 84 178, 100 168 C 116 178, 138 172, 152 150 C 170 120, 170 80, 154 62 C 140 46, 114 48, 100 60 Z';
+
+// 오렌지
+function orangeArt(){return `
+  <path d="M100 52 C 99 42, 98 36, 105 32" stroke="#8D6E63" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M106 36 C 122 22, 146 26, 152 36 C 142 52, 118 52, 106 36 Z" fill="#66BB6A"/>
+  <path d="M106 36 C 124 30, 140 30, 150 36" stroke="#43A047" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <circle cx="100" cy="114" r="62" fill="#FFA726"/>
+  <path d="M100 52 A62 62 0 0 1 100 176 Z" fill="#FB8C00" opacity="0.28"/>
+  <circle cx="100" cy="114" r="62" fill="none" stroke="#F57C00" stroke-width="2" opacity="0.25"/>
+  <ellipse cx="76" cy="94" rx="13" ry="19" fill="#fff" opacity="0.32" transform="rotate(-20 76 94)"/>`;}
+function orangeSil(){return `
+  <path d="M106 36 C 122 22, 146 26, 152 36 C 142 52, 118 52, 106 36 Z" fill="#CDBBAC"/>
+  <circle cx="100" cy="114" r="62" fill="#CDBBAC"/>`;}
+const ORANGE_BODY='M38 114 a62 62 0 1 0 124 0 a62 62 0 1 0 -124 0 Z';
+
+// 바나나
+const BANANA_BODY='M46 152 C 26 106, 66 50, 130 50 C 148 50, 160 58, 162 70 C 148 62, 128 66, 110 74 C 72 92, 58 126, 70 150 C 78 164, 98 168, 116 160 C 92 178, 58 174, 46 152 Z';
+function bananaArt(){return `
+  <path d="${BANANA_BODY}" fill="#FFD740"/>
+  <path d="M46 152 C 58 166, 80 172, 100 168 C 78 168, 66 158, 64 142 C 58 118, 70 92, 92 76 C 64 92, 44 124, 46 152 Z" fill="#F9A825" opacity="0.45"/>
+  <path d="M130 50 C 140 46, 150 48, 158 56" stroke="#6D4C41" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <circle cx="48" cy="154" r="5" fill="#6D4C41"/>`;}
+function bananaSil(){return `<path d="${BANANA_BODY}" fill="#CDBBAC"/>`;}
+
+// 포도
+const GRAPE_BODY='M100 54 C 134 54, 158 76, 158 108 C 158 142, 130 178, 100 178 C 70 178, 42 142, 42 108 C 42 76, 66 54, 100 54 Z';
+function grapeArt(){return `
+  <path d="M100 56 C 100 44, 102 36, 110 30" stroke="#6D4C41" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M110 34 C 126 22, 148 26, 154 36 C 144 50, 122 50, 110 34 Z" fill="#66BB6A"/>
+  <g fill="#8E24AA">
+    <circle cx="84" cy="74" r="19"/><circle cx="116" cy="74" r="19"/>
+    <circle cx="66" cy="104" r="19"/><circle cx="100" cy="104" r="19"/><circle cx="134" cy="104" r="19"/>
+    <circle cx="84" cy="134" r="19"/><circle cx="116" cy="134" r="19"/>
+    <circle cx="100" cy="162" r="19"/>
+  </g>
+  <g fill="#fff" opacity="0.22"><circle cx="78" cy="68" r="6"/><circle cx="60" cy="98" r="6"/><circle cx="94" cy="98" r="6"/></g>`;}
+function grapeSil(){return `<g fill="#CDBBAC">
+    <circle cx="84" cy="74" r="19"/><circle cx="116" cy="74" r="19"/>
+    <circle cx="66" cy="104" r="19"/><circle cx="100" cy="104" r="19"/><circle cx="134" cy="104" r="19"/>
+    <circle cx="84" cy="134" r="19"/><circle cx="116" cy="134" r="19"/>
+    <circle cx="100" cy="162" r="19"/></g>`;}
+
+// 딸기
+const STRAWBERRY_BODY='M100 62 C 140 58, 166 80, 162 112 C 158 146, 124 182, 100 186 C 76 182, 42 146, 38 112 C 34 80, 60 58, 100 62 Z';
+function strawberryArt(){return `
+  <path d="${STRAWBERRY_BODY}" fill="#E53935"/>
+  <path d="M100 62 C 140 58, 166 80, 162 112 C 158 146, 124 182, 100 186 Z" fill="#C62828" opacity="0.32"/>
+  <path d="M70 58 C 80 44, 92 44, 100 52 C 108 44, 120 44, 130 58 C 120 56, 112 60, 100 70 C 88 60, 80 56, 70 58 Z" fill="#66BB6A"/>
+  <path d="M100 52 C 100 42, 100 36, 100 30" stroke="#558B2F" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <g fill="#FFF59D"><ellipse cx="80" cy="94" rx="2.4" ry="3.4"/><ellipse cx="110" cy="86" rx="2.4" ry="3.4"/><ellipse cx="126" cy="106" rx="2.4" ry="3.4"/><ellipse cx="92" cy="116" rx="2.4" ry="3.4"/><ellipse cx="118" cy="134" rx="2.4" ry="3.4"/><ellipse cx="72" cy="118" rx="2.4" ry="3.4"/><ellipse cx="100" cy="150" rx="2.4" ry="3.4"/><ellipse cx="100" cy="100" rx="2.4" ry="3.4"/></g>`;}
+function strawberrySil(){return `
+  <path d="M70 58 C 80 44, 92 44, 100 52 C 108 44, 120 44, 130 58 C 120 56, 112 60, 100 70 C 88 60, 80 56, 70 58 Z" fill="#CDBBAC"/>
+  <path d="${STRAWBERRY_BODY}" fill="#CDBBAC"/>`;}
+
+// 수박 (통째로 둥근 수박)
+const WATERMELON_BODY='M36 110 a64 64 0 1 0 128 0 a64 64 0 1 0 -128 0 Z';
+function watermelonArt(){return `
+  <circle cx="100" cy="110" r="64" fill="#66BB6A"/>
+  <path d="M100 46 C 122 64, 122 156, 100 174" stroke="#2E7D32" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M72 56 C 92 74, 92 146, 72 164" stroke="#2E7D32" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M128 56 C 108 74, 108 146, 128 164" stroke="#2E7D32" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M50 82 C 62 92, 62 128, 50 138" stroke="#2E7D32" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M150 82 C 138 92, 138 128, 150 138" stroke="#2E7D32" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <ellipse cx="76" cy="88" rx="13" ry="18" fill="#fff" opacity="0.22" transform="rotate(-20 76 88)"/>`;}
+function watermelonSil(){return `<path d="${WATERMELON_BODY}" fill="#CDBBAC"/>`;}
+
+// 복숭아
+const PEACH_BODY='M100 58 C 136 52, 166 78, 164 116 C 162 152, 132 176, 100 170 C 68 176, 38 152, 36 116 C 34 78, 64 52, 100 58 Z';
+function peachArt(){return `
+  <path d="${PEACH_BODY}" fill="#FFAB91"/>
+  <path d="M100 58 C 136 52, 166 78, 164 116 C 162 152, 132 176, 100 170 Z" fill="#FF8A65" opacity="0.4"/>
+  <path d="M100 64 C 92 100, 92 138, 100 166" stroke="#EF6C60" stroke-width="3" fill="none" opacity="0.5"/>
+  <path d="M104 56 C 116 40, 138 40, 148 50 C 138 64, 116 64, 104 56 Z" fill="#66BB6A"/>
+  <ellipse cx="74" cy="96" rx="13" ry="18" fill="#fff" opacity="0.3" transform="rotate(-20 74 96)"/>`;}
+function peachSil(){return `
+  <path d="M104 56 C 116 40, 138 40, 148 50 C 138 64, 116 64, 104 56 Z" fill="#CDBBAC"/>
+  <path d="${PEACH_BODY}" fill="#CDBBAC"/>`;}
+
+// 레몬
+const LEMON_BODY='M38 110 C 38 86, 64 66, 100 66 C 136 66, 162 86, 162 110 C 162 134, 136 154, 100 154 C 64 154, 38 134, 38 110 Z';
+function lemonArt(){return `
+  <path d="${LEMON_BODY}" fill="#FDD835"/>
+  <path d="M100 66 C 136 66, 162 86, 162 110 C 162 134, 136 154, 100 154 Z" fill="#FBC02D" opacity="0.4"/>
+  <path d="M160 104 C 168 106, 172 110, 168 114 C 164 116, 160 114, 158 112 Z" fill="#F9A825"/>
+  <path d="M40 104 C 32 106, 28 110, 32 114 C 36 116, 40 114, 42 112 Z" fill="#F9A825"/>
+  <ellipse cx="78" cy="94" rx="13" ry="17" fill="#fff" opacity="0.3" transform="rotate(-20 78 94)"/>`;}
+function lemonSil(){return `<path d="${LEMON_BODY}" fill="#CDBBAC"/>`;}
+
+// 단어 사전: 그림 조각으로 맞출 과일들
+const WP_WORDS={
+  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY},
+  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY},
+  grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY},
+  orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY},
+  strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY},
+  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY},
+  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY},
+  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY}
+};
+// 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
+const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon'];
+
+// 조각 구성: 윗부분 1조각(넓게) + 가운데 3 + 아래 3 = 7조각 (곡선으로 크게 자름)
+// 격자 모서리 좌표계는 3x3(=corner 4x4). 조각은 (행 r, 열 c0~c1) 범위로 정의.
+const WP_PIECES=[
+  {r:0,c0:0,c1:2},
+  {r:1,c0:0,c1:0},{r:1,c0:1,c1:1},{r:1,c0:2,c1:2},
+  {r:2,c0:0,c1:0},{r:2,c0:1,c1:1},{r:2,c0:2,c1:2}
+];
+// 그림을 보드에 더 꽉 채우기(약 1.28배 확대, 중심 기준)
+const WP_TF='translate(100,100) scale(1.28) translate(-100,-100)';
+// 사과를 감싸는 자르기 영역(아트 좌표) — 확대된 사과에 맞춰 넓힘
+const WP_X0=8, WP_X1=192, WP_Y0=0, WP_Y1=200, WP_GC=3, WP_GR=3;
+let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
+
+function goWordPuzzle(){
+  document.getElementById('wp').classList.add('show');
+  try{gtag('event','word_puzzle_open',{word:wpCurrent});}catch(e){}
+  // 세로 방향 잠금 시도(지원 브라우저/설치앱) — 미지원 시 무시
+  try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
+  // 배경음악 (메인 게임과 동일한 bgm.mp3 재사용)
+  try{ SND_BGM.loop=true; SND_BGM.volume=0.25; SND_BGM.play().catch(function(){}); bgmStarted=true; }catch(e){}
+  requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
+}
+function wpBack(){ document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
+
+// 조각 붙는 "찰칵" 효과음 (에셋 없이 Web Audio로 합성)
+var wpAC=null;
+function wpClick(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
+    if(!wpAC) wpAC=new AC();
+    if(wpAC.state==='suspended') wpAC.resume();
+    var t=wpAC.currentTime;
+    var o=wpAC.createOscillator(), g=wpAC.createGain();
+    o.type='triangle';
+    o.frequency.setValueAtTime(1500,t);
+    o.frequency.exponentialRampToValueAtTime(440,t+0.05);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(0.76,t+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
+    o.connect(g); g.connect(wpAC.destination);
+    o.start(t); o.stop(t+0.11);
+  }catch(e){}
+}
+
+function buildPuzzle(key){
+  wpCurrent=key||'apple';
+  var data=WP_WORDS[wpCurrent];
+  var stage=document.getElementById('wpStage');
+  stage.innerHTML='';
+  var SW=stage.clientWidth, SH=stage.clientHeight;
+  if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
+
+  var board=Math.min(SW*0.92, SH*0.52, 440);  // 사과 더 크게(화면 폭 거의 가득)
+  var s=board/200;                          // 아트→픽셀 배율
+  var boardLeft=(SW-board)/2;
+  var boardTop=Math.max(8,(SH-board)/2 - SH*0.02);
+  var cx=boardLeft+board/2, cy=boardTop+board/2;
+  wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
+  wpPlaced=0; wpTotal=WP_PIECES.length;
+  var tEl=document.getElementById('wpTitle'); if(tEl) tEl.textContent='🧩 Make the '+data.word.toLowerCase()+'!';
+
+  // 자르기 격자 모서리(안쪽만 살짝 흔들어 자연스러운 곡선)
+  var cw=(WP_X1-WP_X0)/WP_GC, ch=(WP_Y1-WP_Y0)/WP_GR;
+  var G=[];
+  for(var r=0;r<=WP_GR;r++){G[r]=[];for(var c=0;c<=WP_GC;c++){
+    var x=WP_X0+c*cw, y=WP_Y0+r*ch;
+    if(r>0&&r<WP_GR&&c>0&&c<WP_GC){ x+=Math.sin(r*12.9+c*78.2)*cw*0.13; y+=Math.cos(r*39.3+c*11.7)*ch*0.13; }
+    G[r][c]={x:x,y:y};
+  }}
+  // 모서리 A→B 사이를 부드러운 곡선으로(내부 절단선만 휘게)
+  function seg(A,B,bow){
+    var dx=B.x-A.x, dy=B.y-A.y, L=Math.hypot(dx,dy)||1;
+    var nx=-dy/L, ny=dx/L;
+    return {x0:A.x,y0:A.y,
+      c1x:A.x+dx*0.33+nx*bow, c1y:A.y+dy*0.33+ny*bow,
+      c2x:A.x+dx*0.66+nx*bow, c2y:A.y+dy*0.66+ny*bow,
+      x1:B.x,y1:B.y, straight:bow===0};
+  }
+  function hSeg(r,c){ var bow=(r===0||r===WP_GR)?0: ch*0.14*((r+c)%2?1:-1); return seg(G[r][c],G[r][c+1],bow); }
+  function vSeg(r,c){ var bow=(c===0||c===WP_GC)?0: cw*0.14*((r+c)%2?-1:1); return seg(G[r][c],G[r+1][c],bow); }
+  function fwd(sg,k){ return sg.straight? 'L '+(sg.x1*k).toFixed(1)+' '+(sg.y1*k).toFixed(1)+' '
+      : 'C '+(sg.c1x*k).toFixed(1)+' '+(sg.c1y*k).toFixed(1)+', '+(sg.c2x*k).toFixed(1)+' '+(sg.c2y*k).toFixed(1)+', '+(sg.x1*k).toFixed(1)+' '+(sg.y1*k).toFixed(1)+' '; }
+  function rev(sg,k){ return sg.straight? 'L '+(sg.x0*k).toFixed(1)+' '+(sg.y0*k).toFixed(1)+' '
+      : 'C '+(sg.c2x*k).toFixed(1)+' '+(sg.c2y*k).toFixed(1)+', '+(sg.c1x*k).toFixed(1)+' '+(sg.c1y*k).toFixed(1)+', '+(sg.x0*k).toFixed(1)+' '+(sg.y0*k).toFixed(1)+' '; }
+
+  // 밑그림(연한 실루엣) + 퍼즐 조각 점선(과일 모양 안에만 보이게 클립)
+  function segD(sg){ return 'M '+sg.x0.toFixed(1)+' '+sg.y0.toFixed(1)+' '+fwd(sg,1); }
+  var cuts=segD(hSeg(1,0))+segD(hSeg(1,1))+segD(hSeg(1,2))
+          +segD(hSeg(2,0))+segD(hSeg(2,1))+segD(hSeg(2,2))
+          +segD(vSeg(1,1))+segD(vSeg(1,2))
+          +segD(vSeg(2,1))+segD(vSeg(2,2));
+  var BODY=data.body;
+  var ghost=document.createElement('div');
+  ghost.className='wp-ghost'; ghost.id='wpGhost';
+  ghost.style.left=boardLeft+'px'; ghost.style.top=boardTop+'px';
+  ghost.style.width=board+'px'; ghost.style.height=board+'px';
+  ghost.innerHTML=`<svg viewBox="0 0 200 200" width="${board}" height="${board}" xmlns="http://www.w3.org/2000/svg">`
+    +`<defs><clipPath id="wpSilClip"><path d="${BODY}" transform="${WP_TF}"/></clipPath></defs>`
+    +`<g opacity="0.5" transform="${WP_TF}">${data.sil()}</g>`
+    +`<g clip-path="url(#wpSilClip)"><path d="${cuts}" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.85"/></g>`
+    +`<path d="${BODY}" transform="${WP_TF}" fill="none" stroke="#9C7B66" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.7"/>`
+    +`</svg>`;
+  stage.appendChild(ghost);
+
+  var snap=Math.min(board*0.18,52);
+  var pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
+
+  // 흩어놓을 고정 자리 — 넓은 윗조각(idx 0)은 위 중앙, 나머지 6개는 아래 2줄
+  var slots=[
+    {x:SW*0.50, y:boardTop-board*0.22},
+    {x:SW*0.20, y:boardTop+board+board*0.15},
+    {x:SW*0.50, y:boardTop+board+board*0.15},
+    {x:SW*0.80, y:boardTop+board+board*0.15},
+    {x:SW*0.20, y:boardTop+board+board*0.45},
+    {x:SW*0.50, y:boardTop+board+board*0.45},
+    {x:SW*0.80, y:boardTop+board+board*0.45}
+  ];
+
+  WP_PIECES.forEach(function(spec,idx){
+    var r=spec.r, c0=spec.c0, c1=spec.c1;
+    var TL=G[r][c0];
+    // 경로: 위(좌→우) → 오른쪽(위→아래) → 아래(우→좌) → 왼쪽(아래→위)
+    var d='M '+(TL.x*s).toFixed(1)+' '+(TL.y*s).toFixed(1)+' ';
+    for(var c=c0;c<=c1;c++) d+=fwd(hSeg(r,c),s);          // 위
+    d+=fwd(vSeg(r,c1+1),s);                                // 오른쪽
+    for(var c2=c1;c2>=c0;c2--) d+=rev(hSeg(r+1,c2),s);     // 아래(역순)
+    d+=rev(vSeg(r,c0),s);                                  // 왼쪽
+    d+='Z';
+
+    var piece=document.createElement('div');
+    piece.className='wp-piece';
+    piece.style.width=board+'px'; piece.style.height=board+'px';
+    piece.style.clipPath="path('"+d+"')";
+    piece.style.webkitClipPath="path('"+d+"')";
+    piece.innerHTML=pic;
+
+    // 조각(셀) 영역의 제자리 픽셀 박스 (스테이지 기준)
+    var aX0=WP_X0+c0*cw, aX1=WP_X0+(c1+1)*cw, aY0=WP_Y0+r*ch, aY1=WP_Y0+(r+1)*ch;
+    var homeCenterX=boardLeft+((aX0+aX1)/2)*s, homeCenterY=boardTop+((aY0+aY1)/2)*s;
+    var bx0=boardLeft+aX0*s, bx1=boardLeft+aX1*s, by0=boardTop+aY0*s, by1=boardTop+aY1*s;
+    // 흩어놓기: 지정 자리로 이동
+    var slot=slots[idx%slots.length];
+    var offX=slot.x-homeCenterX, offY=slot.y-homeCenterY;
+    // 조각 박스가 화면을 벗어나지 않게 보정
+    var m=6;
+    if(bx0+offX<m) offX=m-bx0;
+    if(bx1+offX>SW-m) offX=SW-m-bx1;
+    if(by0+offY<m) offY=m-by0;
+    if(by1+offY>SH-m) offY=SH-m-by1;
+    piece.style.left=(boardLeft+offX)+'px'; piece.style.top=(boardTop+offY)+'px';
+
+    piece.addEventListener('pointerdown',function(e){
+      if(piece.classList.contains('placed'))return;
+      e.preventDefault();
+      try{piece.setPointerCapture(e.pointerId);}catch(_){}
+      piece.classList.add('drag');
+      var px=e.clientX, py=e.clientY;
+      var ol=parseFloat(piece.style.left), ot=parseFloat(piece.style.top);
+      function mv(ev){ piece.style.left=(ol+ev.clientX-px)+'px'; piece.style.top=(ot+ev.clientY-py)+'px'; }
+      function up(ev){
+        piece.removeEventListener('pointermove',mv);
+        piece.removeEventListener('pointerup',up);
+        piece.removeEventListener('pointercancel',up);
+        piece.classList.remove('drag');
+        var cl=parseFloat(piece.style.left), ct=parseFloat(piece.style.top);
+        if(Math.hypot(cl-boardLeft,ct-boardTop)<snap){
+          piece.style.left=boardLeft+'px'; piece.style.top=boardTop+'px';
+          piece.classList.add('placed','snap');
+          piece.style.zIndex=10;
+          setTimeout(function(){piece.classList.remove('snap');},400);
+          wpClick();
+          wpPlaced++;
+          if(wpPlaced===wpTotal) setTimeout(wpComplete,300);
+        } else {
+          piece.style.zIndex=20;
+        }
+      }
+      piece.addEventListener('pointermove',mv);
+      piece.addEventListener('pointerup',up);
+      piece.addEventListener('pointercancel',up);
+    });
+
+    stage.appendChild(piece);
+  });
+}
+
+function wpComplete(){
+  try{gtag('event','word_puzzle_complete',{word:wpCurrent});}catch(e){}
+  var data=WP_WORDS[wpCurrent];
+  var stage=document.getElementById('wpStage');
+  var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
+
+  var word=data.word.split('');
+  // 가로 단어 — 사과 안에 크게
+  var wrap=document.createElement('div');
+  wrap.className='wp-word-h'; wrap.id='wpWordH';
+  wrap.style.left=(wpGeo.boardLeft+wpGeo.board/2)+'px';
+  wrap.style.top=(wpGeo.boardTop+wpGeo.board*0.56)+'px';
+  var fs=Math.min(wpGeo.board*0.2, wpGeo.board*0.82/(word.length*0.66));
+  wrap.style.fontSize=fs+'px';
+  word.forEach(function(ch){
+    var sp=document.createElement('span'); sp.className='wl'; sp.textContent=ch; wrap.appendChild(sp);
+  });
+  stage.appendChild(wrap);
+
+  var spans=wrap.querySelectorAll('.wl');
+  // 1) 글자 하나씩: A - P - P - L - E
+  word.forEach(function(ch,i){
+    setTimeout(function(){
+      spans[i].classList.add('show');
+      try{var a=safeAudio('assets/sounds/letter_'+ch.toLowerCase()+'.mp3');a.volume=0.9;a.play().catch(function(){});}catch(_){}
+    },350+i*470);
+  });
+  // 2) 단어 한 번 크게 외치기 + 글자 반짝
+  var shoutAt=350+word.length*470+300;
+  setTimeout(function(){
+    wrap.classList.add('shout');
+    wpSayWord(data.word);
+  },shoutAt);
+  // 3) 외친 다음 개구리 칭찬 음성 (굿잡 등, 기존 에셋)
+  setTimeout(function(){ try{playVoice(getCheer().vk);}catch(_){}; },shoutAt+1200);
+
+  // 4) 다음 과일로 자동 진행 / 마지막이면 다시하기 버튼
+  var idx=WP_ORDER.indexOf(wpCurrent);
+  var isLast=idx>=WP_ORDER.length-1;
+  if(!isLast){
+    setTimeout(function(){
+      if(!document.getElementById('wp').classList.contains('show')) return; // 도중에 나갔으면 중단
+      buildPuzzle(WP_ORDER[idx+1]);
+    }, shoutAt+2700);
+  } else {
+    var rb=document.createElement('button');
+    rb.className='wp-replay'; rb.textContent='🔄';
+    rb.onclick=function(){ buildPuzzle(WP_ORDER[0]); };   // 처음 과일부터 다시
+    stage.appendChild(rb);
+    setTimeout(function(){ rb.classList.add('show'); },shoutAt+1800);
+  }
+}
+
+// 단어 음성: voice_<word>.mp3 → .wav 순으로 파일 재생, 둘 다 없으면 브라우저 TTS
+function wpSayWord(w){
+  var base='assets/sounds/voice_'+w.toLowerCase();
+  var settled=false;
+  function tts(){ if(settled)return; settled=true;
+    try{ if(window.speechSynthesis){ speechSynthesis.cancel();
+      var u=new SpeechSynthesisUtterance(w); u.lang='en-US'; u.rate=0.85; u.pitch=1.15; u.volume=1; speechSynthesis.speak(u);
+    } }catch(e){} }
+  function attempt(urls,i){
+    if(settled) return;
+    if(i>=urls.length){ tts(); return; }
+    var fired=false;
+    function fail(){ if(fired)return; fired=true; attempt(urls,i+1); }
+    try{
+      var a=new Audio(urls[i]); a.volume=1;
+      a.addEventListener('error',fail);
+      a.play().then(function(){ settled=true; }).catch(fail);
+    }catch(e){ fail(); }
+  }
+  attempt([base+'.mp3', base+'.wav'], 0);
+}
+
+// 시작화면 4번째 버튼 아이콘에 사과 SVG 주입
+try{document.getElementById('wordBtnIcon').innerHTML='<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">'+appleArt()+'</svg>';}catch(e){}
+
 // === 뒤로가기 버튼 처리 (TWA 안정성) ===
 window.addEventListener('popstate',function(e){
+  // 단어 퍼즐 화면이 열려 있으면 → 닫기만 (시작화면으로 복귀)
+  var wp=document.getElementById('wp');
+  if(wp&&wp.classList.contains('show')){
+    wp.classList.remove('show');
+    try{SND_BGM.pause();}catch(_){}
+    history.pushState(null,null,location.href);
+    return;
+  }
   var ss=document.getElementById('ss');
   if(ss&&ss.style.display!=='none'){
     // 시작 화면에서 뒤로가기 → 아무것도 안 함 (앱 종료 방지)

@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="ABC Frog">
 <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 <meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
-<link rel="stylesheet" href="style.css?v=19">
+<link rel="stylesheet" href="style.css?v=28">
 <!-- GA4 COPPA-safe -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEN3PCFXXL"></script>
 <script>
@@ -41,7 +41,17 @@ gtag('config','G-VEN3PCFXXL',{
       <button class="mbtn mbtn-mix" onclick="go('ABc')">
         <span class="mbtn-label">ABc</span>
       </button>
+      <button class="mbtn mbtn-word" onclick="goWordPuzzle()">
+        <span class="mbtn-label" id="wordBtnIcon"></span>
+      </button>
     </div>
+  </div>
+
+  <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
+  <div class="wp" id="wp">
+    <button class="wp-back" onclick="wpBack()">‹</button>
+    <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
+    <div class="wp-stage" id="wpStage"></div>
   </div>
   <div class="sc" id="sc">🌟 0</div>
   <div class="cb" id="cb"></div>
@@ -82,6 +92,12 @@ gtag('config','G-VEN3PCFXXL',{
   <div class="tongue" id="tng"></div>
   <div id="fc"></div>
   <div class="cbar" id="cb2"></div>
+</div>
+
+<div id="rotate-warn">
+  <div class="rw-icon">📱</div>
+  <div class="rw-t1">Turn your phone upright!</div>
+  <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
 </div>
 
 <script src="script.js"></script>
