@@ -1336,10 +1336,11 @@ function buildPuzzle(key){
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
 
-  var board=Math.min(SW*0.74, SH*0.42, 320);  // 중앙에 크게 두되 위/아래 조각 밴드 확보
+  var board=Math.min(SW*0.72, SH*0.40, 300);  // 크게 두되 위/아래 조각 밴드 확보
   var s=board/200;                          // 아트→픽셀 배율
   var boardLeft=(SW-board)/2;
-  var boardTop=(SH-board)/2;                 // 사과(맞출 자리)를 화면 정중앙에
+  // 아래쪽에 조각 2줄(넓은 조각+좁은 조각)을 넣어야 하므로 사과를 살짝 위로
+  var boardTop=Math.max(SH*0.05, SH*0.42-board/2);
   var cx=boardLeft+board/2, cy=boardTop+board/2;
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
   wpPlaced=0; wpTotal=WP_PIECES.length;
@@ -1397,8 +1398,8 @@ function buildPuzzle(key){
   var topY=boardTop*0.50;                    // 사과 위 빈 공간 가운데
   var belowStart=boardTop+board;             // 사과 아래쪽 시작
   var belowGap=SH-belowStart;                // 아래 남은 공간
-  var botY1=belowStart+belowGap*0.30;        // 아래 1줄 (넓은 조각)
-  var botY2=belowStart+belowGap*0.72;        // 아래 2줄 (좁은 조각 3개)
+  var botY1=belowStart+belowGap*0.24;        // 아래 1줄 (넓은 조각) — 사과 바로 아래
+  var botY2=belowStart+belowGap*0.82;        // 아래 2줄 (좁은 조각 3개) — 충분히 띄움
   var slots=[
     {x:colX[1], y:botY1},                    // idx0 넓은 윗조각 → 아래 가운데
     {x:colX[0], y:topY},                     // idx1 ┐
