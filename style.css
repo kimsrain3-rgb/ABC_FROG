@@ -144,11 +144,11 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .ms-buttons .mbtn{min-width:160px}
 
 /* === 단어 퍼즐 카테고리 선택 (과일/동물/채소) === */
-.wc{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;flex-direction:column;align-items:center;justify-content:center;gap:22px;z-index:118;overflow:hidden}
+.wc{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding-bottom:7vh;z-index:118;overflow:hidden}
 .wc.show{display:flex}
 .wc-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
 .wc-back:active{transform:scale(.92)}
-.wc-frog{width:300px;max-width:80vw;margin-bottom:2px;animation:msFrogBreathe 1.6s ease-in-out infinite}
+.wc-frog{width:270px;max-width:70vw;margin-bottom:-10px;animation:msFrogBreathe 1.6s ease-in-out infinite}
 .wc-title{font-size:30px;color:#FFEB3B;text-shadow:2px 2px 0 #F57F17,3px 3px 0 rgba(0,0,0,.2);text-align:center;padding:0 20px;margin:0}
 .wc-cards{display:flex;flex-direction:column;gap:18px;align-items:center}
 /* ABC 알약형 버튼과 통일: 좁은 알약 모양 + 내용 가운데 정렬 (아이콘은 유지) */

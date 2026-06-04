@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abc-frog-v15';
+const CACHE_NAME = 'abc-frog-v16';
 
 const ASSETS_TO_CACHE = [
   './',
