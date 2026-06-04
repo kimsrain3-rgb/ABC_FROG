@@ -1336,10 +1336,10 @@ function buildPuzzle(key){
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
 
-  var board=Math.min(SW*0.64, SH*0.36, 320);  // 아래 조각 트레이 공간 확보 위해 작게
+  var board=Math.min(SW*0.74, SH*0.42, 320);  // 중앙에 크게 두되 위/아래 조각 밴드 확보
   var s=board/200;                          // 아트→픽셀 배율
   var boardLeft=(SW-board)/2;
-  var boardTop=Math.max(8, SH*0.01);        // 사과(맞출 자리)는 위쪽에, 아래는 조각 트레이
+  var boardTop=(SH-board)/2;                 // 사과(맞출 자리)를 화면 정중앙에
   var cx=boardLeft+board/2, cy=boardTop+board/2;
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
   wpPlaced=0; wpTotal=WP_PIECES.length;
@@ -1391,20 +1391,22 @@ function buildPuzzle(key){
   var snap=Math.min(board*0.18,52);
   var pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
 
-  // 흩어놓을 고정 자리 — 사과 아래 '트레이'에 겹치지 않게 펼침
-  // 넓은 윗조각(idx 0)은 트레이 맨 윗줄 가운데, 나머지 6개는 3×2 격자
-  // 사과는 확대 표시(약 1.28배)라 박스보다 큼 → 트레이를 충분히 아래로
-  var trayTop=boardTop+board*1.40;
-  var rowH=board*0.46;
-  var colX=[SW*0.20, SW*0.50, SW*0.80];
+  // 흩어놓을 고정 자리 — 가운데 사과 '위쪽 밴드'와 '아래쪽 밴드'에 나눠 펼침
+  // 위쪽: 좁은 조각 3개(idx1~3) / 아래쪽: 넓은 윗조각(idx0) + 좁은 조각 3개(idx4~6)
+  var colX=[SW*0.22, SW*0.50, SW*0.78];
+  var topY=boardTop*0.50;                    // 사과 위 빈 공간 가운데
+  var belowStart=boardTop+board;             // 사과 아래쪽 시작
+  var belowGap=SH-belowStart;                // 아래 남은 공간
+  var botY1=belowStart+belowGap*0.30;        // 아래 1줄 (넓은 조각)
+  var botY2=belowStart+belowGap*0.72;        // 아래 2줄 (좁은 조각 3개)
   var slots=[
-    {x:SW*0.50, y:trayTop},
-    {x:colX[0], y:trayTop+rowH},
-    {x:colX[1], y:trayTop+rowH},
-    {x:colX[2], y:trayTop+rowH},
-    {x:colX[0], y:trayTop+rowH*2},
-    {x:colX[1], y:trayTop+rowH*2},
-    {x:colX[2], y:trayTop+rowH*2}
+    {x:colX[1], y:botY1},                    // idx0 넓은 윗조각 → 아래 가운데
+    {x:colX[0], y:topY},                     // idx1 ┐
+    {x:colX[1], y:topY},                     // idx2 │ 위쪽 밴드
+    {x:colX[2], y:topY},                     // idx3 ┘
+    {x:colX[0], y:botY2},                    // idx4 ┐
+    {x:colX[1], y:botY2},                    // idx5 │ 아래쪽 밴드
+    {x:colX[2], y:botY2}                     // idx6 ┘
   ];
 
   WP_PIECES.forEach(function(spec,idx){
@@ -1481,29 +1483,17 @@ function wpComplete(){
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
 
-  // === 완성된 사과를 화면 중앙으로 부드럽게 키우기(zoom & center) ===
-  // 조각들은 모두 같은 위치(boardLeft,boardTop)·같은 크기(board)로 겹쳐 있으므로
-  // 동일한 변형을 주면 이음새가 벌어지지 않고 통째로 커진다.
-  var SW=stage.clientWidth, SH=stage.clientHeight;
-  var gBoard=Math.min(SW*0.86, SH*0.6);     // 커진 목표 크기
-  var k=gBoard/wpGeo.board;                  // 확대 배율
-  var gCx=SW/2, gCy=SH*0.44;                 // 커진 사과의 중심(화면 중앙쯤)
-  var cx0=wpGeo.boardLeft+wpGeo.board/2, cy0=wpGeo.boardTop+wpGeo.board/2;
-  var Dx=gCx-cx0, Dy=gCy-cy0;
-  Array.prototype.forEach.call(stage.querySelectorAll('.wp-piece.placed'),function(p){
-    p.style.transition='transform .6s cubic-bezier(.34,1.4,.64,1)';
-    p.style.transformOrigin='center';
-    p.style.transform='translate('+Dx.toFixed(1)+'px,'+Dy.toFixed(1)+'px) scale('+k.toFixed(3)+')';
-  });
-  var GROW=560;                              // 확대 애니메이션 동안 글자 등장 대기
+  // 사과(맞출 자리)는 이미 화면 중앙에 크게 있으므로 확대 연출 없음
+  var board=wpGeo.board, bLeft=wpGeo.boardLeft, bTop=wpGeo.boardTop;
+  var GROW=0;
 
   var word=data.word.split('');
-  // 가로 단어 — 커진 사과 중앙에
+  // 가로 단어 — 사과 중앙에
   var wrap=document.createElement('div');
   wrap.className='wp-word-h'; wrap.id='wpWordH';
-  wrap.style.left=gCx+'px';
-  wrap.style.top=(gCy+gBoard*0.06)+'px';
-  var fs=Math.min(gBoard*0.2, gBoard*0.82/(word.length*0.66));
+  wrap.style.left=(bLeft+board/2)+'px';
+  wrap.style.top=(bTop+board*0.56)+'px';
+  var fs=Math.min(board*0.2, board*0.82/(word.length*0.66));
   wrap.style.fontSize=fs+'px';
   word.forEach(function(ch){
     var sp=document.createElement('span'); sp.className='wl'; sp.textContent=ch; wrap.appendChild(sp);
