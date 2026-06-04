@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="ABC Frog">
 <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 <meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
-<link rel="stylesheet" href="style.css?v=28">
+<link rel="stylesheet" href="style.css?v=29">
 <!-- GA4 COPPA-safe -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEN3PCFXXL"></script>
 <script>
@@ -32,17 +32,13 @@ gtag('config','G-VEN3PCFXXL',{
     <h1>ABC Frog</h1>
     <div class="sub">I'm hungry~</div>
     <div class="mode-buttons">
-      <button class="mbtn mbtn-abc" onclick="go('ABC')">
-        <span class="mbtn-label">ABC</span>
+      <button class="game-card card-abc" onclick="goModeSelect()">
+        <span class="card-icon"><img src="assets/images/fly_front.png" alt="catch"></span>
+        <span class="card-label">ABC</span>
       </button>
-      <button class="mbtn mbtn-lower" onclick="go('abc')">
-        <span class="mbtn-label">abc</span>
-      </button>
-      <button class="mbtn mbtn-mix" onclick="go('ABc')">
-        <span class="mbtn-label">ABc</span>
-      </button>
-      <button class="mbtn mbtn-word" onclick="goWordPuzzle()">
-        <span class="mbtn-label" id="wordBtnIcon"></span>
+      <button class="game-card card-word" onclick="goWordPuzzle()">
+        <span class="card-icon" id="wordBtnIcon"></span>
+        <span class="card-label">Word</span>
       </button>
     </div>
   </div>
@@ -52,6 +48,17 @@ gtag('config','G-VEN3PCFXXL',{
     <button class="wp-back" onclick="wpBack()">‹</button>
     <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
     <div class="wp-stage" id="wpStage"></div>
+  </div>
+
+  <!-- ABC 모드 선택 화면 (파리 잡기 글자 모드 고르기) -->
+  <div class="ms" id="ms">
+    <button class="ms-back" onclick="msBack()">‹</button>
+    <h2 class="ms-title">Which letter?</h2>
+    <div class="ms-buttons">
+      <button class="mbtn mbtn-abc" onclick="goMode('ABC')"><span class="mbtn-label">ABC</span></button>
+      <button class="mbtn mbtn-lower" onclick="goMode('abc')"><span class="mbtn-label">abc</span></button>
+      <button class="mbtn mbtn-mix" onclick="goMode('ABc')"><span class="mbtn-label">ABc</span></button>
+    </div>
   </div>
   <div class="sc" id="sc">🌟 0</div>
   <div class="cb" id="cb"></div>

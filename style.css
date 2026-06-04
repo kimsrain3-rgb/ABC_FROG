@@ -122,6 +122,23 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .mbtn-word{background:linear-gradient(180deg,#FFB74D,#FF7043);color:#fff;border-color:#E64A19;display:flex;align-items:center;justify-content:center}
 .mbtn-word .mbtn-label{display:flex;align-items:center;justify-content:center}
 .mbtn-word .mbtn-label svg{width:40px;height:40px;display:block}
+/* === 게임 카드 (메인 메뉴) === */
+.game-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:150px;padding:22px 16px;font-family:'Fredoka',cursive;font-weight:bold;border:4px solid rgba(0,0,0,.2);border-radius:28px;cursor:pointer;transition:all .15s;box-shadow:0 6px 0 rgba(0,0,0,.2),0 8px 20px rgba(0,0,0,.3)}
+.game-card:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.2),0 4px 10px rgba(0,0,0,.3)}
+.game-card .card-icon{width:76px;height:76px;display:flex;align-items:center;justify-content:center}
+.game-card .card-icon img{width:100%;height:100%;object-fit:contain}
+.game-card .card-icon svg{width:66px;height:66px;display:block}
+.game-card .card-label{font-size:28px;letter-spacing:2px;line-height:1;color:#fff;text-shadow:1px 2px 0 rgba(0,0,0,.18)}
+.card-abc{background:linear-gradient(180deg,#81C784,#4CAF50);border-color:#388E3C}
+.card-word{background:linear-gradient(180deg,#FFB74D,#FF7043);border-color:#E64A19}
+/* === ABC 모드 선택 화면 === */
+.ms{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:115}
+.ms.show{display:flex}
+.ms-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
+.ms-back:active{transform:scale(.92)}
+.ms-title{font-size:30px;color:#FFEB3B;text-shadow:2px 2px 0 #F57F17,3px 3px 0 rgba(0,0,0,.2);margin-bottom:6px}
+.ms-buttons{display:flex;flex-direction:column;gap:18px;align-items:center}
+.ms-buttons .mbtn{min-width:160px}
 
 /* === 단어 퍼즐 화면 (그림 직소 퍼즐) === */
 .wp{position:absolute;inset:0;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}

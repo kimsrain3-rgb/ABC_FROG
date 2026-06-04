@@ -1303,6 +1303,11 @@ function goWordPuzzle(){
 }
 function wpBack(){ document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
 
+// === ABC 모드 선택 화면 ===
+function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
+function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }
+function goMode(mode){ try{document.getElementById('ms').classList.remove('show');}catch(e){} go(mode); }
+
 // 조각 붙는 "찰칵" 효과음 (에셋 없이 Web Audio로 합성)
 var wpAC=null;
 function wpClick(){
@@ -1550,6 +1555,12 @@ window.addEventListener('popstate',function(e){
   if(wp&&wp.classList.contains('show')){
     wp.classList.remove('show');
     try{SND_BGM.pause();}catch(_){}
+    history.pushState(null,null,location.href);
+    return;
+  }
+  var ms=document.getElementById('ms');
+  if(ms&&ms.classList.contains('show')){
+    ms.classList.remove('show');
     history.pushState(null,null,location.href);
     return;
   }
