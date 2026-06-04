@@ -1268,7 +1268,7 @@ function lemonSil(){return `<path d="${LEMON_BODY}" fill="#CDBBAC"/>`;}
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
   apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY},
-  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY},
+  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/images/fruit_banana.png?v=1'},
   grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY},
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY},
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY},
@@ -1328,6 +1328,27 @@ function wpClick(){
   }catch(e){}
 }
 
+// PNG 과일용: 그림 알파를 검사해 각 조각(격자 셀)에 그림이 충분히 있는지 판단
+// → 거의 투명한 조각은 만들지 않음(안 보이는 조각=못 맞추는 버그 방지)
+function wpPieceMask(img){
+  var N=200, cw=(WP_X1-WP_X0)/WP_GC, ch=(WP_Y1-WP_Y0)/WP_GR;
+  try{
+    var cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+    var ctx=cv.getContext('2d');
+    var ar=img.width/img.height, dw, dh;             // object-fit: contain
+    if(ar>1){ dw=N; dh=N/ar; } else { dh=N; dw=N*ar; }
+    ctx.drawImage(img,(N-dw)/2,(N-dh)/2,dw,dh);
+    var d=ctx.getImageData(0,0,N,N).data;
+    return WP_PIECES.map(function(p){
+      var x0=Math.round(WP_X0+p.c0*cw), x1=Math.round(WP_X0+(p.c1+1)*cw);
+      var y0=Math.round(WP_Y0+p.r*ch), y1=Math.round(WP_Y0+(p.r+1)*ch);
+      var op=0,tot=0;
+      for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++){ tot++; if(d[(y*N+x)*4+3]>20) op++; }
+      return (op/tot)>=0.08;                          // 8% 이상 그림 있으면 조각으로 사용
+    });
+  }catch(e){ return WP_PIECES.map(function(){return true;}); }
+}
+
 function buildPuzzle(key){
   wpCurrent=key||'apple';
   var data=WP_WORDS[wpCurrent];
@@ -1335,6 +1356,14 @@ function buildPuzzle(key){
   stage.innerHTML='';
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
+  // PNG 과일: 그림이 로드되면 빈 조각 마스크를 한 번 계산해 캐시 후 다시 그림
+  if(data.img && !data._mask){
+    var _im=new Image();
+    _im.onload=function(){ data._mask=wpPieceMask(_im); buildPuzzle(wpCurrent); };
+    _im.onerror=function(){ data._mask=WP_PIECES.map(function(){return true;}); buildPuzzle(wpCurrent); };
+    _im.src=data.img;
+    return;
+  }
 
   // 사과 크기: 화면이 세로로 길어도(데스크탑 500px 칼럼) 위/아래 밴드가 항상 확보되도록
   // 높이 비율은 작게 잡아 "위1줄+사과+아래2줄"이 통째로 들어가게 한다.
@@ -1349,7 +1378,8 @@ function buildPuzzle(key){
   var boardTop=startY+topBand;
   var cx=boardLeft+board/2, cy=boardTop+board/2;
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
-  wpPlaced=0; wpTotal=WP_PIECES.length;
+  var mask=data._mask;                        // PNG 과일이면 조각별 사용여부, 아니면 undefined
+  wpPlaced=0; wpTotal=mask?mask.filter(Boolean).length:WP_PIECES.length;
   var tEl=document.getElementById('wpTitle'); if(tEl) tEl.textContent='🧩 Make the '+data.word.toLowerCase()+'!';
 
   // 자르기 격자 모서리(안쪽만 살짝 흔들어 자연스러운 곡선)
@@ -1387,16 +1417,31 @@ function buildPuzzle(key){
   ghost.className='wp-ghost'; ghost.id='wpGhost';
   ghost.style.left=boardLeft+'px'; ghost.style.top=boardTop+'px';
   ghost.style.width=board+'px'; ghost.style.height=board+'px';
-  ghost.innerHTML=`<svg viewBox="0 0 200 200" width="${board}" height="${board}" xmlns="http://www.w3.org/2000/svg">`
-    +`<defs><clipPath id="wpSilClip"><path d="${BODY}" transform="${WP_TF}"/></clipPath></defs>`
-    +`<g opacity="0.5" transform="${WP_TF}">${data.sil()}</g>`
-    +`<g clip-path="url(#wpSilClip)"><path d="${cuts}" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.85"/></g>`
-    +`<path d="${BODY}" transform="${WP_TF}" fill="none" stroke="#9C7B66" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.7"/>`
-    +`</svg>`;
-  stage.appendChild(ghost);
 
   var snap=Math.min(board*0.18,52);
-  var pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
+  var pic;
+  if(data.img){
+    // PNG 과일: 그림을 비율 유지(contain)로 채우고, 조각은 그 PNG를 격자로 칼질
+    var imgCss='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;';
+    pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;">'
+      +'<img src="'+data.img+'" draggable="false" style="'+imgCss+'pointer-events:none;"></div>';
+    // 맞출 자리: 흐릿한 PNG + 그림 모양에만 보이는 점선 칼선(PNG를 마스크로 사용)
+    var maskCss='-webkit-mask-image:url('+data.img+');mask-image:url('+data.img+');'
+      +'-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;'
+      +'-webkit-mask-position:center;mask-position:center;';
+    ghost.innerHTML='<img src="'+data.img+'" style="'+imgCss+'opacity:0.3;filter:grayscale(0.5) brightness(1.08);">'
+      +'<svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" style="position:absolute;left:0;top:0;'+maskCss+'">'
+      +'<path d="'+cuts+'" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.8"/></svg>';
+  } else {
+    pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
+    ghost.innerHTML=`<svg viewBox="0 0 200 200" width="${board}" height="${board}" xmlns="http://www.w3.org/2000/svg">`
+      +`<defs><clipPath id="wpSilClip"><path d="${BODY}" transform="${WP_TF}"/></clipPath></defs>`
+      +`<g opacity="0.5" transform="${WP_TF}">${data.sil()}</g>`
+      +`<g clip-path="url(#wpSilClip)"><path d="${cuts}" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.85"/></g>`
+      +`<path d="${BODY}" transform="${WP_TF}" fill="none" stroke="#9C7B66" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.7"/>`
+      +`</svg>`;
+  }
+  stage.appendChild(ghost);
 
   // 흩어놓을 고정 자리 — 가운데 사과 '위쪽 밴드'와 '아래쪽 밴드'에 나눠 펼침
   // 위쪽: 좁은 조각 3개(idx1~3) / 아래쪽: 넓은 윗조각(idx0) + 좁은 조각 3개(idx4~6)
@@ -1416,6 +1461,7 @@ function buildPuzzle(key){
   ];
 
   WP_PIECES.forEach(function(spec,idx){
+    if(mask && !mask[idx]) return;             // PNG 과일: 거의 빈 조각은 건너뜀
     var r=spec.r, c0=spec.c0, c1=spec.c1;
     var TL=G[r][c0];
     // 경로: 위(좌→우) → 오른쪽(위→아래) → 아래(우→좌) → 왼쪽(아래→위)
