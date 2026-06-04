@@ -1279,6 +1279,21 @@ const WP_WORDS={
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon'];
 
+// 난이도(조각 수) — WP_ORDER 순서대로: 앞은 쉽게(적은 조각), 뒤로 갈수록 많게
+// gc=가로 칸 수, gr=세로 칸 수 → 조각 수 = gc*gr (PNG 빈 조각은 자동 제외)
+const WP_LEVELS=[
+  {gc:2,gr:2},   // 1번째 — 4조각 (3~4세)
+  {gc:2,gr:2},   // 2번째 — 4조각
+  {gc:3,gr:2},   // 3번째 — 6조각
+  {gc:3,gr:2},   // 4번째 — 6조각
+  {gc:3,gr:2},   // 5번째 — 6조각
+  {gc:3,gr:3},   // 6번째 — 9조각 (6~7세)
+  {gc:3,gr:3},   // 7번째 — 9조각
+  {gc:3,gr:3}    // 8번째 — 9조각
+];
+function wpLevelFor(key){ var i=WP_ORDER.indexOf(key); if(i<0)i=0; return WP_LEVELS[Math.min(i,WP_LEVELS.length-1)]; }
+function wpPiecesFor(gc,gr){ var a=[]; for(var r=0;r<gr;r++)for(var c=0;c<gc;c++)a.push({r:r,c0:c,c1:c}); return a; }
+
 // 조각 구성: 윗부분 1조각(넓게) + 가운데 3 + 아래 3 = 7조각 (곡선으로 크게 자름)
 // 격자 모서리 좌표계는 3x3(=corner 4x4). 조각은 (행 r, 열 c0~c1) 범위로 정의.
 const WP_PIECES=[
@@ -1330,8 +1345,8 @@ function wpClick(){
 
 // PNG 과일용: 그림 알파를 검사해 각 조각(격자 셀)에 그림이 충분히 있는지 판단
 // → 거의 투명한 조각은 만들지 않음(안 보이는 조각=못 맞추는 버그 방지)
-function wpPieceMask(img){
-  var N=200, cw=(WP_X1-WP_X0)/WP_GC, ch=(WP_Y1-WP_Y0)/WP_GR;
+function wpPieceMask(img,gc,gr,pieces){
+  var N=200, cw=(WP_X1-WP_X0)/gc, ch=(WP_Y1-WP_Y0)/gr;
   try{
     var cv=document.createElement('canvas'); cv.width=N; cv.height=N;
     var ctx=cv.getContext('2d');
@@ -1339,14 +1354,14 @@ function wpPieceMask(img){
     if(ar>1){ dw=N; dh=N/ar; } else { dh=N; dw=N*ar; }
     ctx.drawImage(img,(N-dw)/2,(N-dh)/2,dw,dh);
     var d=ctx.getImageData(0,0,N,N).data;
-    return WP_PIECES.map(function(p){
+    return pieces.map(function(p){
       var x0=Math.round(WP_X0+p.c0*cw), x1=Math.round(WP_X0+(p.c1+1)*cw);
       var y0=Math.round(WP_Y0+p.r*ch), y1=Math.round(WP_Y0+(p.r+1)*ch);
       var op=0,tot=0;
       for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++){ tot++; if(d[(y*N+x)*4+3]>20) op++; }
       return (op/tot)>=0.08;                          // 8% 이상 그림 있으면 조각으로 사용
     });
-  }catch(e){ return WP_PIECES.map(function(){return true;}); }
+  }catch(e){ return pieces.map(function(){return true;}); }
 }
 
 function buildPuzzle(key){
@@ -1356,38 +1371,47 @@ function buildPuzzle(key){
   stage.innerHTML='';
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
+
+  // 난이도(조각 수) 격자 결정
+  var lv=wpLevelFor(wpCurrent);
+  var gc=lv.gc, gr=lv.gr;
+  var pieces=wpPiecesFor(gc,gr);
+
   // PNG 과일: 그림이 로드되면 빈 조각 마스크를 한 번 계산해 캐시 후 다시 그림
   if(data.img && !data._mask){
     var _im=new Image();
-    _im.onload=function(){ data._mask=wpPieceMask(_im); buildPuzzle(wpCurrent); };
-    _im.onerror=function(){ data._mask=WP_PIECES.map(function(){return true;}); buildPuzzle(wpCurrent); };
+    _im.onload=function(){ data._mask=wpPieceMask(_im,gc,gr,pieces); buildPuzzle(wpCurrent); };
+    _im.onerror=function(){ data._mask=pieces.map(function(){return true;}); buildPuzzle(wpCurrent); };
     _im.src=data.img;
     return;
   }
 
-  // 사과 크기: 화면이 세로로 길어도(데스크탑 500px 칼럼) 위/아래 밴드가 항상 확보되도록
-  // 높이 비율은 작게 잡아 "위1줄+사과+아래2줄"이 통째로 들어가게 한다.
-  var board=Math.min(SW*0.72, SH*0.36, 300);
+  // 흩어놓을 줄: 위쪽 = 격자 윗줄 절반 / 아래쪽 = 나머지
+  var aboveRows=Math.floor(gr/2), belowRows=gr-aboveRows;
+  // 보드 크기: '위 흩어줄 + 사과 + 아래 흩어줄'이 통째로 세로 중앙에 들어가도록
+  // 간격은 board(=조각 크기)에 비례 → 폰/데스크탑 어떤 화면비에서도 안 겹침
+  var board=Math.min(SW*0.72, SH*0.94/(2.25+0.8/gr), 300);
   var s=board/200;                          // 아트→픽셀 배율
   var boardLeft=(SW-board)/2;
-  // 위 밴드(좁은 조각 1줄) + 사과 + 아래 밴드(넓은 조각·좁은 조각 2줄) 전체를 세로 중앙 정렬
-  // 간격은 화면 높이가 아니라 board(=조각 크기)에 비례 → 어떤 화면비에서도 겹치지 않음
-  var topBand=board*0.56, botBand=board*1.12;
-  var totalH=topBand+board+botBand;
-  var startY=Math.max(SH*0.02,(SH-totalH)/2);
-  var boardTop=startY+topBand;
+  var pitch=board/gr*1.25;                   // 흩어줄 사이 세로 간격
+  var gap=board/gr*0.42;                     // 사과와 첫 흩어줄 사이 여백
+  var aboveH=aboveRows?aboveRows*pitch+gap:0;
+  var belowH=belowRows?belowRows*pitch+gap:0;
+  var totalH=aboveH+board+belowH;
+  var startTop=Math.max(SH*0.02,(SH-totalH)/2);
+  var boardTop=startTop+aboveH;
   var cx=boardLeft+board/2, cy=boardTop+board/2;
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
   var mask=data._mask;                        // PNG 과일이면 조각별 사용여부, 아니면 undefined
-  wpPlaced=0; wpTotal=mask?mask.filter(Boolean).length:WP_PIECES.length;
+  wpPlaced=0; wpTotal=mask?mask.filter(Boolean).length:pieces.length;
   var tEl=document.getElementById('wpTitle'); if(tEl) tEl.textContent='🧩 Make the '+data.word.toLowerCase()+'!';
 
   // 자르기 격자 모서리(안쪽만 살짝 흔들어 자연스러운 곡선)
-  var cw=(WP_X1-WP_X0)/WP_GC, ch=(WP_Y1-WP_Y0)/WP_GR;
+  var cw=(WP_X1-WP_X0)/gc, ch=(WP_Y1-WP_Y0)/gr;
   var G=[];
-  for(var r=0;r<=WP_GR;r++){G[r]=[];for(var c=0;c<=WP_GC;c++){
+  for(var r=0;r<=gr;r++){G[r]=[];for(var c=0;c<=gc;c++){
     var x=WP_X0+c*cw, y=WP_Y0+r*ch;
-    if(r>0&&r<WP_GR&&c>0&&c<WP_GC){ x+=Math.sin(r*12.9+c*78.2)*cw*0.13; y+=Math.cos(r*39.3+c*11.7)*ch*0.13; }
+    if(r>0&&r<gr&&c>0&&c<gc){ x+=Math.sin(r*12.9+c*78.2)*cw*0.13; y+=Math.cos(r*39.3+c*11.7)*ch*0.13; }
     G[r][c]={x:x,y:y};
   }}
   // 모서리 A→B 사이를 부드러운 곡선으로(내부 절단선만 휘게)
@@ -1399,8 +1423,8 @@ function buildPuzzle(key){
       c2x:A.x+dx*0.66+nx*bow, c2y:A.y+dy*0.66+ny*bow,
       x1:B.x,y1:B.y, straight:bow===0};
   }
-  function hSeg(r,c){ var bow=(r===0||r===WP_GR)?0: ch*0.14*((r+c)%2?1:-1); return seg(G[r][c],G[r][c+1],bow); }
-  function vSeg(r,c){ var bow=(c===0||c===WP_GC)?0: cw*0.14*((r+c)%2?-1:1); return seg(G[r][c],G[r+1][c],bow); }
+  function hSeg(r,c){ var bow=(r===0||r===gr)?0: ch*0.14*((r+c)%2?1:-1); return seg(G[r][c],G[r][c+1],bow); }
+  function vSeg(r,c){ var bow=(c===0||c===gc)?0: cw*0.14*((r+c)%2?-1:1); return seg(G[r][c],G[r+1][c],bow); }
   function fwd(sg,k){ return sg.straight? 'L '+(sg.x1*k).toFixed(1)+' '+(sg.y1*k).toFixed(1)+' '
       : 'C '+(sg.c1x*k).toFixed(1)+' '+(sg.c1y*k).toFixed(1)+', '+(sg.c2x*k).toFixed(1)+' '+(sg.c2y*k).toFixed(1)+', '+(sg.x1*k).toFixed(1)+' '+(sg.y1*k).toFixed(1)+' '; }
   function rev(sg,k){ return sg.straight? 'L '+(sg.x0*k).toFixed(1)+' '+(sg.y0*k).toFixed(1)+' '
@@ -1408,10 +1432,9 @@ function buildPuzzle(key){
 
   // 밑그림(연한 실루엣) + 퍼즐 조각 점선(과일 모양 안에만 보이게 클립)
   function segD(sg){ return 'M '+sg.x0.toFixed(1)+' '+sg.y0.toFixed(1)+' '+fwd(sg,1); }
-  var cuts=segD(hSeg(1,0))+segD(hSeg(1,1))+segD(hSeg(1,2))
-          +segD(hSeg(2,0))+segD(hSeg(2,1))+segD(hSeg(2,2))
-          +segD(vSeg(1,1))+segD(vSeg(1,2))
-          +segD(vSeg(2,1))+segD(vSeg(2,2));
+  var cuts='';
+  for(var hr=1;hr<gr;hr++) for(var hc=0;hc<gc;hc++) cuts+=segD(hSeg(hr,hc));   // 안쪽 가로 절단선
+  for(var vc=1;vc<gc;vc++) for(var vr=0;vr<gr;vr++) cuts+=segD(vSeg(vr,vc));   // 안쪽 세로 절단선
   var BODY=data.body;
   var ghost=document.createElement('div');
   ghost.className='wp-ghost'; ghost.id='wpGhost';
@@ -1443,24 +1466,16 @@ function buildPuzzle(key){
   }
   stage.appendChild(ghost);
 
-  // 흩어놓을 고정 자리 — 가운데 사과 '위쪽 밴드'와 '아래쪽 밴드'에 나눠 펼침
-  // 위쪽: 좁은 조각 3개(idx1~3) / 아래쪽: 넓은 윗조각(idx0) + 좁은 조각 3개(idx4~6)
-  var colX=[SW*0.22, SW*0.50, SW*0.78];
-  var topY=startY+topBand*0.42;              // 위쪽 밴드 (사과 위, board 기준 고정 간격)
-  var belowStart=boardTop+board;             // 사과 아래쪽 시작
-  var botY1=belowStart+botBand*0.26;         // 아래 1줄 (넓은 조각) — 사과 바로 아래
-  var botY2=belowStart+botBand*0.74;         // 아래 2줄 (좁은 조각 3개) — board 기준 충분히 띄움
-  var slots=[
-    {x:colX[1], y:botY1},                    // idx0 넓은 윗조각 → 아래 가운데
-    {x:colX[0], y:topY},                     // idx1 ┐
-    {x:colX[1], y:topY},                     // idx2 │ 위쪽 밴드
-    {x:colX[2], y:topY},                     // idx3 ┘
-    {x:colX[0], y:botY2},                    // idx4 ┐
-    {x:colX[1], y:botY2},                    // idx5 │ 아래쪽 밴드
-    {x:colX[2], y:botY2}                     // idx6 ┘
-  ];
+  // 흩어놓을 고정 자리 — 격자 윗줄은 사과 위 밴드, 아랫줄은 아래 밴드에 줄 단위로 배치
+  function colXof(c){ return gc<=1 ? SW*0.5 : SW*0.5 + (c-(gc-1)/2)*(SW*0.80/gc); }
+  function rowYof(r){
+    return (r<aboveRows)
+      ? boardTop - gap - pitch*0.5 - pitch*(aboveRows-1-r)        // 위 밴드 (사과에 가까울수록 아래)
+      : boardTop + board + gap + pitch*0.5 + pitch*(r-aboveRows); // 아래 밴드
+  }
+  var slots=pieces.map(function(p){ return {x:colXof(p.c0), y:rowYof(p.r)}; });
 
-  WP_PIECES.forEach(function(spec,idx){
+  pieces.forEach(function(spec,idx){
     if(mask && !mask[idx]) return;             // PNG 과일: 거의 빈 조각은 건너뜀
     var r=spec.r, c0=spec.c0, c1=spec.c1;
     var TL=G[r][c0];
@@ -1484,7 +1499,7 @@ function buildPuzzle(key){
     var homeCenterX=boardLeft+((aX0+aX1)/2)*s, homeCenterY=boardTop+((aY0+aY1)/2)*s;
     var bx0=boardLeft+aX0*s, bx1=boardLeft+aX1*s, by0=boardTop+aY0*s, by1=boardTop+aY1*s;
     // 흩어놓기: 지정 자리로 이동
-    var slot=slots[idx%slots.length];
+    var slot=slots[idx];
     var offX=slot.x-homeCenterX, offY=slot.y-homeCenterY;
     // 조각 박스가 화면을 벗어나지 않게 보정
     var m=6;
