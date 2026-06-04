@@ -1481,13 +1481,29 @@ function wpComplete(){
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
 
+  // === 완성된 사과를 화면 중앙으로 부드럽게 키우기(zoom & center) ===
+  // 조각들은 모두 같은 위치(boardLeft,boardTop)·같은 크기(board)로 겹쳐 있으므로
+  // 동일한 변형을 주면 이음새가 벌어지지 않고 통째로 커진다.
+  var SW=stage.clientWidth, SH=stage.clientHeight;
+  var gBoard=Math.min(SW*0.86, SH*0.6);     // 커진 목표 크기
+  var k=gBoard/wpGeo.board;                  // 확대 배율
+  var gCx=SW/2, gCy=SH*0.44;                 // 커진 사과의 중심(화면 중앙쯤)
+  var cx0=wpGeo.boardLeft+wpGeo.board/2, cy0=wpGeo.boardTop+wpGeo.board/2;
+  var Dx=gCx-cx0, Dy=gCy-cy0;
+  Array.prototype.forEach.call(stage.querySelectorAll('.wp-piece.placed'),function(p){
+    p.style.transition='transform .6s cubic-bezier(.34,1.4,.64,1)';
+    p.style.transformOrigin='center';
+    p.style.transform='translate('+Dx.toFixed(1)+'px,'+Dy.toFixed(1)+'px) scale('+k.toFixed(3)+')';
+  });
+  var GROW=560;                              // 확대 애니메이션 동안 글자 등장 대기
+
   var word=data.word.split('');
-  // 가로 단어 — 사과 안에 크게
+  // 가로 단어 — 커진 사과 중앙에
   var wrap=document.createElement('div');
   wrap.className='wp-word-h'; wrap.id='wpWordH';
-  wrap.style.left=(wpGeo.boardLeft+wpGeo.board/2)+'px';
-  wrap.style.top=(wpGeo.boardTop+wpGeo.board*0.56)+'px';
-  var fs=Math.min(wpGeo.board*0.2, wpGeo.board*0.82/(word.length*0.66));
+  wrap.style.left=gCx+'px';
+  wrap.style.top=(gCy+gBoard*0.06)+'px';
+  var fs=Math.min(gBoard*0.2, gBoard*0.82/(word.length*0.66));
   wrap.style.fontSize=fs+'px';
   word.forEach(function(ch){
     var sp=document.createElement('span'); sp.className='wl'; sp.textContent=ch; wrap.appendChild(sp);
@@ -1500,10 +1516,10 @@ function wpComplete(){
     setTimeout(function(){
       spans[i].classList.add('show');
       try{var a=safeAudio('assets/sounds/letter_'+ch.toLowerCase()+'.mp3');a.volume=0.9;a.play().catch(function(){});}catch(_){}
-    },350+i*470);
+    },GROW+350+i*470);
   });
   // 2) 단어 한 번 크게 외치기 + 글자 반짝
-  var shoutAt=350+word.length*470+300;
+  var shoutAt=GROW+350+word.length*470+300;
   setTimeout(function(){
     wrap.classList.add('shout');
     wpSayWord(data.word);
