@@ -1336,11 +1336,17 @@ function buildPuzzle(key){
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
 
-  var board=Math.min(SW*0.72, SH*0.40, 300);  // 크게 두되 위/아래 조각 밴드 확보
+  // 사과 크기: 화면이 세로로 길어도(데스크탑 500px 칼럼) 위/아래 밴드가 항상 확보되도록
+  // 높이 비율은 작게 잡아 "위1줄+사과+아래2줄"이 통째로 들어가게 한다.
+  var board=Math.min(SW*0.72, SH*0.36, 300);
   var s=board/200;                          // 아트→픽셀 배율
   var boardLeft=(SW-board)/2;
-  // 아래쪽에 조각 2줄(넓은 조각+좁은 조각)을 넣어야 하므로 사과를 살짝 위로
-  var boardTop=Math.max(SH*0.05, SH*0.42-board/2);
+  // 위 밴드(좁은 조각 1줄) + 사과 + 아래 밴드(넓은 조각·좁은 조각 2줄) 전체를 세로 중앙 정렬
+  // 간격은 화면 높이가 아니라 board(=조각 크기)에 비례 → 어떤 화면비에서도 겹치지 않음
+  var topBand=board*0.56, botBand=board*1.12;
+  var totalH=topBand+board+botBand;
+  var startY=Math.max(SH*0.02,(SH-totalH)/2);
+  var boardTop=startY+topBand;
   var cx=boardLeft+board/2, cy=boardTop+board/2;
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
   wpPlaced=0; wpTotal=WP_PIECES.length;
@@ -1395,11 +1401,10 @@ function buildPuzzle(key){
   // 흩어놓을 고정 자리 — 가운데 사과 '위쪽 밴드'와 '아래쪽 밴드'에 나눠 펼침
   // 위쪽: 좁은 조각 3개(idx1~3) / 아래쪽: 넓은 윗조각(idx0) + 좁은 조각 3개(idx4~6)
   var colX=[SW*0.22, SW*0.50, SW*0.78];
-  var topY=boardTop*0.50;                    // 사과 위 빈 공간 가운데
+  var topY=startY+topBand*0.42;              // 위쪽 밴드 (사과 위, board 기준 고정 간격)
   var belowStart=boardTop+board;             // 사과 아래쪽 시작
-  var belowGap=SH-belowStart;                // 아래 남은 공간
-  var botY1=belowStart+belowGap*0.24;        // 아래 1줄 (넓은 조각) — 사과 바로 아래
-  var botY2=belowStart+belowGap*0.82;        // 아래 2줄 (좁은 조각 3개) — 충분히 띄움
+  var botY1=belowStart+botBand*0.26;         // 아래 1줄 (넓은 조각) — 사과 바로 아래
+  var botY2=belowStart+botBand*0.74;         // 아래 2줄 (좁은 조각 3개) — board 기준 충분히 띄움
   var slots=[
     {x:colX[1], y:botY1},                    // idx0 넓은 윗조각 → 아래 가운데
     {x:colX[0], y:topY},                     // idx1 ┐
