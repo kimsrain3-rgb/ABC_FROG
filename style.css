@@ -128,12 +128,15 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .game-card .card-icon{width:76px;height:76px;display:flex;align-items:center;justify-content:center}
 .game-card .card-icon img{width:100%;height:100%;object-fit:contain}
 .game-card .card-icon svg{width:66px;height:66px;display:block}
+.card-abc .card-icon img{transform:scale(1.3)}
 .game-card .card-label{font-size:28px;letter-spacing:2px;line-height:1;color:#fff;text-shadow:1px 2px 0 rgba(0,0,0,.18)}
 .card-abc{background:linear-gradient(180deg,#81C784,#4CAF50);border-color:#388E3C}
 .card-word{background:linear-gradient(180deg,#FFB74D,#FF7043);border-color:#E64A19}
 /* === ABC 모드 선택 화면 === */
 .ms{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:115}
 .ms.show{display:flex}
+.ms-frog{width:300px;max-width:80vw;margin-bottom:2px;animation:msFrogBreathe 1.6s ease-in-out infinite}
+@keyframes msFrogBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 .ms-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
 .ms-back:active{transform:scale(.92)}
 .ms-title{font-size:30px;color:#FFEB3B;text-shadow:2px 2px 0 #F57F17,3px 3px 0 rgba(0,0,0,.2);margin-bottom:6px}
