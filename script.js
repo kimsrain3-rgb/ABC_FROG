@@ -1336,10 +1336,10 @@ function buildPuzzle(key){
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
 
-  var board=Math.min(SW*0.92, SH*0.52, 440);  // 사과 더 크게(화면 폭 거의 가득)
+  var board=Math.min(SW*0.64, SH*0.36, 320);  // 아래 조각 트레이 공간 확보 위해 작게
   var s=board/200;                          // 아트→픽셀 배율
   var boardLeft=(SW-board)/2;
-  var boardTop=Math.max(8,(SH-board)/2 - SH*0.02);
+  var boardTop=Math.max(8, SH*0.01);        // 사과(맞출 자리)는 위쪽에, 아래는 조각 트레이
   var cx=boardLeft+board/2, cy=boardTop+board/2;
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
   wpPlaced=0; wpTotal=WP_PIECES.length;
@@ -1391,15 +1391,20 @@ function buildPuzzle(key){
   var snap=Math.min(board*0.18,52);
   var pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
 
-  // 흩어놓을 고정 자리 — 넓은 윗조각(idx 0)은 위 중앙, 나머지 6개는 아래 2줄
+  // 흩어놓을 고정 자리 — 사과 아래 '트레이'에 겹치지 않게 펼침
+  // 넓은 윗조각(idx 0)은 트레이 맨 윗줄 가운데, 나머지 6개는 3×2 격자
+  // 사과는 확대 표시(약 1.28배)라 박스보다 큼 → 트레이를 충분히 아래로
+  var trayTop=boardTop+board*1.40;
+  var rowH=board*0.46;
+  var colX=[SW*0.20, SW*0.50, SW*0.80];
   var slots=[
-    {x:SW*0.50, y:boardTop-board*0.22},
-    {x:SW*0.20, y:boardTop+board+board*0.15},
-    {x:SW*0.50, y:boardTop+board+board*0.15},
-    {x:SW*0.80, y:boardTop+board+board*0.15},
-    {x:SW*0.20, y:boardTop+board+board*0.45},
-    {x:SW*0.50, y:boardTop+board+board*0.45},
-    {x:SW*0.80, y:boardTop+board+board*0.45}
+    {x:SW*0.50, y:trayTop},
+    {x:colX[0], y:trayTop+rowH},
+    {x:colX[1], y:trayTop+rowH},
+    {x:colX[2], y:trayTop+rowH},
+    {x:colX[0], y:trayTop+rowH*2},
+    {x:colX[1], y:trayTop+rowH*2},
+    {x:colX[2], y:trayTop+rowH*2}
   ];
 
   WP_PIECES.forEach(function(spec,idx){
