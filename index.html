@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="ABC Frog">
 <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 <meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
-<link rel="stylesheet" href="style.css?v=31">
+<link rel="stylesheet" href="style.css?v=32">
 <!-- GA4 COPPA-safe -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEN3PCFXXL"></script>
 <script>
@@ -36,11 +36,34 @@ gtag('config','G-VEN3PCFXXL',{
         <span class="card-icon"><img src="assets/images/fly_front.png" alt="catch"></span>
         <span class="card-label">ABC</span>
       </button>
-      <button class="game-card card-word" onclick="goWordPuzzle()">
+      <button class="game-card card-word" onclick="goWordCat()">
         <span class="card-icon" id="wordBtnIcon"></span>
         <span class="card-label">Word</span>
       </button>
     </div>
+  </div>
+
+  <!-- 단어 퍼즐 카테고리 선택 (과일 / 동물 / 채소) -->
+  <div class="wc" id="wc">
+    <button class="wc-back" onclick="wcBack()">‹</button>
+    <h2 class="wc-title">Pick a puzzle! 🧩</h2>
+    <div class="wc-cards">
+      <button class="game-card wc-card wc-fruit" onclick="goWordPuzzle()">
+        <span class="card-icon">🍎</span>
+        <span class="card-label">Fruit</span>
+      </button>
+      <button class="game-card wc-card wc-locked" onclick="wcLocked(this)">
+        <span class="card-icon">🐾</span>
+        <span class="card-label">Animal</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked" onclick="wcLocked(this)">
+        <span class="card-icon">🥕</span>
+        <span class="card-label">Vegetable</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+    </div>
+    <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
   </div>
 
   <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
@@ -108,7 +131,7 @@ gtag('config','G-VEN3PCFXXL',{
   <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
 </div>
 
-<script src="script.js?v=11"></script>
+<script src="script.js?v=12"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js');

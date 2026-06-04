@@ -1318,6 +1318,18 @@ function goWordPuzzle(){
 }
 function wpBack(){ document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
 
+// === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
+function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} }
+function wcBack(){ try{document.getElementById('wc').classList.remove('show');}catch(e){} }
+var _wcToastT=null;
+function wcLocked(el){
+  try{
+    el.classList.remove('wc-card-shake'); void el.offsetWidth; el.classList.add('wc-card-shake');  // 흔들기 리셋 후 재생
+    var t=document.getElementById('wcToast');
+    if(t){ t.classList.add('show'); clearTimeout(_wcToastT); _wcToastT=setTimeout(function(){t.classList.remove('show');},1600); }
+  }catch(e){}
+}
+
 // === ABC 모드 선택 화면 ===
 function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }
@@ -1633,6 +1645,12 @@ window.addEventListener('popstate',function(e){
   if(wp&&wp.classList.contains('show')){
     wp.classList.remove('show');
     try{SND_BGM.pause();}catch(_){}
+    history.pushState(null,null,location.href);
+    return;
+  }
+  var wc=document.getElementById('wc');
+  if(wc&&wc.classList.contains('show')){
+    wc.classList.remove('show');
     history.pushState(null,null,location.href);
     return;
   }
