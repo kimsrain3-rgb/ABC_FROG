@@ -151,13 +151,14 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wc-frog{width:190px;max-width:48vw;margin-bottom:2px;animation:msFrogBreathe 1.6s ease-in-out infinite}
 .wc-title{font-size:28px;color:#E65100;text-shadow:1px 2px 0 rgba(255,255,255,.5);text-align:center;padding:0 20px;margin:0}
 .wc-cards{display:flex;flex-direction:column;gap:18px;align-items:center}
-.wc-card{flex-direction:row;width:262px;gap:14px;justify-content:flex-start;padding:16px 20px;position:relative}
-.wc-card .card-icon{font-size:44px;width:54px;height:54px;flex:0 0 auto}
-.wc-card .card-label{font-size:27px}
+/* ABC 알약형 버튼과 통일: 좁은 알약 모양 + 내용 가운데 정렬 (아이콘은 유지) */
+.wc-card{flex-direction:row;width:220px;gap:8px;justify-content:center;align-items:center;padding:13px 16px;border-radius:22px;position:relative}
+.wc-card .card-icon{font-size:32px;width:auto;height:auto;flex:0 0 auto}
+.wc-card .card-label{font-size:28px;letter-spacing:1px}
 .wc-fruit{background:linear-gradient(180deg,#FFB74D,#FF7043);border-color:#E64A19}
 .wc-locked{background:linear-gradient(180deg,#C4C4C4,#9E9E9E);border-color:#757575}
 .wc-locked .card-icon,.wc-locked .card-label{opacity:.7;filter:grayscale(.4)}
-.wc-lock{position:absolute;right:8px;top:6px;font-size:20px}
+.wc-lock{position:absolute;right:8px;top:6px;font-size:18px}
 .wc-card-shake{animation:wcShake .4s ease}
 @keyframes wcShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-9px)}30%{transform:translateX(9px)}45%{transform:translateX(-7px)}60%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
 .wc-toast{position:absolute;bottom:11%;left:50%;transform:translateX(-50%) translateY(18px);background:rgba(0,0,0,.82);color:#fff;padding:12px 24px;border-radius:30px;font-size:20px;font-weight:bold;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap}
