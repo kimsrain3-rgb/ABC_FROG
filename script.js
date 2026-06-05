@@ -1265,6 +1265,40 @@ function lemonArt(){return `
   <ellipse cx="78" cy="94" rx="13" ry="17" fill="#fff" opacity="0.3" transform="rotate(-20 78 94)"/>`;}
 function lemonSil(){return `<path d="${LEMON_BODY}" fill="#CDBBAC"/>`;}
 
+// 망고
+const MANGO_BODY='M100 58 C 141 54, 166 84, 166 118 C 166 152, 136 176, 100 176 C 64 176, 38 150, 38 116 C 38 82, 59 58, 100 58 Z';
+function mangoArt(){return `
+  <path d="${MANGO_BODY}" fill="#FFB300"/>
+  <path d="M100 58 C 141 54, 166 84, 166 118 C 166 152, 136 176, 100 176 Z" fill="#FB8C00" opacity="0.4"/>
+  <path d="M100 58 C 120 56, 138 60, 150 70 C 130 64, 112 66, 96 74 C 92 66, 96 60, 100 58 Z" fill="#FF7043" opacity="0.45"/>
+  <path d="M100 60 C 98 48, 100 40, 108 36" stroke="#8D6E63" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M108 38 C 124 28, 142 32, 148 44 C 138 56, 118 52, 108 38 Z" fill="#66BB6A"/>
+  <ellipse cx="74" cy="100" rx="13" ry="18" fill="#fff" opacity="0.32" transform="rotate(-20 74 100)"/>`;}
+function mangoSil(){return `
+  <path d="M108 38 C 124 28, 142 32, 148 44 C 138 56, 118 52, 108 38 Z" fill="#CDBBAC"/>
+  <path d="${MANGO_BODY}" fill="#CDBBAC"/>`;}
+
+// 파인애플 (몸통 + 초록 왕관)
+const PINEAPPLE_BODY='M100 84 C 138 84, 162 104, 162 134 C 162 164, 136 182, 100 182 C 64 182, 38 164, 38 134 C 38 104, 62 84, 100 84 Z';
+const PINE_CROWN='<path d="M100 28 C 95 50, 95 78, 100 94 C 105 78, 105 50, 100 28 Z"/>'
+  +'<path d="M100 94 C 84 80, 70 60, 66 42 C 80 54, 94 72, 100 94 Z"/>'
+  +'<path d="M100 94 C 116 80, 130 60, 134 42 C 120 54, 106 72, 100 94 Z"/>'
+  +'<path d="M100 94 C 78 86, 58 74, 50 60 C 68 68, 88 82, 100 94 Z"/>'
+  +'<path d="M100 94 C 122 86, 142 74, 150 60 C 132 68, 112 82, 100 94 Z"/>';
+function pineappleArt(){return `
+  <g fill="#43A047">${PINE_CROWN}</g>
+  <g fill="#66BB6A" opacity="0.6"><path d="M100 36 C 97 54, 97 80, 100 94 C 103 80, 103 54, 100 36 Z"/></g>
+  <path d="${PINEAPPLE_BODY}" fill="#FBC02D"/>
+  <path d="M100 84 C 138 84, 162 104, 162 134 C 162 164, 136 182, 100 182 Z" fill="#F9A825" opacity="0.35"/>
+  <g stroke="#E65100" stroke-width="2.2" opacity="0.4" fill="none" stroke-linecap="round">
+    <path d="M72 110 L 104 166"/><path d="M96 102 L 132 150"/><path d="M62 128 L 88 168"/>
+    <path d="M128 110 L 96 166"/><path d="M104 102 L 68 150"/><path d="M138 128 L 112 168"/>
+  </g>
+  <ellipse cx="72" cy="120" rx="11" ry="15" fill="#fff" opacity="0.25" transform="rotate(-20 72 120)"/>`;}
+function pineappleSil(){return `
+  <g fill="#CDBBAC">${PINE_CROWN}</g>
+  <path d="${PINEAPPLE_BODY}" fill="#CDBBAC"/>`;}
+
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
   apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY},
@@ -1274,10 +1308,12 @@ const WP_WORDS={
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY},
   watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY},
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY},
-  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY}
+  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY},
+  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY},
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
-const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon'];
+const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
 
 // 난이도(조각 수) — WP_ORDER 순서대로: 앞은 쉽게(적은 조각), 뒤로 갈수록 많게
 // gc=가로 칸 수, gr=세로 칸 수 → 조각 수 = gc*gr (PNG 빈 조각은 자동 제외)
@@ -1289,7 +1325,9 @@ const WP_LEVELS=[
   {gc:3,gr:2},   // 5번째 — 6조각
   {gc:3,gr:3},   // 6번째 — 9조각 (6~7세)
   {gc:3,gr:3},   // 7번째 — 9조각
-  {gc:3,gr:3}    // 8번째 — 9조각
+  {gc:3,gr:3},   // 8번째 — 9조각
+  {gc:3,gr:3},   // 9번째(망고) — 9조각
+  {gc:3,gr:3}    // 10번째(파인애플) — 9조각
 ];
 function wpLevelFor(key){ var i=WP_ORDER.indexOf(key); if(i<0)i=0; return WP_LEVELS[Math.min(i,WP_LEVELS.length-1)]; }
 function wpPiecesFor(gc,gr){ var a=[]; for(var r=0;r<gr;r++)for(var c=0;c<gc;c++)a.push({r:r,c0:c,c1:c}); return a; }
