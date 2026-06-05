@@ -1301,12 +1301,12 @@ function pineappleSil(){return `
 
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
-  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY},
+  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/images/fruit_apple.png?v=1'},
   banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/images/fruit_banana.png?v=1'},
   grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY},
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY},
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY},
-  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY},
+  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1'},
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY},
   mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
