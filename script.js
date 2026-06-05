@@ -1307,7 +1307,7 @@ const WP_WORDS={
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/images/fruit_orange.png?v=1'},
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/images/fruit_strawberry.png?v=1'},
   watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1'},
-  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY},
+  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/images/fruit_peach.png?v=1'},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/images/fruit_lemon.png?v=1'},
   mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
   pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY}
