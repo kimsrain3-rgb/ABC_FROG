@@ -1309,7 +1309,7 @@ const WP_WORDS={
   watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY},
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY},
-  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY},
+  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
   pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
