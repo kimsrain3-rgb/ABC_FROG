@@ -1343,6 +1343,8 @@ const WP_PIECES=[
 const WP_TF='translate(100,100) scale(1.28) translate(-100,-100)';
 // 사과를 감싸는 자르기 영역(아트 좌표) — 확대된 사과에 맞춰 넓힘
 const WP_X0=8, WP_X1=192, WP_Y0=0, WP_Y1=200, WP_GC=3, WP_GR=3;
+// PNG 과일을 보드에 더 꽉 차게 보이도록 확대 배율 (1=contain 그대로, 클수록 큼)
+const WP_IMG_FILL=1.16;
 let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
 
 function goWordPuzzle(){
@@ -1402,6 +1404,7 @@ function wpPieceMask(img,gc,gr,pieces){
     var ctx=cv.getContext('2d');
     var ar=img.width/img.height, dw, dh;             // object-fit: contain
     if(ar>1){ dw=N; dh=N/ar; } else { dh=N; dw=N*ar; }
+    dw*=WP_IMG_FILL; dh*=WP_IMG_FILL;                 // 화면 표시와 동일하게 확대
     ctx.drawImage(img,(N-dw)/2,(N-dh)/2,dw,dh);
     var d=ctx.getImageData(0,0,N,N).data;
     return pieces.map(function(p){
@@ -1495,7 +1498,7 @@ function buildPuzzle(key){
   var pic;
   if(data.img){
     // PNG 과일: 그림을 비율 유지(contain)로 채우고, 조각은 그 PNG를 격자로 칼질
-    var imgCss='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;';
+    var imgCss='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;transform:scale('+WP_IMG_FILL+');';
     pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;">'
       +'<img src="'+data.img+'" draggable="false" style="'+imgCss+'pointer-events:none;"></div>';
     // 맞출 자리: 흐릿한 PNG + 그림 모양에만 보이는 점선 칼선(PNG를 마스크로 사용)
@@ -1503,7 +1506,7 @@ function buildPuzzle(key){
       +'-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;'
       +'-webkit-mask-position:center;mask-position:center;';
     ghost.innerHTML='<img src="'+data.img+'" style="'+imgCss+'opacity:0.3;filter:grayscale(0.5) brightness(1.08);">'
-      +'<svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" style="position:absolute;left:0;top:0;'+maskCss+'">'
+      +'<svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" style="position:absolute;left:0;top:0;transform:scale('+WP_IMG_FILL+');'+maskCss+'">'
       +'<path d="'+cuts+'" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.8"/></svg>';
   } else {
     pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
