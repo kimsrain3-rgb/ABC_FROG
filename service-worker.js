@@ -1,4 +1,4 @@
-const CACHE_NAME = 'abc-frog-v36';
+const CACHE_NAME = 'abc-frog-v37';
 
 // 오프라인 폴백용 최소 셸만 미리 캐시 (콘텐츠는 항상 네트워크 우선)
 const ASSETS_TO_CACHE = [

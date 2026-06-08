@@ -1682,7 +1682,7 @@ function wpComplete(){
     function go(){ if(advanced)return; advanced=true; playLetter(i+1); }
     var fb=setTimeout(go, 1600);                        // onended가 안 와도 진행(안전장치)
     try{
-      var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.9;
+      var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5;   // 단어 음성(1.0)이 글자의 2배로 들리도록 글자는 절반
       a.onended=function(){ clearTimeout(fb);
         var el=performance.now()-t0;
         setTimeout(go, Math.max(LETTER_INTERVAL-el, LETTER_GAP));   // 짧은 글자는 간격 채우고, 긴 글자는 GAP만
