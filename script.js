@@ -1306,11 +1306,11 @@ const WP_WORDS={
   grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/images/fruit_grape.png?v=1'},
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/images/fruit_orange.png?v=1'},
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/images/fruit_strawberry.png?v=1'},
-  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1'},
+  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1',lvl:{gc:2,gr:2}},
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/images/fruit_peach.png?v=1'},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/images/fruit_lemon.png?v=1'},
   mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
-  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.5}
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.5,lvl:{gc:2,gr:3}}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
@@ -1329,7 +1329,10 @@ const WP_LEVELS=[
   {gc:3,gr:3},   // 9번째(망고) — 9조각
   {gc:3,gr:3}    // 10번째(파인애플) — 9조각
 ];
-function wpLevelFor(key){ var i=WP_ORDER.indexOf(key); if(i<0)i=0; return WP_LEVELS[Math.min(i,WP_LEVELS.length-1)]; }
+function wpLevelFor(key){
+  if(WP_WORDS[key] && WP_WORDS[key].lvl) return WP_WORDS[key].lvl;   // 과일별 격자 지정(얇은 조각 방지)
+  var i=WP_ORDER.indexOf(key); if(i<0)i=0; return WP_LEVELS[Math.min(i,WP_LEVELS.length-1)];
+}
 function wpPiecesFor(gc,gr){ var a=[]; for(var r=0;r<gr;r++)for(var c=0;c<gc;c++)a.push({r:r,c0:c,c1:c}); return a; }
 
 // 조각 구성: 윗부분 1조각(넓게) + 가운데 3 + 아래 3 = 7조각 (곡선으로 크게 자름)
@@ -1509,7 +1512,7 @@ function buildPuzzle(key){
   ghost.style.left=boardLeft+'px'; ghost.style.top=boardTop+'px';
   ghost.style.width=board+'px'; ghost.style.height=board+'px';
 
-  var snap=Math.min(board*0.18,52);
+  var snap=Math.min(board*0.34,100);   // 후하게 — 정답 근처에 대충 놔도 착 붙게(키즈 친화)
   var pic;
   if(data.img){
     // PNG 과일: 그림을 비율 유지(contain)로 채우고, 조각은 그 PNG를 격자로 칼질
