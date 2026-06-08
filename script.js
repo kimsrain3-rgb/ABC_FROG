@@ -1310,7 +1310,7 @@ const WP_WORDS={
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/images/fruit_peach.png?v=1'},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/images/fruit_lemon.png?v=1'},
   mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
-  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1'}
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.5}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
@@ -1622,17 +1622,26 @@ function wpComplete(){
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
 
-  // 사과(맞출 자리)는 이미 화면 중앙에 크게 있으므로 확대 연출 없음
   var board=wpGeo.board, bLeft=wpGeo.boardLeft, bTop=wpGeo.boardTop;
   var GROW=0;
 
+  // 길쭉한 과일(파인애플 등)은 작아 보이므로 완성 시 살짝 키움(빈 공간 활용, 잘림 없음)
+  var fscale=data.scale||1;
+  if(fscale!==1){
+    stage.querySelectorAll('.wp-piece.placed').forEach(function(p){
+      p.style.transformOrigin='center';        // 각 조각=보드 크기/위치 → 중심이 곧 보드 중심
+      p.style.transition='transform .45s cubic-bezier(.34,1.4,.64,1)';
+      p.style.transform='scale('+fscale+')';
+    });
+  }
+
   var word=data.word.split('');
-  // 가로 단어 — 사과 중앙에
+  // 가로 단어 — 사과 중앙에 (확대된 과일에 맞춰 글자도 같이 키움)
   var wrap=document.createElement('div');
   wrap.className='wp-word-h'; wrap.id='wpWordH';
   wrap.style.left=(bLeft+board/2)+'px';
-  wrap.style.top=(bTop+board*0.56)+'px';
-  var fs=Math.min(board*0.2, board*0.82/(word.length*0.66));
+  wrap.style.top=(bTop+board/2+board*0.06*fscale)+'px';
+  var fs=Math.min(board*0.2, board*0.82/(word.length*0.66))*fscale;
   wrap.style.fontSize=fs+'px';
   word.forEach(function(ch){
     var sp=document.createElement('span'); sp.className='wl'; sp.textContent=ch; wrap.appendChild(sp);
