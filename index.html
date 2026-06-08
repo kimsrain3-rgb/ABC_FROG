@@ -135,7 +135,18 @@ gtag('config','G-VEN3PCFXXL',{
 <script src="script.js?v=28"></script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js');
+  // 새 서비스워커가 활성화되면(=새 버전 배포됨) 자동 새로고침 → 폰도 최신으로
+  var __hadController = !!navigator.serviceWorker.controller;
+  var __reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if (__reloaded || !__hadController) return;   // 최초 설치 땐 새로고침 안 함
+    __reloaded = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register('service-worker.js').then(function(reg){
+    // 앱이 오래 켜져 있어도 주기적으로 업데이트 확인
+    setInterval(function(){ try{ reg.update(); }catch(e){} }, 30*60*1000);
+  }).catch(function(){});
 }
 </script>
 </body>
