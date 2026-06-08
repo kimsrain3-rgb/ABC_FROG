@@ -1407,10 +1407,11 @@ function wpImgBBox(img){
     return {fx:minx/N, fy:miny/N, fw:(maxx-minx+1)/N, fh:(maxy-miny+1)/N, W:img.width, H:img.height};
   }catch(e){ return {fx:0,fy:0,fw:1,fh:1,W:img.width,H:img.height}; }
 }
-// bbox(실제 과일)를 보드(S) 안에 가로 90%·세로 98% 한도로 꽉 차게 배치 (여백 제거 → 크게 + 안 잘림)
+// bbox(실제 과일)를 보드(S) 안에 배치 (여백 제거 → 크게). 격자 자르기 범위(가로 4~96%) 안에
+// 충분히 들어가도록 가로 86%·세로 94% 한도 → 좌우/상하 안전 여백 확보(안 잘림)
 function wpImgFit(bb,S){
   var bw=bb.fw*bb.W, bh=bb.fh*bb.H;
-  var k=Math.min(S*0.90/bw, S*0.98/bh);
+  var k=Math.min(S*0.86/bw, S*0.94/bh);
   return { rw:bb.W*k, rh:bb.H*k, left:S/2-(bb.fx*bb.W+bw/2)*k, top:S/2-(bb.fy*bb.H+bh/2)*k };
 }
 function wpPieceMask(img,gc,gr,pieces,bb){
