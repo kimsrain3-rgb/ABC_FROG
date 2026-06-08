@@ -1306,11 +1306,11 @@ const WP_WORDS={
   grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/images/fruit_grape.png?v=1'},
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/images/fruit_orange.png?v=1'},
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/images/fruit_strawberry.png?v=1'},
-  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1',lvl:{gc:2,gr:2}},
+  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1'},
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/images/fruit_peach.png?v=1'},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/images/fruit_lemon.png?v=1'},
-  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1',lvl:{gc:2,gr:3}},
-  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.5,lvl:{gc:2,gr:3}}
+  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.5}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
@@ -1330,7 +1330,9 @@ const WP_LEVELS=[
   {gc:3,gr:3}    // 10번째(파인애플) — 9조각
 ];
 function wpLevelFor(key){
-  if(WP_WORDS[key] && WP_WORDS[key].lvl) return WP_WORDS[key].lvl;   // 과일별 격자 지정(얇은 조각 방지)
+  var d=WP_WORDS[key];
+  if(d && d.lvl) return d.lvl;        // 강제 지정(있으면 최우선)
+  if(d && d._grid) return d._grid;    // 그림 분석으로 자동 선택된 격자(빈 조각 0 보장)
   var i=WP_ORDER.indexOf(key); if(i<0)i=0; return WP_LEVELS[Math.min(i,WP_LEVELS.length-1)];
 }
 function wpPiecesFor(gc,gr){ var a=[]; for(var r=0;r<gr;r++)for(var c=0;c<gc;c++)a.push({r:r,c0:c,c1:c}); return a; }
@@ -1417,22 +1419,51 @@ function wpImgFit(bb,S){
   var k=Math.min(S*0.86/bw, S*0.94/bh);
   return { rw:bb.W*k, rh:bb.H*k, left:S/2-(bb.fx*bb.W+bw/2)*k, top:S/2-(bb.fy*bb.H+bh/2)*k };
 }
-function wpPieceMask(img,gc,gr,pieces,bb){
+// 격자 각 칸(행우선)의 그림 채움 비율(0~1) 배열 — 화면 표시와 동일한 bbox 배치로 샘플링
+function wpCellFills(img,gc,gr,bb){
   var N=200, cw=(WP_X1-WP_X0)/gc, ch=(WP_Y1-WP_Y0)/gr;
+  var cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+  var ctx=cv.getContext('2d');
+  var f=wpImgFit(bb,N);
+  ctx.drawImage(img, f.left, f.top, f.rw, f.rh);
+  var d=ctx.getImageData(0,0,N,N).data;
+  var out=[];
+  for(var r=0;r<gr;r++)for(var c=0;c<gc;c++){
+    var x0=Math.round(WP_X0+c*cw), x1=Math.round(WP_X0+(c+1)*cw);
+    var y0=Math.round(WP_Y0+r*ch), y1=Math.round(WP_Y0+(r+1)*ch);
+    var op=0,tot=0;
+    for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++){ tot++; if(d[(y*N+x)*4+3]>20) op++; }
+    out.push(tot?op/tot:0);
+  }
+  return out;
+}
+function wpPieceMask(img,gc,gr,pieces,bb){
   try{
-    var cv=document.createElement('canvas'); cv.width=N; cv.height=N;
-    var ctx=cv.getContext('2d');
-    var f=wpImgFit(bb,N);                             // 화면 표시와 동일한 배치로 샘플링
-    ctx.drawImage(img, f.left, f.top, f.rw, f.rh);
-    var d=ctx.getImageData(0,0,N,N).data;
-    return pieces.map(function(p){
-      var x0=Math.round(WP_X0+p.c0*cw), x1=Math.round(WP_X0+(p.c1+1)*cw);
-      var y0=Math.round(WP_Y0+p.r*ch), y1=Math.round(WP_Y0+(p.r+1)*ch);
-      var op=0,tot=0;
-      for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++){ tot++; if(d[(y*N+x)*4+3]>20) op++; }
-      return (op/tot)>=0.08;                          // 8% 이상 그림 있으면 조각으로 사용
-    });
+    var fills=wpCellFills(img,gc,gr,bb);                 // pieces는 행우선(wpPiecesFor)이라 index 일치
+    return pieces.map(function(p,i){ return fills[i]>=0.08; });
   }catch(e){ return pieces.map(function(){return true;}); }
+}
+// ★ 빈/흐릿한 조각이 절대 안 생기는 격자 자동 선택.
+//   각 칸은 둘 중 하나여야 안전: ① 솔리드(MINF 22%↑, 보이는 조각) ② 거의 비어(DROP 8%↓, 마스크가 제거→공간 없음)
+//   위험한 건 그 사이 [8%,22%) "어중간한 칸" — 빼지도 않고 흐릿하게 보이는 빈 조각. 이게 0인 격자만 안전.
+//   안전 격자 중 목표 난이도(조각 수)에 가장 가까운 걸 채택. (어떤 그림이든 흐릿한 빈 조각 0 보장)
+function wpAutoGrid(img,bb,desired){
+  var CANDS=[{gc:2,gr:2},{gc:3,gr:2},{gc:2,gr:3},{gc:3,gr:3}];   // 4·6·6·9조각, 칸 모양은 정사각에 가깝게만
+  var DROP=0.08, MINF=0.22;
+  var best=null;
+  for(var i=0;i<CANDS.length;i++){
+    var g=CANDS[i];
+    var fills; try{ fills=wpCellFills(img,g.gc,g.gr,bb); }catch(e){ continue; }
+    var bad=0, kept=0;
+    for(var j=0;j<fills.length;j++){ if(fills[j]>=DROP){ kept++; if(fills[j]<MINF) bad++; } }  // bad=어중간칸, kept=실제 보이는 조각
+    if(kept<3) continue;                                          // 너무 적은 조각 격자 제외
+    var cand={g:g, bad:bad, score:Math.abs(kept-(desired||6)), kept:kept};
+    // 우선순위: 어중간칸 적은 것 → 목표 조각수에 가까운 것 → 조각 많은 것
+    if(!best || cand.bad<best.bad
+       || (cand.bad===best.bad && cand.score<best.score)
+       || (cand.bad===best.bad && cand.score===best.score && cand.kept>best.kept)) best=cand;
+  }
+  return best? best.g : {gc:2,gr:2};
 }
 
 function buildPuzzle(key){
@@ -1448,11 +1479,21 @@ function buildPuzzle(key){
   var gc=lv.gc, gr=lv.gr;
   var pieces=wpPiecesFor(gc,gr);
 
-  // PNG 과일: 그림이 로드되면 실제영역(bbox) + 빈 조각 마스크를 계산해 캐시 후 다시 그림
+  // PNG 과일: 그림이 로드되면 ① 실제영역(bbox) ② 빈 조각이 안 생기는 격자 자동선택 ③ 마스크 계산 후 다시 그림
   if(data.img && !data._mask){
     var _im=new Image();
-    _im.onload=function(){ data._bbox=wpImgBBox(_im); data._mask=wpPieceMask(_im,gc,gr,pieces,data._bbox); buildPuzzle(wpCurrent); };
-    _im.onerror=function(){ data._bbox={fx:0,fy:0,fw:1,fh:1,W:1,H:1}; data._mask=pieces.map(function(){return true;}); buildPuzzle(wpCurrent); };
+    _im.onload=function(){
+      data._bbox=wpImgBBox(_im);
+      if(!data.lvl && !data._grid){                       // 수동 지정 없으면 그림 보고 안전한 격자 자동 선택
+        var i=WP_ORDER.indexOf(wpCurrent); var L=WP_LEVELS[Math.min(i<0?0:i,WP_LEVELS.length-1)];
+        data._grid=wpAutoGrid(_im,data._bbox,L.gc*L.gr);  // 목표 난이도(위치별 조각수)에 가장 가까운 솔리드 격자
+      }
+      var g=data.lvl||data._grid;
+      var pcs=wpPiecesFor(g.gc,g.gr);
+      data._mask=wpPieceMask(_im,g.gc,g.gr,pcs,data._bbox);
+      buildPuzzle(wpCurrent);
+    };
+    _im.onerror=function(){ data._bbox={fx:0,fy:0,fw:1,fh:1,W:1,H:1}; data._grid={gc:2,gr:2}; data._mask=[true,true,true,true]; buildPuzzle(wpCurrent); };
     _im.src=data.img;
     return;
   }
