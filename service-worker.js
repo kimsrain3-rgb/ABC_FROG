@@ -1,10 +1,10 @@
-const CACHE_NAME = 'abc-frog-v34';
+const CACHE_NAME = 'abc-frog-v35';
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './style.css',
-  './script.js?v=27',
+  './script.js?v=28',
   './manifest.json',
   './assets/icons/icon-192x192.png',
   './assets/icons/icon-512x512.png'

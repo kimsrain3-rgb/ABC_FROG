@@ -1672,16 +1672,21 @@ function wpComplete(){
       setTimeout(function(){ rb.classList.add('show'); }, 2000);
     }
   }
-  var LETTER_GAP=100;                                   // 글자 사이 짧은 쉼(ms)
+  // 글자 간격을 '균일'하게: 글자마다 같은 간격(LETTER_INTERVAL)으로 진행하되,
+  // 그보다 긴 글자(E 등)만 안 잘리게 끝날 때까지 더 기다림 → PP 등도 다른 글자와 같은 리듬
+  var LETTER_INTERVAL=950, LETTER_GAP=70;
   function playLetter(i){
     if(i>=word.length){ setTimeout(afterLetters, 320); return; }
     spans[i].classList.add('show');
-    var advanced=false;
-    function next(){ if(advanced)return; advanced=true; setTimeout(function(){playLetter(i+1);}, LETTER_GAP); }
-    var fb=setTimeout(next, 1300);                      // 소리가 안 끝나거나 재생 실패해도 진행(안전장치)
+    var t0=performance.now(), advanced=false;
+    function go(){ if(advanced)return; advanced=true; playLetter(i+1); }
+    var fb=setTimeout(go, 1600);                        // onended가 안 와도 진행(안전장치)
     try{
       var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.9;
-      a.onended=function(){ clearTimeout(fb); next(); };
+      a.onended=function(){ clearTimeout(fb);
+        var el=performance.now()-t0;
+        setTimeout(go, Math.max(LETTER_INTERVAL-el, LETTER_GAP));   // 짧은 글자는 간격 채우고, 긴 글자는 GAP만
+      };
       var pr=a.play(); if(pr&&pr.catch) pr.catch(function(){});
     }catch(e){}
   }
