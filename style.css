@@ -169,7 +169,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wp.show{display:flex}
 .wp-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
 .wp-back:active{transform:scale(.92)}
-.wp-title{font-size:26px;color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto}
+.wp-title{font-size:clamp(15px,4.8vw,26px);color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto;width:100%;box-sizing:border-box;padding:0 56px;white-space:nowrap}
 .wp-stage{position:relative;width:100%;flex:1 1 auto;touch-action:none}
 
 /* 정답 자리 안내(점선 윤곽 + 흐린 그림) */
