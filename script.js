@@ -1639,37 +1639,40 @@ function wpComplete(){
   stage.appendChild(wrap);
 
   var spans=wrap.querySelectorAll('.wl');
-  // 1) 글자 하나씩: A - P - P - L - E
-  word.forEach(function(ch,i){
-    setTimeout(function(){
-      spans[i].classList.add('show');
-      try{var a=safeAudio('assets/sounds/letter_'+ch.toLowerCase()+'.mp3');a.volume=0.9;a.play().catch(function(){});}catch(_){}
-    },GROW+350+i*470);
-  });
-  // 2) 단어 한 번 크게 외치기 + 글자 반짝
-  var shoutAt=GROW+350+word.length*470+300;
-  setTimeout(function(){
-    wrap.classList.add('shout');
-    wpSayWord(data.word);
-  },shoutAt);
-  // 3) 외친 다음 개구리 칭찬 음성 (굿잡 등, 기존 에셋)
-  setTimeout(function(){ try{playVoice(getCheer().vk);}catch(_){}; },shoutAt+1200);
 
-  // 4) 다음 과일로 자동 진행 / 마지막이면 다시하기 버튼
-  var idx=WP_ORDER.indexOf(wpCurrent);
-  var isLast=idx>=WP_ORDER.length-1;
-  if(!isLast){
-    setTimeout(function(){
-      if(!document.getElementById('wp').classList.contains('show')) return; // 도중에 나갔으면 중단
-      buildPuzzle(WP_ORDER[idx+1]);
-    }, shoutAt+2700);
-  } else {
-    var rb=document.createElement('button');
-    rb.className='wp-replay'; rb.textContent='🔄';
-    rb.onclick=function(){ buildPuzzle(WP_ORDER[0]); };   // 처음 과일부터 다시
-    stage.appendChild(rb);
-    setTimeout(function(){ rb.classList.add('show'); },shoutAt+1800);
+  // === 글자 소리를 '앞 소리가 끝나면 다음' 순서로 재생 → 간격 일정하고 자연스럽게 ===
+  function afterLetters(){
+    wrap.classList.add('shout');                       // 단어 전체 강조 + 반짝
+    wpSayWord(data.word);                               // 단어 한 번 외치기
+    setTimeout(function(){ try{playVoice(getCheer().vk);}catch(_){}; }, 1300);  // 칭찬 음성
+    var idx=WP_ORDER.indexOf(wpCurrent), isLast=idx>=WP_ORDER.length-1;
+    if(!isLast){
+      setTimeout(function(){
+        if(!document.getElementById('wp').classList.contains('show')) return;   // 도중에 나갔으면 중단
+        buildPuzzle(WP_ORDER[idx+1]);
+      }, 2900);
+    } else {
+      var rb=document.createElement('button');
+      rb.className='wp-replay'; rb.textContent='🔄';
+      rb.onclick=function(){ buildPuzzle(WP_ORDER[0]); };   // 처음 과일부터 다시
+      stage.appendChild(rb);
+      setTimeout(function(){ rb.classList.add('show'); }, 2000);
+    }
   }
+  var LETTER_GAP=100;                                   // 글자 사이 짧은 쉼(ms)
+  function playLetter(i){
+    if(i>=word.length){ setTimeout(afterLetters, 320); return; }
+    spans[i].classList.add('show');
+    var advanced=false;
+    function next(){ if(advanced)return; advanced=true; setTimeout(function(){playLetter(i+1);}, LETTER_GAP); }
+    var fb=setTimeout(next, 1300);                      // 소리가 안 끝나거나 재생 실패해도 진행(안전장치)
+    try{
+      var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.9;
+      a.onended=function(){ clearTimeout(fb); next(); };
+      var pr=a.play(); if(pr&&pr.catch) pr.catch(function(){});
+    }catch(e){}
+  }
+  setTimeout(function(){ playLetter(0); }, 450);        // 완성 직후 잠깐 뒤 시작
 }
 
 // 단어 음성: voice_<word>.mp3 → .wav 순으로 파일 재생, 둘 다 없으면 브라우저 TTS
