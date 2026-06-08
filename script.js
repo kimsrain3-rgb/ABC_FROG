@@ -1343,8 +1343,6 @@ const WP_PIECES=[
 const WP_TF='translate(100,100) scale(1.28) translate(-100,-100)';
 // 사과를 감싸는 자르기 영역(아트 좌표) — 확대된 사과에 맞춰 넓힘
 const WP_X0=8, WP_X1=192, WP_Y0=0, WP_Y1=200, WP_GC=3, WP_GR=3;
-// PNG 과일을 보드에 더 꽉 차게 보이도록 확대 배율 (1=contain 그대로, 클수록 큼)
-const WP_IMG_FILL=1.16;
 let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
 
 function goWordPuzzle(){
@@ -1397,15 +1395,31 @@ function wpClick(){
 
 // PNG 과일용: 그림 알파를 검사해 각 조각(격자 셀)에 그림이 충분히 있는지 판단
 // → 거의 투명한 조각은 만들지 않음(안 보이는 조각=못 맞추는 버그 방지)
-function wpPieceMask(img,gc,gr,pieces){
+// PNG에서 실제 그림(불투명) 영역 bbox 구하기 (투명 여백 제거용) — 이미지 비율로 반환
+function wpImgBBox(img){
+  try{
+    var N=120, cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+    var ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,N,N);
+    var d=ctx.getImageData(0,0,N,N).data;
+    var minx=N,miny=N,maxx=-1,maxy=-1;
+    for(var y=0;y<N;y++)for(var x=0;x<N;x++){ if(d[(y*N+x)*4+3]>20){ if(x<minx)minx=x; if(x>maxx)maxx=x; if(y<miny)miny=y; if(y>maxy)maxy=y; } }
+    if(maxx<0) return {fx:0,fy:0,fw:1,fh:1,W:img.width,H:img.height};
+    return {fx:minx/N, fy:miny/N, fw:(maxx-minx+1)/N, fh:(maxy-miny+1)/N, W:img.width, H:img.height};
+  }catch(e){ return {fx:0,fy:0,fw:1,fh:1,W:img.width,H:img.height}; }
+}
+// bbox(실제 과일)를 보드(S) 안에 가로 90%·세로 98% 한도로 꽉 차게 배치 (여백 제거 → 크게 + 안 잘림)
+function wpImgFit(bb,S){
+  var bw=bb.fw*bb.W, bh=bb.fh*bb.H;
+  var k=Math.min(S*0.90/bw, S*0.98/bh);
+  return { rw:bb.W*k, rh:bb.H*k, left:S/2-(bb.fx*bb.W+bw/2)*k, top:S/2-(bb.fy*bb.H+bh/2)*k };
+}
+function wpPieceMask(img,gc,gr,pieces,bb){
   var N=200, cw=(WP_X1-WP_X0)/gc, ch=(WP_Y1-WP_Y0)/gr;
   try{
     var cv=document.createElement('canvas'); cv.width=N; cv.height=N;
     var ctx=cv.getContext('2d');
-    var ar=img.width/img.height, dw, dh;             // object-fit: contain
-    if(ar>1){ dw=N; dh=N/ar; } else { dh=N; dw=N*ar; }
-    dw*=WP_IMG_FILL; dh*=WP_IMG_FILL;                 // 화면 표시와 동일하게 확대
-    ctx.drawImage(img,(N-dw)/2,(N-dh)/2,dw,dh);
+    var f=wpImgFit(bb,N);                             // 화면 표시와 동일한 배치로 샘플링
+    ctx.drawImage(img, f.left, f.top, f.rw, f.rh);
     var d=ctx.getImageData(0,0,N,N).data;
     return pieces.map(function(p){
       var x0=Math.round(WP_X0+p.c0*cw), x1=Math.round(WP_X0+(p.c1+1)*cw);
@@ -1430,11 +1444,11 @@ function buildPuzzle(key){
   var gc=lv.gc, gr=lv.gr;
   var pieces=wpPiecesFor(gc,gr);
 
-  // PNG 과일: 그림이 로드되면 빈 조각 마스크를 한 번 계산해 캐시 후 다시 그림
+  // PNG 과일: 그림이 로드되면 실제영역(bbox) + 빈 조각 마스크를 계산해 캐시 후 다시 그림
   if(data.img && !data._mask){
     var _im=new Image();
-    _im.onload=function(){ data._mask=wpPieceMask(_im,gc,gr,pieces); buildPuzzle(wpCurrent); };
-    _im.onerror=function(){ data._mask=pieces.map(function(){return true;}); buildPuzzle(wpCurrent); };
+    _im.onload=function(){ data._bbox=wpImgBBox(_im); data._mask=wpPieceMask(_im,gc,gr,pieces,data._bbox); buildPuzzle(wpCurrent); };
+    _im.onerror=function(){ data._bbox={fx:0,fy:0,fw:1,fh:1,W:1,H:1}; data._mask=pieces.map(function(){return true;}); buildPuzzle(wpCurrent); };
     _im.src=data.img;
     return;
   }
@@ -1498,15 +1512,19 @@ function buildPuzzle(key){
   var pic;
   if(data.img){
     // PNG 과일: 그림을 비율 유지(contain)로 채우고, 조각은 그 PNG를 격자로 칼질
-    var imgCss='position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;transform:scale('+WP_IMG_FILL+');';
+    // 실제 과일이 보드에 꽉 차도록(여백 제거) 배치 — 확대 아님 → 잘리지 않음
+    var ft=wpImgFit(data._bbox||{fx:0,fy:0,fw:1,fh:1,W:1,H:1}, board);
+    var fw=ft.rw.toFixed(1), fh=ft.rh.toFixed(1), fl=ft.left.toFixed(1), ftp=ft.top.toFixed(1);
+    var imgCss='position:absolute;left:'+fl+'px;top:'+ftp+'px;width:'+fw+'px;height:'+fh+'px;';
     pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;">'
       +'<img src="'+data.img+'" draggable="false" style="'+imgCss+'pointer-events:none;"></div>';
-    // 맞출 자리: 흐릿한 PNG + 그림 모양에만 보이는 점선 칼선(PNG를 마스크로 사용)
+    // 맞출 자리: 흐릿한 PNG + 그림 모양에만 보이는 점선 칼선(PNG를 마스크로 사용, 배치 동일)
     var maskCss='-webkit-mask-image:url('+data.img+');mask-image:url('+data.img+');'
-      +'-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;'
-      +'-webkit-mask-position:center;mask-position:center;';
+      +'-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;'
+      +'-webkit-mask-size:'+fw+'px '+fh+'px;mask-size:'+fw+'px '+fh+'px;'
+      +'-webkit-mask-position:'+fl+'px '+ftp+'px;mask-position:'+fl+'px '+ftp+'px;';
     ghost.innerHTML='<img src="'+data.img+'" style="'+imgCss+'opacity:0.3;filter:grayscale(0.5) brightness(1.08);">'
-      +'<svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" style="position:absolute;left:0;top:0;transform:scale('+WP_IMG_FILL+');'+maskCss+'">'
+      +'<svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" style="position:absolute;left:0;top:0;'+maskCss+'">'
       +'<path d="'+cuts+'" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.8"/></svg>';
   } else {
     pic='<div class="wp-piece-img" style="width:'+board+'px;height:'+board+'px;"><svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" xmlns="http://www.w3.org/2000/svg"><g transform="'+WP_TF+'">'+data.art()+'</g></svg></div>';
