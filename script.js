@@ -1302,7 +1302,7 @@ function pineappleSil(){return `
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
   apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/images/fruit_apple.png?v=1'},
-  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/images/fruit_banana.png?v=1'},
+  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/images/fruit_banana.png?v=1',cut:'bsp',parts:6},
   grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/images/fruit_grape.png?v=1'},
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/images/fruit_orange.png?v=1'},
   strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/images/fruit_strawberry.png?v=1'},
@@ -1310,7 +1310,7 @@ const WP_WORDS={
   peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/images/fruit_peach.png?v=1'},
   lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/images/fruit_lemon.png?v=1'},
   mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
-  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.5}
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.3}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
@@ -1470,6 +1470,132 @@ function wpAutoGrid(img,bb,desired){
   return best? best.g : {gc:2,gr:2};
 }
 
+// ★ BSP(번갈아 쪼개기) 자르기 — 스케치처럼 T자 교차의 다양한 조각.
+//   '조각(영역) 중 그림이 가장 많은 것'을 골라, 그 영역의 더 긴 방향(주축 u / 직각 v)으로
+//   그림 면적이 반반이 되는 위치에서 둘로 자르기를 n조각이 될 때까지 반복.
+//   영역 안에서만 잘리므로 교차점이 항상 T자(3갈래) → 격자의 +교차 모서리 슬리버 없음.
+//   전체가 보드를 빈틈없이 분할 + 각 조각이 그림을 골고루 가짐 → 구멍·빈조각 0.
+function wpBspCut(img,bb,n){
+  try{
+    var N=200, cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+    var ctx=cv.getContext('2d'); var f=wpImgFit(bb,N); ctx.drawImage(img,f.left,f.top,f.rw,f.rh);
+    var dd=ctx.getImageData(0,0,N,N).data;
+    var pts=[], sx=0,sy=0;
+    for(var y=0;y<N;y++)for(var x=0;x<N;x++){ if(dd[(y*N+x)*4+3]>20){ pts.push([x,y]); sx+=x; sy+=y; } }
+    var cnt=pts.length; if(cnt<40) return null;
+    var mx=sx/cnt, my=sy/cnt, Sxx=0,Syy=0,Sxy=0;
+    for(var i=0;i<cnt;i++){ var ex=pts[i][0]-mx, ey=pts[i][1]-my; Sxx+=ex*ex; Syy+=ey*ey; Sxy+=ex*ey; }
+    var th=0.5*Math.atan2(2*Sxy, Sxx-Syy);
+    var ux=Math.cos(th), uy=Math.sin(th), vx=-uy, vy=ux;        // u=길이축, v=직각축
+    function proj(p,dx,dy){ return (p[0]-mx)*dx+(p[1]-my)*dy; }
+    function clipHalf(poly,keepGE,dx,dy,tt){ var out=[]; for(var k=0;k<poly.length;k++){ var A=poly[k],B=poly[(k+1)%poly.length];
+      var pa=proj(A,dx,dy)-tt, pb=proj(B,dx,dy)-tt, inA=keepGE?pa>=0:pa<=0, inB=keepGE?pb>=0:pb<=0;
+      if(inA) out.push(A); if(inA!==inB){ var t=pa/(pa-pb); out.push([A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t]); } } return out; }
+    var regions=[{poly:[[0,0],[200,0],[200,200],[0,200]], pts:pts}];
+    var guard=0;
+    while(regions.length<n && guard++<50){
+      // 그림 픽셀이 가장 많은 영역 선택
+      var bi=0; for(i=1;i<regions.length;i++){ if(regions[i].pts.length>regions[bi].pts.length) bi=i; }
+      var R=regions[bi]; if(R.pts.length<8) break;
+      // 영역의 u/v 범위 → 더 긴 방향으로 자름(조각 비율 좋게)
+      var uMin=1e9,uMax=-1e9,vMin=1e9,vMax=-1e9;
+      R.pts.forEach(function(p){ var pu=proj(p,ux,uy), pv=proj(p,vx,vy); if(pu<uMin)uMin=pu; if(pu>uMax)uMax=pu; if(pv<vMin)vMin=pv; if(pv>vMax)vMax=pv; });
+      var useU=(uMax-uMin)>=(vMax-vMin);
+      var dx=useU?ux:vx, dy=useU?uy:vy;
+      var pr=R.pts.map(function(p){ return proj(p,dx,dy); }).sort(function(a,b){return a-b;});
+      var tt=pr[Math.floor(pr.length/2)];                      // 면적 반반(중앙값)
+      var A=clipHalf(R.poly,true,dx,dy,tt), B=clipHalf(R.poly,false,dx,dy,tt);
+      var pa=[],pb=[]; R.pts.forEach(function(p){ (proj(p,dx,dy)>=tt?pa:pb).push(p); });
+      if(A.length>=3&&B.length>=3&&pa.length>=4&&pb.length>=4){
+        regions.splice(bi,1,{poly:A,pts:pa},{poly:B,pts:pb});
+      } else { R.pts=[]; }                                      // 더 못 쪼개는 영역은 후보에서 제외
+    }
+    // ★ 용접: T자 교차점을 이웃 조각의 변에도 꼭짓점으로 삽입 → 곡선 칼선이 양쪽 정확히 일치(틈/겹침 0)
+    (function(){
+      var rd=function(v){return Math.round(v*10)/10;}, key=function(p){return rd(p[0])+','+rd(p[1]);};
+      var rep={}; regions.forEach(function(R){ R.poly.forEach(function(p){ var k=key(p); if(!rep[k]) rep[k]=[rd(p[0]),rd(p[1])]; }); });
+      var verts=[]; for(var k in rep) verts.push(rep[k]);
+      regions.forEach(function(R){
+        var P=R.poly.map(function(p){ return rep[key(p)]; });          // 같은 점 → 같은 참조로 통일
+        var Q=[]; for(var i=0;i<P.length;i++){ if(!Q.length||Q[Q.length-1]!==P[i]) Q.push(P[i]); }
+        if(Q.length>1 && Q[0]===Q[Q.length-1]) Q.pop();
+        var out=[];
+        for(i=0;i<Q.length;i++){
+          var A=Q[i], B=Q[(i+1)%Q.length]; out.push(A);
+          var dx=B[0]-A[0], dy=B[1]-A[1], L2=dx*dx+dy*dy; if(L2<1e-6) continue;
+          var on=[];
+          verts.forEach(function(V){ if(V===A||V===B) return;
+            var t=((V[0]-A[0])*dx+(V[1]-A[1])*dy)/L2; if(t<=0.012||t>=0.988) return;
+            if(Math.hypot(V[0]-(A[0]+t*dx), V[1]-(A[1]+t*dy))<0.5) on.push([t,V]); });
+          on.sort(function(a,b){return a[0]-b[0];});
+          on.forEach(function(o){ out.push(o[1]); });
+        }
+        R.poly=out;
+      });
+    })();
+    var bands=regions.filter(function(R){return R.poly.length>=3;}).map(function(R){
+      var cx=0,cy=0,c=R.pts.length||1; R.pts.forEach(function(p){cx+=p[0];cy+=p[1];});
+      // pts 비면 폴리곤 무게중심으로 대체
+      if(!R.pts.length){ R.poly.forEach(function(p){cx+=p[0];cy+=p[1];}); c=R.poly.length; }
+      return {poly:R.poly, cx:cx/c, cy:cy/c};
+    });
+    // 컷선(점선 미리보기) = 보드 테두리가 아닌 폴리곤 모서리
+    function onBorder(A,B){ return (Math.abs(A[0])<0.6&&Math.abs(B[0])<0.6)||(Math.abs(A[0]-200)<0.6&&Math.abs(B[0]-200)<0.6)||(Math.abs(A[1])<0.6&&Math.abs(B[1])<0.6)||(Math.abs(A[1]-200)<0.6&&Math.abs(B[1]-200)<0.6); }
+    var cuts=[];
+    bands.forEach(function(b){ var P=b.poly; for(var k=0;k<P.length;k++){ var A=P[k],B=P[(k+1)%P.length]; if(!onBorder(A,B)) cuts.push({x0:A[0],y0:A[1],x1:B[0],y1:B[1]}); } });
+    return bands.length>=2 ? {bands:bands, cuts:cuts} : null;
+  }catch(e){ return null; }
+}
+
+// ★ 주축(길이) 방향 n토막 자르기 — 바나나처럼 길쭉/대각선 과일용.
+//   그림의 주축(PCA)을 구해, 그 방향으로 '면적이 균등'하게 n조각으로 가로지르는 컷을 만든다.
+//   조각=보드 정사각형을 컷선으로 나눈 띠(다각형) → n조각이 보드를 빈틈없이 덮으므로 구멍이 구조적으로 0,
+//   각 띠가 그림 면적을 1/n씩 가지므로 빈 조각도 없음. (격자의 모서리 슬리버 문제 자체가 없음)
+function wpAxisCut(img,bb,n){
+  try{
+    var N=200, cv=document.createElement('canvas'); cv.width=N; cv.height=N;
+    var ctx=cv.getContext('2d'); var f=wpImgFit(bb,N); ctx.drawImage(img,f.left,f.top,f.rw,f.rh);
+    var d=ctx.getImageData(0,0,N,N).data;
+    var xs=[],ys=[],sx=0,sy=0;
+    for(var y=0;y<N;y++)for(var x=0;x<N;x++){ if(d[(y*N+x)*4+3]>20){ xs.push(x); ys.push(y); sx+=x; sy+=y; } }
+    var cnt=xs.length; if(cnt<20) return null;
+    var mx=sx/cnt, my=sy/cnt;
+    var Sxx=0,Syy=0,Sxy=0;
+    for(var i=0;i<cnt;i++){ var dx=xs[i]-mx, dy=ys[i]-my; Sxx+=dx*dx; Syy+=dy*dy; Sxy+=dx*dy; }
+    var th=0.5*Math.atan2(2*Sxy, Sxx-Syy);            // 주축 각도
+    var ux=Math.cos(th), uy=Math.sin(th);             // 주축 방향(길이 방향)
+    var projs=new Array(cnt);
+    for(i=0;i<cnt;i++){ projs[i]=(xs[i]-mx)*ux+(ys[i]-my)*uy; }
+    var sorted=projs.slice().sort(function(a,b){return a-b;});
+    var cutsT=[]; for(var k=1;k<n;k++){ cutsT.push(sorted[Math.floor(cnt*k/n)]); }  // 면적 균등 분위수
+    var lo=sorted[0]-40, hi=sorted[cnt-1]+40;
+    var bnd=[lo].concat(cutsT).concat([hi]);
+    // 각 띠 폴리곤 = 보드사각형[0..200] ∩ {bnd[k] ≤ proj ≤ bnd[k+1]}
+    function projOf(p){ return (p[0]-mx)*ux+(p[1]-my)*uy; }
+    function clipHalf(poly,keepGE,tt){ var out=[]; for(var i2=0;i2<poly.length;i2++){ var A=poly[i2],B=poly[(i2+1)%poly.length];
+      var pa=projOf(A)-tt, pb=projOf(B)-tt; var inA=keepGE?pa>=0:pa<=0, inB=keepGE?pb>=0:pb<=0;
+      if(inA) out.push(A); if(inA!==inB){ var t=pa/(pa-pb); out.push([A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t]); } } return out; }
+    // 띠별 그림 무게중심(흩어놓기 기준)
+    var bcx=[],bcy=[],bcn=[]; for(k=0;k<n;k++){bcx[k]=0;bcy[k]=0;bcn[k]=0;}
+    for(i=0;i<cnt;i++){ var bi=0; while(bi<n-1 && projs[i]>cutsT[bi]) bi++; bcx[bi]+=xs[i]; bcy[bi]+=ys[i]; bcn[bi]++; }
+    var bands=[];
+    for(k=0;k<n;k++){
+      var poly=[[0,0],[200,0],[200,200],[0,200]];
+      poly=clipHalf(poly,true,bnd[k]); poly=clipHalf(poly,false,bnd[k+1]);
+      if(poly.length<3 || bcn[k]<1) continue;
+      bands.push({ poly:poly, cx:bcx[k]/bcn[k], cy:bcy[k]/bcn[k] });
+    }
+    // 컷선(점선 미리보기용) — 각 컷을 보드사각형과 교차시켜 선분으로
+    function lineSeg(tt){ var Q=[mx+tt*ux,my+tt*uy], vx=-uy, vy=ux, pts=[];
+      function add(px,py){ if(px>=-0.3&&px<=200.3&&py>=-0.3&&py<=200.3) pts.push([px,py]); }
+      if(Math.abs(vx)>1e-6){ add(0, Q[1]+vy*((0-Q[0])/vx)); add(200, Q[1]+vy*((200-Q[0])/vx)); }
+      if(Math.abs(vy)>1e-6){ add(Q[0]+vx*((0-Q[1])/vy), 0); add(Q[0]+vx*((200-Q[1])/vy), 200); }
+      return pts.length>=2 ? {x0:pts[0][0],y0:pts[0][1],x1:pts[1][0],y1:pts[1][1]} : null; }
+    var cuts=[]; cutsT.forEach(function(tt){ var sgmt=lineSeg(tt); if(sgmt) cuts.push(sgmt); });
+    return (bands.length===n) ? {bands:bands, cuts:cuts} : null;
+  }catch(e){ return null; }
+}
+
 function buildPuzzle(key){
   wpCurrent=key||'apple';
   var data=WP_WORDS[wpCurrent];
@@ -1488,6 +1614,11 @@ function buildPuzzle(key){
     var _im=new Image();
     _im.onload=function(){
       data._bbox=wpImgBBox(_im);
+      if(data.cut==='bsp' || data.cut==='axis'){          // 비격자 자르기(바나나 등 길쭉/대각선)
+        data._axis=(data.cut==='bsp') ? wpBspCut(_im,data._bbox,data.parts||6) : wpAxisCut(_im,data._bbox,data.parts||4);
+        data._mask=[true];                                // 게이트 재진입 방지(비격자 분할은 격자 마스크 안 씀)
+        buildPuzzle(wpCurrent); return;
+      }
       if(!data.lvl && !data._grid){                       // 수동 지정 없으면 그림 보고 안전한 격자 자동 선택
         var i=WP_ORDER.indexOf(wpCurrent); var L=WP_LEVELS[Math.min(i<0?0:i,WP_LEVELS.length-1)];
         data._grid=wpAutoGrid(_im,data._bbox,L.gc*L.gr);  // 목표 난이도(위치별 조각수)에 가장 가까운 솔리드 격자
@@ -1552,10 +1683,12 @@ function buildPuzzle(key){
   for(var hr=1;hr<gr;hr++) for(var hc=0;hc<gc;hc++) cuts+=segD(hSeg(hr,hc));   // 안쪽 가로 절단선
   for(var vc=1;vc<gc;vc++) for(var vr=0;vr<gr;vr++) cuts+=segD(vSeg(vr,vc));   // 안쪽 세로 절단선
   var BODY=data.body;
+  var fscale=data.scale||1;                     // 길쭉 과일(파인애플) 확대 — 처음부터 끝까지 '일정'하게(완성 때 부풀리지 않음)
   var ghost=document.createElement('div');
   ghost.className='wp-ghost'; ghost.id='wpGhost';
   ghost.style.left=boardLeft+'px'; ghost.style.top=boardTop+'px';
   ghost.style.width=board+'px'; ghost.style.height=board+'px';
+  if(fscale!==1){ ghost.style.transformOrigin='center'; ghost.style.transform='scale('+fscale+')'; }
 
   var snap=Math.min(board*0.34,100);   // 후하게 — 정답 근처에 대충 놔도 착 붙게(키즈 친화)
   var pic;
@@ -1586,6 +1719,86 @@ function buildPuzzle(key){
   }
   stage.appendChild(ghost);
 
+  // === 주축 토막 자르기(바나나 등): 격자 대신 길이방향 n조각 — 빈틈/빈조각 0 ===
+  if(data._axis && data._axis.bands && data._axis.bands.length){
+    var ax=data._axis, abands=ax.bands, nP=abands.length;
+    // 곡선 칼선: 안쪽(조각끼리 맞닿는) 모서리는 곡선, 보드 테두리는 직선.
+    // 곡선 휨 부호를 두 점 순서로 자동 반전 → 이웃 조각이 같은 곡선을 거꾸로 그려 빈틈/겹침 0.
+    var onBdr=function(A,B){ return (Math.abs(A[0])<0.6&&Math.abs(B[0])<0.6)||(Math.abs(A[0]-200)<0.6&&Math.abs(B[0]-200)<0.6)||(Math.abs(A[1])<0.6&&Math.abs(B[1])<0.6)||(Math.abs(A[1]-200)<0.6&&Math.abs(B[1]-200)<0.6); };
+    var edgeCmd=function(A,B,k){
+      if(onBdr(A,B)) return 'L '+(B[0]*k).toFixed(1)+' '+(B[1]*k).toFixed(1)+' ';
+      var dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L;
+      var sgn=((A[0]-B[0])||(A[1]-B[1]))>0?1:-1, bow=sgn*Math.min(L*0.12,13);
+      var c1x=A[0]+dx/3+nx*bow, c1y=A[1]+dy/3+ny*bow, c2x=A[0]+dx*2/3+nx*bow, c2y=A[1]+dy*2/3+ny*bow;
+      return 'C '+(c1x*k).toFixed(1)+' '+(c1y*k).toFixed(1)+', '+(c2x*k).toFixed(1)+' '+(c2y*k).toFixed(1)+', '+(B[0]*k).toFixed(1)+' '+(B[1]*k).toFixed(1)+' ';
+    };
+    var polyPath=function(poly,k){ var s2='M '+(poly[0][0]*k).toFixed(1)+' '+(poly[0][1]*k).toFixed(1)+' '; for(var i=0;i<poly.length;i++) s2+=edgeCmd(poly[i],poly[(i+1)%poly.length],k); return s2+'Z'; };
+    // 맞출자리 점선: 안쪽 곡선 칼선만(중복 제거)
+    var cutsA='', _seen={};
+    abands.forEach(function(b){ var P=b.poly; for(var i=0;i<P.length;i++){ var A=P[i],B=P[(i+1)%P.length]; if(onBdr(A,B)) continue;
+      var ka=A[0].toFixed(1)+'_'+A[1].toFixed(1), kb=B[0].toFixed(1)+'_'+B[1].toFixed(1), key=ka<kb?ka+'|'+kb:kb+'|'+ka; if(_seen[key]) continue; _seen[key]=1;
+      cutsA+='M '+(A[0]).toFixed(1)+' '+(A[1]).toFixed(1)+' '+edgeCmd(A,B,1); } });
+    ghost.innerHTML='<img src="'+data.img+'" style="'+imgCss+'opacity:0.3;filter:grayscale(0.5) brightness(1.08);">'
+      +'<svg viewBox="0 0 200 200" width="'+board+'" height="'+board+'" style="position:absolute;left:0;top:0;'+maskCss+'">'
+      +'<path d="'+cutsA+'" fill="none" stroke="#9C7B66" stroke-width="2" stroke-dasharray="4 4" stroke-linecap="round" opacity="0.8"/></svg>';
+    var aboveN=Math.ceil(nP/2);
+    function slotOf(idx){
+      var above=idx<aboveN, inRow=above?idx:idx-aboveN, rowN=above?aboveN:(nP-aboveN);
+      var yy=above? boardTop-gap-pitch*0.5 : boardTop+board+gap+pitch*0.5;
+      var xx=SW*0.5 + (inRow-(rowN-1)/2)*(SW*0.66/Math.max(rowN,1));
+      return {x:xx,y:yy};
+    }
+    wpPlaced=0; wpTotal=nP;
+    abands.forEach(function(band,idx){
+      var poly=band.poly;
+      var d=polyPath(poly,s);
+      var piece=document.createElement('div');
+      piece.className='wp-piece';
+      piece.style.width=board+'px'; piece.style.height=board+'px';
+      piece.style.clipPath="path('"+d+"')"; piece.style.webkitClipPath="path('"+d+"')";
+      piece.innerHTML=pic;
+      var minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+      poly.forEach(function(pp){ if(pp[0]<minx)minx=pp[0]; if(pp[0]>maxx)maxx=pp[0]; if(pp[1]<miny)miny=pp[1]; if(pp[1]>maxy)maxy=pp[1]; });
+      var bx0=boardLeft+minx*s, bx1=boardLeft+maxx*s, by0=boardTop+miny*s, by1=boardTop+maxy*s;
+      var homeCenterX=boardLeft+band.cx*s, homeCenterY=boardTop+band.cy*s;
+      var slot=slotOf(idx);
+      var offX=slot.x-homeCenterX, offY=slot.y-homeCenterY, m=6;
+      if(bx0+offX<m) offX=m-bx0;
+      if(bx1+offX>SW-m) offX=SW-m-bx1;
+      if(by0+offY<m) offY=m-by0;
+      if(by1+offY>SH-m) offY=SH-m-by1;
+      piece.style.left=(boardLeft+offX)+'px'; piece.style.top=(boardTop+offY)+'px';
+      piece.addEventListener('pointerdown',function(e){
+        if(piece.classList.contains('placed'))return;
+        e.preventDefault();
+        try{piece.setPointerCapture(e.pointerId);}catch(_){}
+        piece.classList.add('drag');
+        var px=e.clientX, py=e.clientY;
+        var ol=parseFloat(piece.style.left), ot=parseFloat(piece.style.top);
+        function mv(ev){ piece.style.left=(ol+ev.clientX-px)+'px'; piece.style.top=(ot+ev.clientY-py)+'px'; }
+        function up(ev){
+          piece.removeEventListener('pointermove',mv);
+          piece.removeEventListener('pointerup',up);
+          piece.removeEventListener('pointercancel',up);
+          piece.classList.remove('drag');
+          var cl=parseFloat(piece.style.left), ct=parseFloat(piece.style.top);
+          if(Math.hypot(cl-boardLeft,ct-boardTop)<snap){
+            piece.style.left=boardLeft+'px'; piece.style.top=boardTop+'px';
+            piece.classList.add('placed','snap'); piece.style.zIndex=10;
+            setTimeout(function(){piece.classList.remove('snap');},400);
+            wpClick(); wpPlaced++;
+            if(wpPlaced===wpTotal) setTimeout(wpComplete,300);
+          } else { piece.style.zIndex=20; }
+        }
+        piece.addEventListener('pointermove',mv);
+        piece.addEventListener('pointerup',up);
+        piece.addEventListener('pointercancel',up);
+      });
+      stage.appendChild(piece);
+    });
+    return;
+  }
+
   // 흩어놓을 고정 자리 — 격자 윗줄은 사과 위 밴드, 아랫줄은 아래 밴드에 줄 단위로 배치
   function colXof(c){ return gc<=1 ? SW*0.5 : SW*0.5 + (c-(gc-1)/2)*(SW*0.80/gc); }
   function rowYof(r){
@@ -1612,6 +1825,7 @@ function buildPuzzle(key){
     piece.style.width=board+'px'; piece.style.height=board+'px';
     piece.style.clipPath="path('"+d+"')";
     piece.style.webkitClipPath="path('"+d+"')";
+    if(fscale!==1){ piece.style.transformOrigin='center'; piece.style.transform='scale('+fscale+')'; }  // 처음부터 일정 확대
     piece.innerHTML=pic;
 
     // 조각(셀) 영역의 제자리 픽셀 박스 (스테이지 기준)
@@ -1673,15 +1887,8 @@ function wpComplete(){
   var board=wpGeo.board, bLeft=wpGeo.boardLeft, bTop=wpGeo.boardTop;
   var GROW=0;
 
-  // 길쭉한 과일(파인애플 등)은 작아 보이므로 완성 시 살짝 키움(빈 공간 활용, 잘림 없음)
+  // 파인애플 등은 처음부터 fscale로 일정 확대됨(완성 때 부풀리지 않음) → 글자만 같은 배율로 맞춤
   var fscale=data.scale||1;
-  if(fscale!==1){
-    stage.querySelectorAll('.wp-piece.placed').forEach(function(p){
-      p.style.transformOrigin='center';        // 각 조각=보드 크기/위치 → 중심이 곧 보드 중심
-      p.style.transition='transform .45s cubic-bezier(.34,1.4,.64,1)';
-      p.style.transform='scale('+fscale+')';
-    });
-  }
 
   var word=data.word.split('');
   // 가로 단어 — 사과 중앙에 (확대된 과일에 맞춰 글자도 같이 키움)
