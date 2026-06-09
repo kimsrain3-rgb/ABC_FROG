@@ -1443,19 +1443,23 @@ function wpPieceMask(img,gc,gr,pieces,bb){
     return pieces.map(function(p,i){ return fills[i]>=0.08; });
   }catch(e){ return pieces.map(function(){return true;}); }
 }
-// ★ 빈/흐릿한 조각이 절대 안 생기는 격자 자동 선택.
-//   각 칸은 둘 중 하나여야 안전: ① 솔리드(MINF 22%↑, 보이는 조각) ② 거의 비어(DROP 8%↓, 마스크가 제거→공간 없음)
-//   위험한 건 그 사이 [8%,22%) "어중간한 칸" — 빼지도 않고 흐릿하게 보이는 빈 조각. 이게 0인 격자만 안전.
-//   안전 격자 중 목표 난이도(조각 수)에 가장 가까운 걸 채택. (어떤 그림이든 흐릿한 빈 조각 0 보장)
+// ★ 빈/흐릿한 조각·손톱만한 빈틈이 절대 안 생기는 격자 자동 선택.
+//   각 칸은 둘 중 하나여야 안전: ① 솔리드(MINF 22%↑ → 보이는 조각) ② 완전 빈 칸(EMPTY 2%↓ → 제거해도 빈틈 없음)
+//   위험한 건 그 사이 (2%,22%): 8~22%=흐릿한 빈 조각 / 2~8%=제거되지만 그림이 손톱만큼 남아 빈틈. 이 밴드가 0인 격자만 안전.
+//   안전 격자 중 목표 난이도(조각 수)에 가장 가까운 걸 채택. (어떤 그림이든 빈 조각·빈틈 0 보장)
 function wpAutoGrid(img,bb,desired){
   var CANDS=[{gc:2,gr:2},{gc:3,gr:2},{gc:2,gr:3},{gc:3,gr:3}];   // 4·6·6·9조각, 칸 모양은 정사각에 가깝게만
-  var DROP=0.08, MINF=0.22;
+  var MINF=0.22, EMPTY=0.02;
   var best=null;
   for(var i=0;i<CANDS.length;i++){
     var g=CANDS[i];
     var fills; try{ fills=wpCellFills(img,g.gc,g.gr,bb); }catch(e){ continue; }
     var bad=0, kept=0;
-    for(var j=0;j<fills.length;j++){ if(fills[j]>=DROP){ kept++; if(fills[j]<MINF) bad++; } }  // bad=어중간칸, kept=실제 보이는 조각
+    for(var j=0;j<fills.length;j++){
+      if(fills[j]>=MINF) kept++;              // 솔리드 = 보이는 조각
+      else if(fills[j]>EMPTY) bad++;          // (2%,22%) = 흐릿한 조각 또는 손톱만한 빈틈
+      // fills[j]<=EMPTY : 완전 빈 칸 → 제거해도 빈틈 없음(무해)
+    }
     if(kept<3) continue;                                          // 너무 적은 조각 격자 제외
     var cand={g:g, bad:bad, score:Math.abs(kept-(desired||6)), kept:kept};
     // 우선순위: 어중간칸 적은 것 → 목표 조각수에 가까운 것 → 조각 많은 것
