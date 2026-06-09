@@ -1715,17 +1715,16 @@ function wpComplete(){
   }
   // 글자 간격을 '균일'하게: 글자마다 같은 간격(LETTER_INTERVAL)으로 진행하되,
   // 그보다 긴 글자(E 등)만 안 잘리게 끝날 때까지 더 기다림 → PP 등도 다른 글자와 같은 리듬
-  var SPEED=1.5;                                        // 스펠링 1.5배 빠르게(음성+간격 동시)
+  var SPEED=1.5;                                        // 스펠링 빠르게: 음성 톤은 원래대로, '간격'만 1.5배 단축
   var LETTER_INTERVAL=Math.round(950/SPEED), LETTER_GAP=Math.round(70/SPEED);
   function playLetter(i){
     if(i>=word.length){ setTimeout(afterLetters, 320); return; }
     spans[i].classList.add('show');
     var t0=performance.now(), advanced=false;
     function go(){ if(advanced)return; advanced=true; playLetter(i+1); }
-    var fb=setTimeout(go, Math.round(1600/SPEED));      // onended가 안 와도 진행(안전장치)
+    var fb=setTimeout(go, 1600);                        // onended가 안 와도 진행(안전장치)
     try{
       var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5;   // 단어 음성(1.0)이 글자의 2배로 들리도록 글자는 절반
-      try{ a.playbackRate=SPEED; }catch(e){}            // 음성 자체도 1.5배 빠르게
       a.onended=function(){ clearTimeout(fb);
         var el=performance.now()-t0;
         setTimeout(go, Math.max(LETTER_INTERVAL-el, LETTER_GAP));   // 짧은 글자는 간격 채우고, 긴 글자는 GAP만
