@@ -1968,8 +1968,7 @@ function wpSayWord(w){
   attempt([base+'.mp3', base+'.wav'], 0);
 }
 
-// 시작화면 4번째 버튼 아이콘에 사과 SVG 주입
-try{document.getElementById('wordBtnIcon').innerHTML='<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">'+appleArt()+'</svg>';}catch(e){}
+// (Word 카드 사과 아이콘은 index.html에 fruit_apple.png를 직접 넣음 — JS 주입 제거: JS 멈춰도 안 사라지게)
 
 // === 뒤로가기 버튼 처리 (TWA 안정성) ===
 window.addEventListener('popstate',function(e){
