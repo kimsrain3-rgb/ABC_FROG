@@ -1,1 +1,10 @@
 index.html.bak
+
+# 서명 키 / 비밀정보 — 절대 커밋 금지 (Public 저장소)
+keystore_base64.txt
+*.jks
+*.keystore
+*.p12
+*.env
+.env
+.claude/settings.json
