@@ -121,6 +121,7 @@ ABC_FROG/
 - [ ] 🟢 `wpSayWord`가 `new Audio()` 직접 사용 — `safeAudio()`로 통일 권장 (script.js:1963, try-catch로 위험은 낮음)
 - [x] 🟢 퍼즐 화면 즉시 뒤로가기 시 `buildPuzzle` 0.06초 재시도 루프가 안 멈춤 → 배터리 소모 — `'show'` 가드 추가, **수정/배포 완료**
 - [ ] ➕ **안드로이드(MainActivity.java)**: 오프라인 시 `onReceivedError` 비어있어 안내화면 미표시 → 깨진 에러화면 노출. 웹 아닌 앱 수정 → **Play Console 업데이트 필요** (수채화/보이스 업데이트 때 묶어 처리)
+- [ ] 🟢 **`buildPuzzle` 비동기 race (잠재)**: PNG 과일 마스크 계산용 `_im.onload` 콜백이 전역 `wpCurrent`를 참조 → 퍼즐 빌드가 겹쳐 호출되면 엉뚱한 과일이 뜸. 실제 플레이는 한 번에 하나라 미발생, 우선순위 낮음. 고치려면 onload에 빌드 대상 fruit key를 클로저로 고정 (script.js:1617~1636). (※ 참고: 퍼즐 조각이 '깨진 이미지'로 보이면 거의 항상 **로컬 테스트 서버 꺼짐**이 원인 — 코드 버그 아님. 라이브/서버켜짐 상태선 정상)
 - [ ] 🔴🔐 **서명키 비밀번호 교체 (보안)**: `twa-project/app/build.gradle`에 `storePassword`/`keyPassword`가 `abcfrog123` 평문으로 박혀 있고, 이 파일이 Public 저장소에 이미 노출됨(깃 히스토리 포함). **Secrets로 옮기는 것만으론 부족** — ① `keytool`로 키스토어 비밀번호를 새 비번으로 변경 → ② GitHub Secret(KEYSTORE_BASE64/비번) 재등록 → ③ build.gradle은 평문 제거하고 환경변수/Secret 참조 방식으로 변경 → ④ AAB 재빌드·검증. (주의: 서명키 자체는 교체 불가 — 비밀번호만 교체. 같은 키로 계속 서명해야 Play 업데이트 가능)
 
 ## 협업 규칙
