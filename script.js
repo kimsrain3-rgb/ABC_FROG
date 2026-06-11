@@ -1930,7 +1930,7 @@ function wpComplete(){
   }
   // 글자 간격을 '균일'하게: 글자마다 같은 간격(LETTER_INTERVAL)으로 진행하되,
   // 그보다 긴 글자(E 등)만 안 잘리게 끝날 때까지 더 기다림 → PP 등도 다른 글자와 같은 리듬
-  var SPEED=2.5;                                        // 스펠링 빠르게: 음성 톤은 원래대로, '간격'만 단축 (1.5→1.7→2.2→2.5)
+  var SPEED=3.0;                                        // 스펠링 빠르게: 음성 톤은 원래대로, '간격'만 단축 (1.5→1.7→2.2→2.5→2.8→3.0, 사실상 한계)
   var LETTER_INTERVAL=Math.round(950/SPEED), LETTER_GAP=Math.round(70/SPEED);
   function playLetter(i){
     if(i>=word.length){ setTimeout(afterLetters, 320); return; }
