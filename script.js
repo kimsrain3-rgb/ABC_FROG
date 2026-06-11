@@ -596,7 +596,7 @@ function pt(f,d,t='sine',v=.3){ea();if(!ax)return;const o=ax.createOscillator(),
 function psg(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(80,ax.currentTime);o.frequency.exponentialRampToValueAtTime(40,ax.currentTime+.3);o.frequency.exponentialRampToValueAtTime(90,ax.currentTime+.5);o.frequency.exponentialRampToValueAtTime(35,ax.currentTime+.8);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.8);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.8)}
 function py(){[0,100,200].forEach((d,i)=>setTimeout(()=>pt(523+i*100,.15,'sine',.25),d))}
 function pk(){pt(200,.1,'sawtooth',.2);setTimeout(()=>pt(150,.15,'sawtooth',.25),100);setTimeout(()=>pt(100,.3,'sawtooth',.15),200)}
-function ptg(){ea();const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(800,ax.currentTime);o.frequency.exponentialRampToValueAtTime(200,ax.currentTime+.15);g.gain.setValueAtTime(.15,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.15);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.15)}
+function ptg(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(800,ax.currentTime);o.frequency.exponentialRampToValueAtTime(200,ax.currentTime+.15);g.gain.setValueAtTime(.15,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.15);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.15)}
 function pbr(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,ax.currentTime);o.frequency.exponentialRampToValueAtTime(60,ax.currentTime+.4);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.5);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.5)}
 function psu(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>pt(f,.2,'sine',.2),i*80))}
 function sp(t,r=1.1,onStart){try{if('speechSynthesis'in window&&speechSynthesis){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=r;u.pitch=1.8;u.volume=1;if(onStart)u.onstart=onStart;u.onerror=function(){};speechSynthesis.speak(u)}}catch(e){console.warn('TTS unavailable');}}
@@ -936,7 +936,7 @@ function owc(f){
 }
 
 function oft(id){
-  if(ia)return;ea();rit();
+  if(ia||gp!=='playing')return;ea();rit();
   const f=fl.find(x=>x.id===id);if(!f)return;
   const isMatch = f.letter.toUpperCase()===ct.toUpperCase();
   pauseAnim();setFrame('open');
@@ -1602,7 +1602,11 @@ function buildPuzzle(key){
   var stage=document.getElementById('wpStage');
   stage.innerHTML='';
   var SW=stage.clientWidth, SH=stage.clientHeight;
-  if(SW<10||SH<10){ setTimeout(function(){buildPuzzle(wpCurrent);},60); return; }
+  if(SW<10||SH<10){
+    var wpEl=document.getElementById('wp');
+    if(wpEl&&wpEl.classList.contains('show')) setTimeout(function(){buildPuzzle(wpCurrent);},60);  // 화면 닫혔으면 재시도 멈춤(배터리 누수 방지)
+    return;
+  }
 
   // 난이도(조각 수) 격자 결정
   var lv=wpLevelFor(wpCurrent);
