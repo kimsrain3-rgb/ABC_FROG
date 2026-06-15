@@ -190,7 +190,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 @keyframes wpLetterPop{0%{opacity:0;transform:scale(0) rotate(-18deg)}70%{opacity:1;transform:scale(1.3) rotate(6deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 /* 단어 외치기: 한 번 크게 + 글자 반짝 */
 .wp-word-h.shout{animation:wpWordShout .6s cubic-bezier(.175,.885,.32,1.275)}
-@keyframes wpWordShout{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.5)}100%{transform:translate(-50%,-50%) scale(1.18)}}
+@keyframes wpWordShout{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.25)}100%{transform:translate(-50%,-50%) scale(1.1)}}
 .wp-word-h.shout .wl{opacity:1!important;transform:none;animation:wpSparkle 1.1s ease-in-out infinite}
 @keyframes wpSparkle{0%,100%{color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25)}50%{color:#FFF59D;text-shadow:0 0 12px #FFD54F,0 0 26px #FFEB3B,3px 3px 0 #F57F17}}
 

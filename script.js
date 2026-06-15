@@ -1359,7 +1359,7 @@ function goWordPuzzle(){
   try{ SND_BGM.loop=true; SND_BGM.volume=0.25; SND_BGM.play().catch(function(){}); bgmStarted=true; }catch(e){}
   requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
 }
-function wpBack(){ var o=document.getElementById('wpVideo'); if(o&&o.parentNode) o.parentNode.removeChild(o);   // 엔딩 흰 덮개 정리
+function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
   document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
@@ -1948,21 +1948,32 @@ function wpComplete(){
   setTimeout(function(){ playLetter(0); }, 450);        // 완성 직후 잠깐 뒤 시작
 }
 
+// 엔딩 정리 함수(화면 이탈 시 음성/타이머/영상 한 번에 정리) — wpBack/popstate/replay에서 호출
+var _wpEndingStop=null;
 // 마지막 과일까지 다 맞추면 개구리 과일바구니 축하 영상 + "Thanks friend!" 음성 재생 → 끝나면 다시하기 버튼
 // (영상은 이 순간에만 불러옴 → 평소 로딩 영향 없음 / 영상은 무음 자동재생, 소리는 음성이 담당 / 음성 끝나면 마무리 / 탭하면 건너뛰기 / 실패해도 버튼만)
 function wpPlayEnding(stage){
-  var done=false, ov=null, voice=null, voiceOk=false;
+  var done=false, ov=null, voice=null, voiceOk=false, safetyId=0;
   function showReplay(host){
     if(!stage || document.getElementById('wpReplayBtn')) return;
     var rb=document.createElement('button');
     rb.id='wpReplayBtn'; rb.className='wp-replay'; rb.textContent='🔄';
     rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
-      var o=document.getElementById('wpVideo'); if(o&&o.parentNode) o.parentNode.removeChild(o);   // 흰 덮개 제거
+      if(_wpEndingStop) _wpEndingStop();   // 음성/타이머/영상 모두 정리
       buildPuzzle(WP_ORDER[0]); };   // 처음 과일부터 다시
     (host||stage).appendChild(rb);
     setTimeout(function(){ rb.classList.add('show'); }, 300);
   }
+  // 화면 이탈 시 정리: 음성 정지 + 9초 타이머 해제 + 영상 제거 + 늦은 finish 차단
+  function endingStop(){
+    done=true;
+    try{ clearTimeout(safetyId); }catch(_){}
+    try{ if(voice){ voice.pause(); voice.onended=null; } }catch(_){}
+    var o=document.getElementById('wpVideo'); if(o&&o.parentNode) o.parentNode.removeChild(o);
+    _wpEndingStop=null;
+  }
   function finish(){ if(done)return; done=true;
+    try{ clearTimeout(safetyId); }catch(_){}
     try{ if(voice) voice.pause(); }catch(_){}
     // 영상을 '정지 그림(캔버스)'으로 바꿔치기 → 일부 기기에서 멈춘 영상 레이어가 미세하게 떨리는 현상 제거
     try{ if(ov){ var fv=ov.querySelector('video'); if(fv){ try{fv.pause();}catch(_){}
@@ -1974,6 +1985,7 @@ function wpPlayEnding(stage){
   // 화면을 이미 벗어났으면 영상 없이 버튼만
   var wpEl=document.getElementById('wp');
   if(!stage || !wpEl || !wpEl.classList.contains('show')){ showReplay(); return; }
+  _wpEndingStop=endingStop;   // 이 시점부터 화면 이탈 시 정리 가능
   // "Thanks friend, yummy fruit!" 음성 — 이 음성이 끝나면 마무리(타이밍 지휘자)
   try{
     voice=safeAudio('assets/sounds/Thanks-friend-Yummy-fruit.mp3'); voice.volume=1;
@@ -1998,7 +2010,7 @@ function wpPlayEnding(stage){
     setTimeout(function(){ if(ov) ov.classList.add('show'); }, 30);  // 부드러운 페이드인
     var pr=vid.play(); if(pr&&pr.catch) pr.catch(function(){ if(!voiceOk) finish(); });   // 둘 다 막히면 버튼으로
   }catch(e){ if(!voiceOk) finish(); }
-  setTimeout(finish, 9000);   // 안전장치: 9초 지나면 강제로 정리
+  safetyId=setTimeout(finish, 9000);   // 안전장치: 9초 지나면 강제로 정리
 }
 
 // 단어 음성: voice_<word>.mp3 → .wav 순으로 파일 재생, 둘 다 없으면 브라우저 TTS
@@ -2030,7 +2042,7 @@ window.addEventListener('popstate',function(e){
   // 단어 퍼즐 화면이 열려 있으면 → 닫기만 (시작화면으로 복귀)
   var wp=document.getElementById('wp');
   if(wp&&wp.classList.contains('show')){
-    var ov=document.getElementById('wpVideo'); if(ov&&ov.parentNode) ov.parentNode.removeChild(ov);   // 엔딩 흰 덮개 정리
+    if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
     wp.classList.remove('show');
     try{SND_BGM.pause();}catch(_){}
     history.pushState(null,null,location.href);

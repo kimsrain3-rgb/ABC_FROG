@@ -68,6 +68,8 @@ ABC_FROG/
 - [x] v1.0.4 AAB 빌드 & Play Console 제출 — 비공개 테스트 통과 (2026-04-09)
 - [x] 비공개 테스트 → **프로덕션 정식 출시 완료** (검수 통과)
 - [x] **실유저 300명+ 다운로드 (2026-06-08 기준), versionCode 8 라이브**
+- [x] **단어퍼즐 엔딩 추가 (2026-06-15, 커밋 c48282e)**: 마지막 과일 완성 → 개구리 과일바구니 영상(`assets/images/frog-baskit.mp4`) + "Thanks friend!" 음성(`Thanks-friend-Yummy-fruit.mp3`) → 마지막 장면 캔버스 정지그림으로 고정(영상레이어 떨림 방지) + 흰 전체화면 + 다시하기. `wpPlayEnding()`.
+- [x] **엔딩 후속 수정 (2026-06-15)**: ① 엔딩 중 뒤로가기 시 음성·9초타이머·영상 정리 누수 → `_wpEndingStop()` 통합정리(wpBack/popstate/replay에서 호출, 코덱스 검토 반영) ② shout 확대(1.5→1.25)로 긴 단어(PINEAPPLE) 끝글자 잘림 해결
 - ⚠️ **앱은 WebView로 GitHub Pages를 실시간 로딩 → main에 push하면 즉시 모든 실유저에게 반영됨. 푸시 전 반드시 검증할 것.**
 
 ## 핵심 게임 메카닉
