@@ -167,7 +167,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 /* === 단어 퍼즐 화면 (그림 직소 퍼즐) === */
 .wp{position:absolute;inset:0;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}
 .wp.show{display:flex}
-.wp-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
+.wp-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:140}
 .wp-back:active{transform:scale(.92)}
 .wp-title{font-size:clamp(15px,4.8vw,26px);color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto;width:100%;box-sizing:border-box;padding:0 56px;white-space:nowrap}
 .wp-stage{position:relative;width:100%;flex:1 1 auto;touch-action:none}
@@ -198,6 +198,11 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wp-replay{position:absolute;bottom:24px;left:50%;transform:translateX(-50%) scale(0);width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:linear-gradient(180deg,#81C784,#4CAF50);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);z-index:130;opacity:0}
 .wp-replay.show{opacity:1;transform:translateX(-50%) scale(1);transition:opacity .3s,transform .3s cubic-bezier(.175,.885,.32,1.275)}
 .wp-replay:active{transform:translateX(-50%) scale(.92)}
+
+/* === 마지막 완성 축하 영상(개구리 과일바구니) === */
+.wp-video{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;z-index:135;opacity:0;transition:opacity .4s;cursor:pointer}
+.wp-video.show{opacity:1}
+.wp-video video,.wp-video .wp-still{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 
 /* === 가로 방향 안내(세로 고정 유도) === */
 #rotate-warn{display:none}

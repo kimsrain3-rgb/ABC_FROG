@@ -1359,7 +1359,8 @@ function goWordPuzzle(){
   try{ SND_BGM.loop=true; SND_BGM.volume=0.25; SND_BGM.play().catch(function(){}); bgmStarted=true; }catch(e){}
   requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
 }
-function wpBack(){ document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
+function wpBack(){ var o=document.getElementById('wpVideo'); if(o&&o.parentNode) o.parentNode.removeChild(o);   // 엔딩 흰 덮개 정리
+  document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
 function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} }
@@ -1913,19 +1914,16 @@ function wpComplete(){
   function afterLetters(){
     wrap.classList.add('shout');                       // 단어 전체 강조 + 반짝
     wpSayWord(data.word);                               // 단어 한 번 외치기
-    setTimeout(function(){ try{playVoice(getCheer().vk);}catch(_){}; }, 1300);  // 칭찬 음성
     var idx=WP_ORDER.indexOf(wpCurrent), isLast=idx>=WP_ORDER.length-1;
     if(!isLast){
+      setTimeout(function(){ try{playVoice(getCheer().vk);}catch(_){}; }, 1300);  // 칭찬 음성 (마지막 과일은 Thanks 음성이 대신함)
       setTimeout(function(){
         if(!document.getElementById('wp').classList.contains('show')) return;   // 도중에 나갔으면 중단
         buildPuzzle(WP_ORDER[idx+1]);
       }, 2900);
     } else {
-      var rb=document.createElement('button');
-      rb.className='wp-replay'; rb.textContent='🔄';
-      rb.onclick=function(){ buildPuzzle(WP_ORDER[0]); };   // 처음 과일부터 다시
-      stage.appendChild(rb);
-      setTimeout(function(){ rb.classList.add('show'); }, 2000);
+      // 마지막 과일 완성 → 개구리 과일바구니 축하 영상 → 끝나면 다시하기 버튼
+      setTimeout(function(){ wpPlayEnding(stage); }, 1800);
     }
   }
   // 글자 간격을 '균일'하게: 글자마다 같은 간격(LETTER_INTERVAL)으로 진행하되,
@@ -1948,6 +1946,59 @@ function wpComplete(){
     }catch(e){}
   }
   setTimeout(function(){ playLetter(0); }, 450);        // 완성 직후 잠깐 뒤 시작
+}
+
+// 마지막 과일까지 다 맞추면 개구리 과일바구니 축하 영상 + "Thanks friend!" 음성 재생 → 끝나면 다시하기 버튼
+// (영상은 이 순간에만 불러옴 → 평소 로딩 영향 없음 / 영상은 무음 자동재생, 소리는 음성이 담당 / 음성 끝나면 마무리 / 탭하면 건너뛰기 / 실패해도 버튼만)
+function wpPlayEnding(stage){
+  var done=false, ov=null, voice=null, voiceOk=false;
+  function showReplay(host){
+    if(!stage || document.getElementById('wpReplayBtn')) return;
+    var rb=document.createElement('button');
+    rb.id='wpReplayBtn'; rb.className='wp-replay'; rb.textContent='🔄';
+    rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation();
+      var o=document.getElementById('wpVideo'); if(o&&o.parentNode) o.parentNode.removeChild(o);   // 흰 덮개 제거
+      buildPuzzle(WP_ORDER[0]); };   // 처음 과일부터 다시
+    (host||stage).appendChild(rb);
+    setTimeout(function(){ rb.classList.add('show'); }, 300);
+  }
+  function finish(){ if(done)return; done=true;
+    try{ if(voice) voice.pause(); }catch(_){}
+    // 영상을 '정지 그림(캔버스)'으로 바꿔치기 → 일부 기기에서 멈춘 영상 레이어가 미세하게 떨리는 현상 제거
+    try{ if(ov){ var fv=ov.querySelector('video'); if(fv){ try{fv.pause();}catch(_){}
+      try{ if(fv.videoWidth){ var c=document.createElement('canvas'); c.width=fv.videoWidth; c.height=fv.videoHeight; c.className='wp-still'; c.getContext('2d').drawImage(fv,0,0,c.width,c.height); ov.insertBefore(c,fv); fv.style.display='none'; } }catch(_){}
+    } } }catch(_){}
+    // 마지막 장면 위에 다시하기 버튼 (파인애플 퍼즐이 다시 보이지 않게)
+    showReplay(ov && ov.parentNode ? ov : stage);
+  }
+  // 화면을 이미 벗어났으면 영상 없이 버튼만
+  var wpEl=document.getElementById('wp');
+  if(!stage || !wpEl || !wpEl.classList.contains('show')){ showReplay(); return; }
+  // "Thanks friend, yummy fruit!" 음성 — 이 음성이 끝나면 마무리(타이밍 지휘자)
+  try{
+    voice=safeAudio('assets/sounds/Thanks-friend-Yummy-fruit.mp3'); voice.volume=1;
+    voice.onended=finish;
+    var vpr=voice.play();
+    if(vpr&&vpr.then){ vpr.then(function(){ voiceOk=true; }).catch(function(){ voiceOk=false; }); }
+    else { voiceOk=true; }
+  }catch(e){ voice=null; voiceOk=false; }
+  // 무음 영상 (자동재생용 무음 — 소리는 위 음성이 담당)
+  try{
+    ov=document.createElement('div'); ov.className='wp-video'; ov.id='wpVideo';
+    var vid=document.createElement('video');
+    vid.src='assets/images/frog-baskit.mp4';
+    vid.muted=true; vid.defaultMuted=true; vid.setAttribute('muted','');     // 무음 → 폰 자동재생 허용
+    vid.setAttribute('playsinline',''); vid.playsInline=true;                 // iOS 전체화면 강제 방지
+    vid.autoplay=true; vid.controls=false; vid.preload='auto';
+    ov.appendChild(vid);
+    (document.getElementById('wp')||stage).appendChild(ov);          // 화면 전체를 흰색으로 덮음(위아래 띠 포함)
+    ov.addEventListener('click', finish);                            // 탭하면 건너뛰기
+    vid.addEventListener('ended', function(){ if(!voiceOk) finish(); });   // 음성이 안 되면 영상 끝에 맞춰 마무리
+    vid.addEventListener('error', function(){ if(!voiceOk) finish(); });   // 영상 실패 시(음성도 없으면) 버튼만
+    setTimeout(function(){ if(ov) ov.classList.add('show'); }, 30);  // 부드러운 페이드인
+    var pr=vid.play(); if(pr&&pr.catch) pr.catch(function(){ if(!voiceOk) finish(); });   // 둘 다 막히면 버튼으로
+  }catch(e){ if(!voiceOk) finish(); }
+  setTimeout(finish, 9000);   // 안전장치: 9초 지나면 강제로 정리
 }
 
 // 단어 음성: voice_<word>.mp3 → .wav 순으로 파일 재생, 둘 다 없으면 브라우저 TTS
@@ -1979,6 +2030,7 @@ window.addEventListener('popstate',function(e){
   // 단어 퍼즐 화면이 열려 있으면 → 닫기만 (시작화면으로 복귀)
   var wp=document.getElementById('wp');
   if(wp&&wp.classList.contains('show')){
+    var ov=document.getElementById('wpVideo'); if(ov&&ov.parentNode) ov.parentNode.removeChild(ov);   // 엔딩 흰 덮개 정리
     wp.classList.remove('show');
     try{SND_BGM.pause();}catch(_){}
     history.pushState(null,null,location.href);
