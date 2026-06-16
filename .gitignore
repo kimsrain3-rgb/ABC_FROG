@@ -8,3 +8,29 @@ keystore_base64.txt
 *.env
 .env
 .claude/settings.json
+
+# === 개발/작업 파일 — 배포 저장소에 안 들어가게 (2026-06) ===
+# 자동화 테스트 흔적 (Playwright)
+.playwright-mcp/
+
+# 디자인/영상 작업 원본 (무거움) — *.psd 는 어느 폴더든 무시
+*.psd
+*.prproj
+*.prin
+# Premiere 작업 폴더 (앱 오디오는 assets/sounds/ 에 따로 있음)
+sound/
+
+# 스토어/스케치 자료 (앱 런타임 아님)
+assets/SCREEN SHOT/
+assets/sketch/
+assets/feature-graphic.png
+
+# bkit 도구 상태 파일
+docs/.bkit-memory.json
+docs/.pdca-status.json
+docs/.pdca-snapshots/
+
+# 루트에 흩어진 임시 이미지 (앱 이미지는 assets/ 안에 있음)
+/*.png
+/*.jpg
+/*.jpeg
