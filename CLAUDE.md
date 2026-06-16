@@ -117,7 +117,7 @@ ABC_FROG/
 ### 작업 완료 시
 1. 코드 수정 완료
 2. git commit & push (script.js/style.css 고쳤으면 배포/캐시 규칙 확인)
-3. **완료 기록은 `docs/CHANGELOG.md`에.** CLAUDE.md "현재 상태"는 한두 줄만 갱신 (← CLAUDE.md 비대화 방지)
+3. **완료 기록은 `docs/CHANGELOG.md`의 "작업 일지(날짜별)"에 그날 한 일 한 줄 추가.** CLAUDE.md "현재 상태"는 한두 줄만 갱신 (← CLAUDE.md 비대화 방지)
 
 ### 의사결정
 - 기획 방향 변경 → 반드시 사용자 확인 후 진행
