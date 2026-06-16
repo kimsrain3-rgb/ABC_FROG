@@ -12,7 +12,8 @@
 <meta name="apple-mobile-web-app-title" content="ABC Frog">
 <link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 <meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
-<link rel="stylesheet" href="style.css?v=40">
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기(버전번호 수동관리 불필요) -->
+<script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>
 <!-- GA4 COPPA-safe -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-VEN3PCFXXL"></script>
 <script>
@@ -132,7 +133,8 @@ gtag('config','G-VEN3PCFXXL',{
   <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
 </div>
 
-<script src="script.js?v=50"></script>
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
+<script>document.write('<scr' + 'ipt src="script.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <script>
 // 캐시 도우미(서비스워커) 사용 안 함 — 앱은 항상 서버 최신을 직접 로드(푸시 즉시 반영).
 // 과거에 등록된 서비스워커/캐시가 있으면 깨끗이 정리(자가 복구). 새로 등록은 하지 않음.
