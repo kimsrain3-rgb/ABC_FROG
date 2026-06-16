@@ -1357,10 +1357,7 @@ function goWordPuzzle(){
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
   // 배경음악 (메인 게임과 동일한 bgm.mp3 재사용)
   try{ SND_BGM.loop=true; SND_BGM.volume=0.25; SND_BGM.play().catch(function(){}); bgmStarted=true; }catch(e){}
-  // ===== TEMP 진단: ?last 면 마지막 과일부터(전환 검은화면 테스트용) — 일반유저 영향X, 확인 후 제거 =====
-  var _sk = (location.search.indexOf('last')>=0) ? WP_ORDER[WP_ORDER.length-1] : WP_ORDER[0];
-  requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(_sk);});});
-  // ===== /TEMP =====
+  requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
 }
 function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
   document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
@@ -1978,10 +1975,14 @@ function wpPlayEnding(stage){
   function finish(){ if(done)return; done=true;
     try{ clearTimeout(safetyId); }catch(_){}
     try{ if(voice) voice.pause(); }catch(_){}
-    // 영상을 '정지 그림(캔버스)'으로 바꿔치기 → 일부 기기에서 멈춘 영상 레이어가 미세하게 떨리는 현상 제거
-    try{ if(ov){ var fv=ov.querySelector('video'); if(fv){ try{fv.pause();}catch(_){}
-      try{ if(fv.videoWidth){ var c=document.createElement('canvas'); c.width=fv.videoWidth; c.height=fv.videoHeight; c.className='wp-still'; c.getContext('2d').drawImage(fv,0,0,c.width,c.height); ov.insertBefore(c,fv); fv.style.display='none'; } }catch(_){}
-    } } }catch(_){}
+    // 영상을 '정지 그림(캔버스)'으로 바꿔치기(멈춘 영상 레이어 미세 떨림 제거) + 덮개 제거
+    try{ if(ov){ var fv=ov.querySelector('video');
+      if(fv){ try{fv.pause();}catch(_){}
+        try{ if(fv.videoWidth){ var c=document.createElement('canvas'); c.width=fv.videoWidth; c.height=fv.videoHeight; c.className='wp-still'; c.getContext('2d').drawImage(fv,0,0,c.width,c.height); ov.insertBefore(c,fv); } }catch(_){}
+        fv.style.display='none';                                            // 영상 항상 숨김(정지그림 있으면 그게, 없으면 흰 배경)
+      }
+      var cvr=ov.querySelector('.wp-vcover'); if(cvr&&cvr.parentNode) cvr.parentNode.removeChild(cvr);   // 덮개 정리
+    } }catch(_){}
     // 마지막 장면 위에 다시하기 버튼 (파인애플 퍼즐이 다시 보이지 않게)
     showReplay(ov && ov.parentNode ? ov : stage);
   }
@@ -2006,17 +2007,22 @@ function wpPlayEnding(stage){
     vid.setAttribute('playsinline',''); vid.playsInline=true;                 // iOS 전체화면 강제 방지
     vid.autoplay=true; vid.controls=false; vid.preload='auto';
     ov.appendChild(vid);
+    // 불투명 덮개: 영상 자리를 처음부터 완전히 가림 → 영상 준비 전 '검은 surface'가 절대 안 보임.
+    // 영상이 '진짜 재생'(currentTime 전진=실제 프레임 출력)을 시작하면 그때 덮개를 걷어냄.
+    var cover=document.createElement('div'); cover.className='wp-vcover';
+    ov.appendChild(cover);
     (document.getElementById('wp')||stage).appendChild(ov);          // 화면 전체를 흰색으로 덮음(위아래 띠 포함)
     ov.addEventListener('click', finish);                            // 탭하면 건너뛰기
     vid.addEventListener('ended', function(){ if(!voiceOk) finish(); });   // 음성이 안 되면 영상 끝에 맞춰 마무리
     vid.addEventListener('error', function(){ if(!voiceOk) finish(); });   // 영상 실패 시(음성도 없으면) 버튼만
-    // 흰 덮개는 즉시 불투명(밑 퍼즐 가림). 영상은 '첫 프레임 준비(canplay)' 후에만 페이드인
-    // → 페이드 중 밑그림 비침 + WebView 검은 surface 한 프레임 스침 둘 다 방지
-    var revealVid=function(){ if(ov) ov.classList.add('show'); };
-    if(vid.readyState>=2) revealVid();
-    else { vid.addEventListener('canplay', revealVid, {once:true}); vid.addEventListener('loadeddata', revealVid, {once:true}); }
-    setTimeout(revealVid, 800);   // 안전장치: 늦어도 0.8초엔 보이게
-    var pr=vid.play(); if(pr&&pr.catch) pr.catch(function(){ if(!voiceOk) finish(); });   // 둘 다 막히면 버튼으로
+    var uncovered=false;
+    function uncover(){ if(uncovered)return; uncovered=true;
+      if(cover){ cover.classList.add('hide'); setTimeout(function(){ try{ if(cover&&cover.parentNode) cover.parentNode.removeChild(cover); }catch(_){} }, 380); } }
+    function chk(){ if(vid.currentTime>0 && !vid.paused) uncover(); }   // 진짜 재생 중(프레임 나오는 중)일 때만 덮개 제거
+    vid.addEventListener('timeupdate', chk);                           // currentTime 전진 = 실제 프레임 출력 신호
+    vid.addEventListener('playing', chk);
+    setTimeout(uncover, 1500);   // 안전장치: 1.5초 안에 확인 못 해도 덮개는 걷음(대개 이미 재생 중)
+    var pr=vid.play(); if(pr&&pr.catch) pr.catch(function(){ if(!voiceOk) finish(); });   // 자동재생/영상 막히면 버튼으로
   }catch(e){ if(!voiceOk) finish(); }
   safetyId=setTimeout(finish, 9000);   // 안전장치: 9초 지나면 강제로 정리
 }
