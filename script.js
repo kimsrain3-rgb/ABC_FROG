@@ -1357,7 +1357,10 @@ function goWordPuzzle(){
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
   // 배경음악 (메인 게임과 동일한 bgm.mp3 재사용)
   try{ SND_BGM.loop=true; SND_BGM.volume=0.25; SND_BGM.play().catch(function(){}); bgmStarted=true; }catch(e){}
-  requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
+  // ===== TEMP 진단: ?last 면 마지막 과일부터(전환 검은화면 테스트용) — 일반유저 영향X, 확인 후 제거 =====
+  var _sk = (location.search.indexOf('last')>=0) ? WP_ORDER[WP_ORDER.length-1] : WP_ORDER[0];
+  requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(_sk);});});
+  // ===== /TEMP =====
 }
 function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
   document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
