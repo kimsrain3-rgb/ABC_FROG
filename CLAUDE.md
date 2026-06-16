@@ -160,6 +160,13 @@ v1.0.4부터 TWA 제거, 순수 WebView 앱으로 전환됨. JS 에러 = 앱 크
 6. **브라우저 API 사용 전 존재 확인** — `'speechSynthesis' in window`, `window.AudioContext || window.webkitAudioContext` 등 반드시 체크 후 사용
 7. **새 기능 추가 시** — `.play()`, `.speak()`, DOM API 등 실패 가능한 호출은 항상 `.catch(()=>{})` 또는 try-catch로 감쌀 것
 
+### 배포 / 캐시 규칙 (필수 준수)
+> 앱은 WebView(`setCacheMode(LOAD_DEFAULT)`)로 GitHub Pages를 로드 → 캐시 때문에 "수정했는데 폰엔 옛 코드"가 반복 발생했던 영역. **방법이 아니라 목적을 지킬 것.**
+
+1. **목적(불변)**: 푸시하면 **유저가 반드시 최신을 받아야 한다.** 현재 방법 = `index.html`이 `document.write`로 `script.js?b=Date.now()` / `style.css?b=Date.now()` 를 붙여 **매 실행 always-fresh** 로 로드(커밋 aad03fb~). **이 로더를 정적 `?v=`로 되돌리지 말 것.** 더 나은 방법(빌드 도구 등)으로 바꾸려면 → 새 방법도 "푸시 후 최신 보장"을 충족하고 **실제 폰에서 검증**을 통과해야 함.
+2. **그림·소리 교체 주의**: always-fresh는 **코드(script.js/css)만** 커버함. 이미지/사운드를 **같은 파일명으로 교체**하면(예: `fruit_apple.png?v=1` 그대로) 여전히 캐시됨 → 교체 시 **파일명을 바꾸거나 그 파일의 `?v=` 번호를 올릴 것.** (새 파일명 추가는 문제 없음)
+3. **검증은 반드시 실제 폰에서**: 캐시는 여러 겹 — **"한 겹 막았다 = 다 막았다"가 아님**(과거 서비스워커만 없애고 다 됐다고 과장 → HTTP캐시 층에서 재발). 로컬 강력새로고침(Ctrl+Shift+R)은 캐시를 숨겨서 멀쩡해 보이므로, 최종 검증은 **실제 폰에서 앱 완전종료→재시작** 후 확인.
+
 ### 세션 시작 프로토콜
 1. 이 CLAUDE.md 읽기 (자동)
 2. git pull로 최신 코드 확인
