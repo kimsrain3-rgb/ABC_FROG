@@ -200,9 +200,11 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wp-replay:active{transform:translateX(-50%) scale(.92)}
 
 /* === 마지막 완성 축하 영상(개구리 과일바구니) === */
-.wp-video{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;z-index:135;opacity:0;transition:opacity .4s;cursor:pointer}
-.wp-video.show{opacity:1}
+.wp-video{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;z-index:135;cursor:pointer}
 .wp-video video,.wp-video .wp-still{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
+.wp-video video{opacity:0;transition:opacity .35s ease}   /* 첫 프레임 준비 후 .show 붙으면 페이드인 */
+.wp-video.show video{opacity:1}
+/* 정지그림(캔버스)은 즉시 표시 → 영상→그림 교체 시 깜빡임 없음 */
 
 /* === 가로 방향 안내(세로 고정 유도) === */
 #rotate-warn{display:none}

@@ -2007,7 +2007,12 @@ function wpPlayEnding(stage){
     ov.addEventListener('click', finish);                            // 탭하면 건너뛰기
     vid.addEventListener('ended', function(){ if(!voiceOk) finish(); });   // 음성이 안 되면 영상 끝에 맞춰 마무리
     vid.addEventListener('error', function(){ if(!voiceOk) finish(); });   // 영상 실패 시(음성도 없으면) 버튼만
-    setTimeout(function(){ if(ov) ov.classList.add('show'); }, 30);  // 부드러운 페이드인
+    // 흰 덮개는 즉시 불투명(밑 퍼즐 가림). 영상은 '첫 프레임 준비(canplay)' 후에만 페이드인
+    // → 페이드 중 밑그림 비침 + WebView 검은 surface 한 프레임 스침 둘 다 방지
+    var revealVid=function(){ if(ov) ov.classList.add('show'); };
+    if(vid.readyState>=2) revealVid();
+    else { vid.addEventListener('canplay', revealVid, {once:true}); vid.addEventListener('loadeddata', revealVid, {once:true}); }
+    setTimeout(revealVid, 800);   // 안전장치: 늦어도 0.8초엔 보이게
     var pr=vid.play(); if(pr&&pr.catch) pr.catch(function(){ if(!voiceOk) finish(); });   // 둘 다 막히면 버튼으로
   }catch(e){ if(!voiceOk) finish(); }
   safetyId=setTimeout(finish, 9000);   // 안전장치: 9초 지나면 강제로 정리
