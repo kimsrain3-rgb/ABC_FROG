@@ -2086,3 +2086,8 @@ window.addEventListener('popstate',function(e){
 });
 // 초기 히스토리 상태 추가
 try{history.pushState(null,null,location.href);}catch(e){}
+
+// ===== TEMP 진단: 화면 좌하단에 빌드 번호 표시 (폰이 새 코드 받았는지 눈으로 확인용) — 확인 후 제거 =====
+try{ (function(){ var d=document.createElement('div'); d.textContent='build c0616';
+  d.style.cssText='position:fixed;left:6px;bottom:6px;z-index:99999;font:12px sans-serif;color:#fff;background:rgba(0,0,0,.45);padding:2px 6px;border-radius:6px;pointer-events:none';
+  (document.body||document.documentElement).appendChild(d); })(); }catch(e){}
