@@ -3,128 +3,72 @@
 ## 프로젝트 개요
 - **이름**: ABC Frog
 - **장르**: 키즈 영어 교육 게임 (게임 퍼스트, 교육은 덤)
-- **컨셉**: 배고픈 개구리가 연잎 위에서 알파벳을 들고 날아다니는 파리를 혀로 잡아먹는 게임
+- **컨셉**: 배고픈 개구리가 연잎 위에서 알파벳 든 파리를 혀로 잡아먹는 게임
 - **타겟**: 3~7세 아이들
-- **기술 스택**: HTML5 + JavaScript + CSS (모듈 분리 완료)
-- **플랫폼**: 웹 → PWA/앱 래핑 예정
+- **기술 스택**: HTML5 + JS + CSS (index.html / style.css / script.js 분리, 빌드 도구 없음)
+- **플랫폼**: 웹(GitHub Pages) + 안드로이드 WebView 앱 래핑 — **프로덕션 라이브**
 
-## GitHub
-- 저장소: https://github.com/kimsrain3-rgb/ABC_FROG
-- Public 저장소
-
-## 노션
-- 메인 기획서 + TODO: 🐸 ABC Frog (page_id: 3097112a-ae24-819e-8d27-f1d38f19258d)
+## GitHub / 노션
+- 저장소: https://github.com/kimsrain3-rgb/ABC_FROG (Public)
+- 메인 기획서+TODO: 🐸 ABC Frog (notion page_id: 3097112a-ae24-819e-8d27-f1d38f19258d)
 - 시리즈 전체 기획: 🎮 게임 아이디어 (page_id: 3097112a-ae24-819b-b5b5-c3ce269888f0)
 
-## 현재 파일 구조
+## 현재 상태 (요약)
+- ✅ **프로덕션 정식 출시 / 실유저 300명+ / versionCode 8 라이브** (2026-06-08 기준)
+- ✅ 메인 게임(파리잡기 ABC/abc/ABc) + **단어퍼즐(과일) + 엔딩 영상·음성** 라이브
+- 🔜 진행 중: **동물 퍼즐**(배경 통째 네모 직소퍼즐 스타일) 설계 — 재료(장면그림)+보상(AI영상 테스트) 대기
+- 📜 완료 이력 전체 → **`docs/CHANGELOG.md`**
+- ⚠️ **앱은 WebView로 GitHub Pages 실시간 로딩 → `main` push = 즉시 전 유저 반영. 푸시 전 반드시 검증.**
+
+## 현재 파일 구조 (핵심만)
 ```
 ABC_FROG/
-├── index.html          ← HTML 뼈대 (1.4KB)
-├── style.css           ← CSS 스타일 (약 20KB)
-├── script.js           ← 게임 로직 (약 99KB, base64 제거됨 / 파리잡기 + 단어퍼즐 Word 포함)
-├── index.html.bak      ← 분리 전 원본 백업 (9,599KB)
-├── CLAUDE.md           ← 이 파일 (프로젝트 스킬)
-├── README.md
-├── assets/
-│   ├── fonts/
-│   ├── images/         ← 이미지 20개 (개구리/파리/나비/애벌레/연잎)
-│   └── sounds/         ← 사운드 75개 (알파벳26+보이스42+효과음7)
-├── manifest.json        ← PWA 매니페스트
-├── service-worker.js    ← 서비스워커 '킬스위치' (옛 캐시 자가청소 전용, 더 이상 캐시 안 함)
-├── privacy-policy.html  ← 개인정보처리방침
-├── keystore_base64.txt  ← 서명 키 base64 (GitHub에 올리지 말 것!)
-├── twa-project/         ← Android WebView 프로젝트 (Gradle, TWA 제거됨)
-│   ├── app/build.gradle ← 앱 설정 (versionCode 5, targetSdk 35)
-│   └── app/src/main/
-│       ├── AndroidManifest.xml ← MainActivity만 등록
-│       └── java/.../MainActivity.java ← 순수 WebView 앱
-├── .github/workflows/   ← GitHub Actions (build-aab.yml)
-├── versions/
-└── docs/
+├── index.html          ← HTML 뼈대 (+ 캐시버스터 always-fresh 로더)
+├── style.css           ← CSS
+├── script.js           ← 게임 로직 (파리잡기 + 단어퍼즐)
+├── data-word-fruits.js ← 과일 데이터 분리 (※ refactor 브랜치, main 병합 대기)
+├── manifest.json / service-worker.js(킬스위치) / privacy-policy.html
+├── assets/  images/ · sounds/ · fonts/   ← 실제 파일로 관리 (base64 X)
+├── twa-project/        ← 안드로이드 순수 WebView 앱 (Gradle, MainActivity.java)
+├── .github/workflows/  ← GitHub Actions (build-aab.yml)
+└── docs/               ← CHANGELOG.md 등
 ```
 
-## 진행 상황
-- [x] 단일 index.html → index.html + style.css + script.js 분리 완료
-- [x] base64 이미지 → assets/images/로 실제 파일 분리 (20개)
-- [x] base64 오디오 → assets/sounds/로 실제 파일 분리 (75개)
-- [x] 에셋 분리 후 게임 정상 작동 테스트
-- [x] ABC (대문자) 모드: 파리 캐릭터 + bg_3 배경
-- [x] abc (소문자) 모드: 잠자리 캐릭터 + bg_4 배경
-- [x] ABc (혼합) 모드: 거미 캐릭터 + bg_5 배경 + 그루터기 에셋 분리
-- [x] 인트로 화면: frog_4a/4b 숨쉬기 애니메이션
-- [x] 말풍선 크기 2배 확대 + 개구리 옆 배치
-- [x] 소문자 글자 크기 35% 확대
-- [x] 튜토리얼 데모: ABC 모드에서만 표시
-- [x] 수집판: ABc 모드 랜덤 대소문자 표시
-- [x] PWA 설정 (manifest.json + service-worker.js + 앱 아이콘 4종)
-- [x] 개인정보처리방침 페이지 (privacy-policy.html, 한/영 토글)
-- [x] TWA 프로젝트 구성 (twa-project/, Gradle 빌드)
-- [x] GitHub Actions AAB 빌드 워크플로우 (.github/workflows/build-aab.yml)
-- [x] 서명 키 관리: GitHub Secret (KEYSTORE_BASE64)으로 고정 키 사용
-- [x] Play Console 비공개 테스트 버전 업로드 (v2, 1.0.1)
-- [x] v1.0.2 안정성 수정 (JS 방어 코딩) — 거부됨
-- [x] v1.0.3 구조적 수정 (WebView폴백, GA4제거, assetlinks, 뒤로가기) — 거부됨
-- [x] v1.0.4 TWA 완전 제거 → 순수 WebView 앱 전환
-- [x] v1.0.4 AAB 빌드 & Play Console 제출 — 비공개 테스트 통과 (2026-04-09)
-- [x] 비공개 테스트 → **프로덕션 정식 출시 완료** (검수 통과)
-- [x] **실유저 300명+ 다운로드 (2026-06-08 기준), versionCode 8 라이브**
-- [x] **단어퍼즐 엔딩 추가 (2026-06-15, 커밋 c48282e)**: 마지막 과일 완성 → 개구리 과일바구니 영상(`assets/images/frog-baskit.mp4`) + "Thanks friend!" 음성(`Thanks-friend-Yummy-fruit.mp3`) → 마지막 장면 캔버스 정지그림으로 고정(영상레이어 떨림 방지) + 흰 전체화면 + 다시하기. `wpPlayEnding()`.
-- [x] **엔딩 후속 수정 (2026-06-15)**: ① 엔딩 중 뒤로가기 시 음성·9초타이머·영상 정리 누수 → `_wpEndingStop()` 통합정리(wpBack/popstate/replay에서 호출, 코덱스 검토 반영) ② shout 확대(1.5→1.25)로 긴 단어(PINEAPPLE) 끝글자 잘림 해결
-- ⚠️ **앱은 WebView로 GitHub Pages를 실시간 로딩 → main에 push하면 즉시 모든 실유저에게 반영됨. 푸시 전 반드시 검증할 것.**
-
-## 핵심 게임 메카닉
-- 정답 파리 → "야미야미!" + 알파벳 발음 + 별 터짐 + 배 빵빵
-- 오답 파리 → "우웩!" + 토하기 + 침 묻은 파리 다시 날아감
-- 콤보: 야미 → 야미야미 → 야미야미야미
-- 개구리 감정 4종: 배고픔(hungry), 맛있음(yummy), 맛없음(yucky), 배부름(full)
-
-## 캐릭터
-- 개구리: 메인 캐릭터, 스프라이트 기반 애니메이션 (hungry/yummy/yucky/full 상태)
-- 나비: 서브 캐릭터, 4프레임 애니메이션, 탭하면 대사
-- 애벌레: 서브 캐릭터, 9프레임 애니메이션, 탭하면 대사
-- 파리: 알파벳을 들고 날아다니는 타겟
-
-## 엔딩 컨셉
-- ABC 노래 + 파리 합창단 + 개구리 지휘자
-- 파리 4줄 배치: ABCDEFG / HIJKLMNOP / QRSTUV / WXYZ
-- 호명 시 볼록렌즈 효과 + 반짝임
-
-## 사운드 시스템
-- 사운드 44개 (알파벳 26 + 효과음 18) 현재 base64 임베딩
-- 나비/애벌레 캐릭터 보이스 포함
+## 게임 디자인 (참고)
+- **핵심 메카닉**: 정답 파리 → "야미야미!" + 알파벳 발음 + 별 + 배 빵빵 / 오답 → "우웩!" + 토하기 / 콤보(야미→야미야미→…) / 개구리 감정 4종(hungry·yummy·yucky·full)
+- **캐릭터**: 개구리(메인, 스프라이트 애니), 나비(4프레임), 애벌레(9프레임), 파리(알파벳 타겟)
+- **ABC 노래 엔딩 컨셉**: 파리 합창단 + 개구리 지휘자, 호명 시 볼록렌즈 + 반짝임
 
 ## 에셋 관리 방침
-- 그림/소리는 assets/ 폴더에 실제 파일로 관리 (base64 내장 X)
-- 앞으로 그림 추가/교체가 빈번할 예정 (러프스케치 → 깔끔한 라인 업그레이드 등)
-- 파일 이름은 알아보기 쉽게: frog_hungry.png, frog_full.png, fly.png 등
+- 그림/소리는 `assets/`에 실제 파일로 (base64 내장 X)
+- 그림 추가/교체 빈번 예정 (러프스케치 → 깔끔한 라인 업그레이드 등)
+- 파일명 알아보기 쉽게: `frog_hungry.png`, `fly.png` 등
+- ⚠️ **기존 파일을 같은 이름으로 교체하면 캐시됨** → 교체 시 파일명 변경 또는 `?v=` 갱신 (아래 배포/캐시 규칙)
 
 ## Google Play 배포 정보
 - **패키지명**: com.ggomzipapa.abcfrog
 - **현재 버전**: versionCode 8 (프로덕션 라이브)
-- **서명 키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
-- **서명 키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
+- **서명키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
+- **서명키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
+- **서명키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
 - **개발자 계정 ID**: 8921467846864051720
-- **개인정보처리방침 URL**: https://kimsrain3-rgb.github.io/ABC_FROG/privacy-policy.html
-- **연락처 이메일**: ccomzpapa@naver.com
-- **서명 키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
-- **assetlinks.json**: .well-known/assetlinks.json (GitHub Pages에서 서빙)
-- **상태**: ✅ **프로덕션 정식 출시됨 / 실유저 300명+ / versionCode 8 (2026-06-08 기준)**
-- ⚠️ **라이브 서비스 주의**: 앱이 GitHub Pages를 실시간 로딩하므로, `main` push = 즉시 전 유저 반영. 푸시 전 브라우저 검증 필수, 큰 변경은 신중히.
+- **개인정보처리방침**: https://kimsrain3-rgb.github.io/ABC_FROG/privacy-policy.html
+- **연락처**: ccomzpapa@naver.com
+- **assetlinks.json**: .well-known/assetlinks.json (GitHub Pages 서빙)
 
 ## 알려진 이슈
 - 파리 경계 처리 — 화면 밖으로 나가는 버그 반복 발생 이력
-- 반응형 전환 로직 — PC(1024px+)/모바일(768px-) 분기점 주의
+- 반응형 전환 — PC(1024px+)/모바일(768px-) 분기점 주의
 
-## 미처리 TODO (2026-06-11 코드점검 / Fable5 + Opus 교차검증)
-- [x] 🔴 `ptg()` 안전장치(`if(!ax)return`) 누락 → 오디오 없는 기기에서 혀쏘기 먹통 — **수정/배포 완료**
-- [x] 🟡 튜토리얼 데모 파리 탭 시 "우웩" 오답 반응 (정답글자 미설정 상태) — `oft`에 `gp!=='playing'` 가드 추가, **수정/배포 완료**
-- [ ] 🟡 나비/애벌레 혀(`isShooting`)와 게임 혀(`ia`)가 잠금변수 달라 동시탭 시 혀 겹침 글리치 (script.js:177/421)
-- [ ] 🟢 파리 먹힐 때 입 위치 고정값(0.5,0.38) — 4~5단계 뚱뚱 개구리 입(0.56)과 어긋남 (script.js:906)
-- [ ] 🟢 `wpSayWord`가 `new Audio()` 직접 사용 — `safeAudio()`로 통일 권장 (script.js:1963, try-catch로 위험은 낮음)
-- [x] 🟢 퍼즐 화면 즉시 뒤로가기 시 `buildPuzzle` 0.06초 재시도 루프가 안 멈춤 → 배터리 소모 — `'show'` 가드 추가, **수정/배포 완료**
-- [ ] ➕ **안드로이드(MainActivity.java)**: 오프라인 시 `onReceivedError` 비어있어 안내화면 미표시 → 깨진 에러화면 노출. 웹 아닌 앱 수정 → **Play Console 업데이트 필요** (수채화/보이스 업데이트 때 묶어 처리)
-- [ ] 🟢 **`buildPuzzle` 비동기 race (잠재)**: PNG 과일 마스크 계산용 `_im.onload` 콜백이 전역 `wpCurrent`를 참조 → 퍼즐 빌드가 겹쳐 호출되면 엉뚱한 과일이 뜸. 실제 플레이는 한 번에 하나라 미발생, 우선순위 낮음. 고치려면 onload에 빌드 대상 fruit key를 클로저로 고정 (script.js:1617~1636). (※ 참고: 퍼즐 조각이 '깨진 이미지'로 보이면 거의 항상 **로컬 테스트 서버 꺼짐**이 원인 — 코드 버그 아님. 라이브/서버켜짐 상태선 정상)
-- [ ] 🔴🔐 **서명키 비밀번호 교체 (보안)**: `twa-project/app/build.gradle`에 `storePassword`/`keyPassword`가 `abcfrog123` 평문으로 박혀 있고, 이 파일이 Public 저장소에 이미 노출됨(깃 히스토리 포함). **Secrets로 옮기는 것만으론 부족** — ① `keytool`로 키스토어 비밀번호를 새 비번으로 변경 → ② GitHub Secret(KEYSTORE_BASE64/비번) 재등록 → ③ build.gradle은 평문 제거하고 환경변수/Secret 참조 방식으로 변경 → ④ AAB 재빌드·검증. (주의: 서명키 자체는 교체 불가 — 비밀번호만 교체. 같은 키로 계속 서명해야 Play 업데이트 가능)
+## 미처리 TODO (미완료만 — 완료분은 docs/CHANGELOG.md)
+- [ ] 🟡 나비/애벌레 혀(`isShooting`)와 게임 혀(`ia`) 잠금변수 달라 동시탭 시 혀 겹침 글리치
+- [ ] 🟢 파리 먹힐 때 입 위치 고정값(0.5,0.38) — 4~5단계 뚱뚱 개구리 입(0.56)과 어긋남
+- [ ] 🟢 `wpSayWord`가 `new Audio()` 직접 사용 → `safeAudio()`로 통일 권장 (위험 낮음)
+- [ ] 🟢 `buildPuzzle` 비동기 race(잠재): `_im.onload`가 전역 `wpCurrent` 참조 → 빌드 겹치면 엉뚱한 과일. 실플레이 미발생, 우선순위 낮음. (※ 퍼즐이 '깨진 이미지'면 거의 항상 **로컬 테스트서버 꺼짐**이 원인, 코드버그 아님)
+- [ ] ➕ **안드로이드(MainActivity.java)**: 오프라인 시 `onReceivedError` 비어있어 깨진 에러화면 노출 → 안내화면 추가 (Play 업데이트 때 묶어 처리)
+- [ ] 🔴🔐 **서명키 비밀번호 교체**: `twa-project/app/build.gradle`에 `abcfrog123` 평문 노출(깃 히스토리 포함). keytool로 비번 변경 → Secret 재등록 → build.gradle 평문 제거(환경변수 참조) → AAB 재빌드. (서명키 자체는 교체 불가, 비번만)
+- [ ] 🔵 refactor 브랜치(`data-word-fruits.js` 데이터 분리) main 병합 — 검증 완료, always-fresh 방식과 정합 확인 후 머지
+- [ ] 🔵 **동물 퍼즐 만들기**: 배경 통째 네모 직소퍼즐 + 이름 스펠링 + 보상(영상). 카테고리 화면 Animal 카드 잠금해제부터. 장면그림(코끼리 숲 준비됨/사자는 배경버전 필요) + 보상영상 결정 대기
 
 ## 협업 규칙
 
@@ -141,7 +85,6 @@ ABC_FROG/
 
 ### Google Play 제출 규칙 (필수 준수)
 **절대 "검토 시작"을 바로 누르지 말 것!** 반드시 프리 런치 보고서를 먼저 확인한다.
-
 1. AAB 빌드 (GitHub Actions → Build AAB)
 2. Play Console → 비공개 테스트 → AAB 업로드
 3. **"저장"만** 누르기 (❌ "검토 시작" 누르지 말기)
@@ -150,22 +93,20 @@ ABC_FROG/
 6. 크래시 있으면 → 로그 확인 → 수정 → 1번부터 다시
 
 ### Google Play 안정성 규칙 (WebView 앱 — 필수 준수)
-v1.0.4부터 TWA 제거, 순수 WebView 앱으로 전환됨. JS 에러 = 앱 크래시 = 심사 거부이므로 **방어적 프로그래밍 필수**.
-
-1. **전역 에러 핸들러 유지** — `window.onerror` + `unhandledrejection`이 script.js 최상단에 있음. 절대 제거하지 말 것
-2. **Audio는 반드시 `safeAudio()` 사용** — `new Audio()` 직접 호출 금지. 로드 실패 시 더미 객체를 반환하는 `safeAudio()` 래퍼를 통해서만 생성
-3. **SpeechSynthesis는 try-catch 필수** — `sp()` 함수 안에서 처리됨. TTS 없는 기기에서 크래시 방지
-4. **AudioContext 사용 전 null 체크** — `ea()` 후 `if(!ax) return;` 패턴 유지. 오실레이터 함수(`pt`, `psg`, `pbr`) 모두 적용됨
-5. **게임 루프(`gl`) try-catch 유지** — `uf()` 호출을 try-catch로 감싸서 한 프레임 에러가 전체 루프를 멈추지 않도록
-6. **브라우저 API 사용 전 존재 확인** — `'speechSynthesis' in window`, `window.AudioContext || window.webkitAudioContext` 등 반드시 체크 후 사용
-7. **새 기능 추가 시** — `.play()`, `.speak()`, DOM API 등 실패 가능한 호출은 항상 `.catch(()=>{})` 또는 try-catch로 감쌀 것
+순수 WebView 앱이라 **JS 에러 = 앱 크래시 = 심사 거부.** 방어적 프로그래밍 필수.
+1. **전역 에러 핸들러 유지** — `window.onerror` + `unhandledrejection`(script.js 최상단). 절대 제거 금지
+2. **Audio는 반드시 `safeAudio()` 사용** — `new Audio()` 직접 호출 금지 (실패 시 더미 객체 반환 래퍼)
+3. **SpeechSynthesis는 try-catch 필수** — `sp()` 안에서 처리. TTS 없는 기기 크래시 방지
+4. **AudioContext 사용 전 null 체크** — `ea()` 후 `if(!ax) return;` 패턴 유지 (`pt`,`psg`,`pbr`)
+5. **게임 루프(`gl`) try-catch 유지** — `uf()` 호출 감싸 한 프레임 에러가 전체 루프 안 멈추게
+6. **브라우저 API 사용 전 존재 확인** — `'speechSynthesis' in window`, `window.AudioContext||window.webkitAudioContext` 등
+7. **새 기능 추가 시** — `.play()`,`.speak()`,DOM API 등 실패 가능한 호출은 항상 `.catch(()=>{})` 또는 try-catch
 
 ### 배포 / 캐시 규칙 (필수 준수)
-> 앱은 WebView(`setCacheMode(LOAD_DEFAULT)`)로 GitHub Pages를 로드 → 캐시 때문에 "수정했는데 폰엔 옛 코드"가 반복 발생했던 영역. **방법이 아니라 목적을 지킬 것.**
-
-1. **목적(불변)**: 푸시하면 **유저가 반드시 최신을 받아야 한다.** 현재 방법 = `index.html`이 `document.write`로 `script.js?b=Date.now()` / `style.css?b=Date.now()` 를 붙여 **매 실행 always-fresh** 로 로드(커밋 aad03fb~). **이 로더를 정적 `?v=`로 되돌리지 말 것.** 더 나은 방법(빌드 도구 등)으로 바꾸려면 → 새 방법도 "푸시 후 최신 보장"을 충족하고 **실제 폰에서 검증**을 통과해야 함.
-2. **그림·소리 교체 주의**: always-fresh는 **코드(script.js/css)만** 커버함. 이미지/사운드를 **같은 파일명으로 교체**하면(예: `fruit_apple.png?v=1` 그대로) 여전히 캐시됨 → 교체 시 **파일명을 바꾸거나 그 파일의 `?v=` 번호를 올릴 것.** (새 파일명 추가는 문제 없음)
-3. **검증은 반드시 실제 폰에서**: 캐시는 여러 겹 — **"한 겹 막았다 = 다 막았다"가 아님**(과거 서비스워커만 없애고 다 됐다고 과장 → HTTP캐시 층에서 재발). 로컬 강력새로고침(Ctrl+Shift+R)은 캐시를 숨겨서 멀쩡해 보이므로, 최종 검증은 **실제 폰에서 앱 완전종료→재시작** 후 확인.
+> 앱이 WebView(`setCacheMode(LOAD_DEFAULT)`)로 GitHub Pages를 로드 → 캐시 때문에 "수정했는데 폰엔 옛 코드"가 반복됐던 영역. **방법이 아니라 목적을 지킬 것.**
+1. **목적(불변)**: 푸시하면 **유저가 반드시 최신을 받아야 한다.** 현재 방법 = `index.html`이 `document.write`로 `script.js?b=Date.now()`/`style.css?b=Date.now()` 붙여 **매 실행 always-fresh** 로드. **이 로더를 정적 `?v=`로 되돌리지 말 것.** 더 나은 방법으로 바꾸려면 새 방법도 "푸시 후 최신 보장" + **실제 폰 검증** 통과해야 함.
+2. **그림·소리 교체 주의**: always-fresh는 **코드(js/css)만** 커버. 이미지/사운드를 **같은 파일명으로 교체**하면 여전히 캐시됨 → 파일명 변경 또는 `?v=` 갱신. (새 파일명 추가는 OK)
+3. **검증은 반드시 실제 폰에서**: 캐시는 여러 겹 — "한 겹 막았다 = 다 막았다" 아님. 로컬 강력새로고침은 캐시를 숨김 → 최종 검증은 **실제 폰 앱 완전종료→재시작** 후. (※ 오래 깔린 기기는 캐시/옛 서비스워커로 며칠 늦게 반영될 수 있음. 즉시 100% 보장하려면 MainActivity에 캐시 무력화 넣어 Play 업데이트 — 1회성)
 
 ### 세션 시작 프로토콜
 1. 이 CLAUDE.md 읽기 (자동)
@@ -175,10 +116,15 @@ v1.0.4부터 TWA 제거, 순수 WebView 앱으로 전환됨. JS 에러 = 앱 크
 
 ### 작업 완료 시
 1. 코드 수정 완료
-2. git commit & push
-3. CLAUDE.md의 "진행 상황" 업데이트
+2. git commit & push (script.js/style.css 고쳤으면 배포/캐시 규칙 확인)
+3. **완료 기록은 `docs/CHANGELOG.md`에.** CLAUDE.md "현재 상태"는 한두 줄만 갱신 (← CLAUDE.md 비대화 방지)
 
 ### 의사결정
 - 기획 방향 변경 → 반드시 사용자 확인 후 진행
 - 버그 수정, 코드 정리 → Claude가 바로 진행 가능
 - 새 기능 추가 → 사용자와 범위 합의 후 진행
+
+### 문서 관리 원칙
+- CLAUDE.md = **살아있는 규칙 + 현재 상태(요약) + 미완료 TODO**만. 길이를 짧게 유지(규칙이 묻히지 않게).
+- 완료 이력·옛 버전 → `docs/CHANGELOG.md`
+- 규칙이 **코드로 강제되면**(예: 캐시 always-fresh) CLAUDE.md엔 핵심 한 줄만, 자세한 건 코드/메모리에
