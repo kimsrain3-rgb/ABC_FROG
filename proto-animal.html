@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Animal Puzzle — Jigsaw Drag Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
 <style>
   html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;display:flex;flex-direction:column;background:#fff;overflow:hidden}
@@ -11,7 +12,7 @@
   #title{position:absolute;top:8px;left:0;width:100%;text-align:center;font-weight:700;color:#3a5a2a;font-size:15px;z-index:5;text-shadow:0 1px 2px #fff}
   #tray{position:relative;flex:1 1 auto;background:#c3cdd2;border-top:3px solid #aab6bc}
   #traylabel{position:absolute;top:4px;left:0;width:100%;text-align:center;font-size:11px;color:#5d6a70;font-weight:600;pointer-events:none}
-  .ghost{position:absolute;opacity:.20;filter:saturate(.8);pointer-events:none}
+  .ghost{position:absolute;opacity:.30;filter:saturate(.8);pointer-events:none}
   #slots{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
   #layer{position:fixed;inset:0;pointer-events:none}
   .piece{position:absolute;transform-origin:top left;pointer-events:auto;cursor:grab;touch-action:none;
@@ -21,13 +22,22 @@
   #done{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
         background:rgba(255,255,255,.0);z-index:50;pointer-events:none}
   #done .msg{background:#fff;border:4px solid #8bc34a;border-radius:20px;padding:18px 26px;font-size:24px;font-weight:800;color:#558b2f;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-  /* 완성 시 단어 스펠링(과일 퍼즐과 동일 스타일) */
-  #word{position:fixed;left:50%;top:31%;transform:translate(-50%,-50%);display:flex;gap:1px;z-index:55;pointer-events:none;white-space:nowrap}
-  #word .wl{font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive;font-weight:900;line-height:1;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.3),0 0 3px #B25800;opacity:0;transform:scale(0)}
-  #word .wl.show{animation:wpop .42s cubic-bezier(.175,.885,.32,1.275) forwards}
-  @keyframes wpop{0%{opacity:0;transform:scale(0) rotate(-15deg)}70%{opacity:1;transform:scale(1.3) rotate(6deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
-  #word.shout{animation:wshout .6s cubic-bezier(.175,.885,.32,1.275)}
-  @keyframes wshout{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.18)}100%{transform:translate(-50%,-50%) scale(1.08)}}
+  /* 완성 시 단어 스펠링 — 과일 퍼즐과 동일 (style.css .wp-word-h .wl 복제) */
+  #word{position:fixed;left:50%;top:31%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:1px;z-index:55;pointer-events:none;white-space:nowrap}
+  #word .wl{display:inline-block;font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive;font-weight:900;line-height:1;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;opacity:0;transform:scale(0)}
+  #word .wl.show{animation:wpLetterPop .42s cubic-bezier(.175,.885,.32,1.275) forwards}
+  @keyframes wpLetterPop{0%{opacity:0;transform:scale(0) rotate(-18deg)}70%{opacity:1;transform:scale(1.3) rotate(6deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+  #word.shout{animation:wpWordShout .6s cubic-bezier(.175,.885,.32,1.275)}
+  @keyframes wpWordShout{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.25)}100%{transform:translate(-50%,-50%) scale(1.1)}}
+  #word.shout .wl{opacity:1!important;transform:none;animation:wpSparkle 1.1s ease-in-out infinite}
+  @keyframes wpSparkle{0%,100%{color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25)}50%{color:#FFF59D;text-shadow:0 0 12px #FFD54F,0 0 26px #FFEB3B,3px 3px 0 #F57F17}}
+  /* 완성 후 그 동물 영상 — 과일 게임 엔딩 영상 방식(흰 덮개 anti-flash + 탭 스킵 + 정지그림) */
+  .av-video{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:transparent;z-index:70;cursor:pointer}
+  .av-video video,.av-video .av-still{width:100%;height:100%;object-fit:cover}   /* 꽉 채움 → 양옆 흰 여백 제거(살짝 확대되며 넘치는 부분만 잘림) */
+  .av-video video{opacity:0;transition:opacity .3s ease}   /* 첫 프레임 준비되면 페이드인 → 흰/검은 화면 안 스침 */
+  .av-replay{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) scale(0);width:64px;height:64px;border-radius:50%;border:4px solid #fff;background:linear-gradient(180deg,#81C784,#4CAF50);color:#fff;font-size:30px;cursor:pointer;box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);z-index:80;opacity:0}
+  .av-replay.show{opacity:1;transform:translateX(-50%) scale(1);transition:opacity .3s,transform .3s cubic-bezier(.175,.885,.32,1.275)}
+  .av-replay:active{transform:translateX(-50%) scale(.92)}
 </style>
 </head>
 <body>
@@ -55,26 +65,117 @@
     g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.76,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.11);}catch(e){} }
   var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=0.25;     // 과일 퍼즐과 동일 볼륨
-  var bgmOn=false; function startBgm(){ if(bgmOn)return; bgmOn=true; try{var p=bgm.play(); if(p&&p.catch)p.catch(function(){});}catch(e){} actx(); }
+  var bgmOn=false; function startBgm(){ if(bgmOn)return; bgmOn=true; try{var p=bgm.play(); if(p&&p.catch)p.catch(function(){});}catch(e){} actx();
+    try{ WORD.split('').forEach(loadLetter); }catch(e){} }   // 글자 음성 미리 디코드(첫 글자 지연 방지)
   var muteBtn=document.getElementById('mute');
   if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
 
   // === 완성 시 스펠링 + 단어 읽기 (과일 퍼즐 방식) ===
   var WORD='ELEPHANT';
-  function playLetterSound(ch){ try{ var a=new Audio('assets/sounds/letter_'+ch.toLowerCase()+'.mp3'); a.volume=0.5; var p=a.play(); if(p&&p.catch)p.catch(function(){}); }catch(e){} }
-  function sayWord(){
+  function sayWord(){   // 단어 외치기: 넣어둔 mp3 우선, 없으면 TTS 폴백 (과일 퍼즐 wpSayWord 방식)
     var settled=false;
-    function tts(){ if(settled)return; settled=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance('Elephant'); u.lang='en-US'; u.rate=0.85; u.pitch=1.1; u.volume=1; speechSynthesis.speak(u); } }catch(e){} }
-    try{ var a=new Audio('assets/sounds/voice_elephant.mp3'); a.volume=1;   // 녹음 파일 있으면 그걸로, 없으면 TTS
+    function tts(){ if(settled)return; settled=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance('Elephant'); u.lang='en-US'; u.rate=0.85; u.pitch=1.15; u.volume=1; speechSynthesis.speak(u); } }catch(e){} }
+    try{ var a=new Audio('assets/sounds/sound_elefant.mp3'); a.volume=1;   // 사운드 폴더에 넣어둔 elephant mp3
       a.addEventListener('error',tts); a.play().then(function(){settled=true;}).catch(tts);
     }catch(e){ tts(); }
   }
+  // 스펠링: 글자 음성의 앞/뒤 묵음을 '자동 감지'해 잘라내고 발음만 이어붙임.
+  //  → 발음 길이·음정은 그대로 두고 '간격(죽은 묵음)'만 줄여 빠르고 자연스러움. 모든 단어 자동 적용.
+  //  ▶ LETTER_GAP: 발음과 발음 사이 쉬는 간격(ms). 키우면 또박또박, 줄이면 더 빠름.
+  var LETTER_GAP=90;
+  var _lbuf={};   // 글자별 {buffer,start,end} 캐시(중복 디코드 방지)
+  function loadLetter(ch){
+    ch=ch.toLowerCase(); if(_lbuf[ch]) return _lbuf[ch];
+    _lbuf[ch]=fetch('assets/sounds/letter_'+ch+'.mp3').then(function(r){return r.arrayBuffer();})
+      .then(function(ab){ var c=actx(); return new Promise(function(res,rej){ c.decodeAudioData(ab,res,rej); }); })
+      .then(function(buf){
+        var d=buf.getChannelData(0), sr=buf.sampleRate, win=Math.floor(sr*0.01), thr=0.015, first=-1, last=0;
+        for(var i=0;i<d.length;i+=win){ var s=0,n=0; for(var j=i;j<i+win&&j<d.length;j++){s+=d[j]*d[j];n++;}
+          if(Math.sqrt(s/n)>thr){ last=i+win; if(first<0)first=i; } }
+        return { buffer:buf,
+          start:(first<0?0:Math.max(0,first/sr-0.03)),       // 발음 시작(앞 30ms 여유)
+          end:Math.min(buf.duration,last/sr+0.04) };          // 발음 끝(뒤 40ms 여유)
+      }).catch(function(){ return null; });
+    return _lbuf[ch];
+  }
   function spellThenSay(){
-    var spans=document.querySelectorAll('#word .wl'); var i=0;
-    (function nextL(){
-      if(i>=spans.length){ document.getElementById('word').classList.add('shout'); setTimeout(sayWord,300); return; }
-      spans[i].classList.add('show'); playLetterSound(WORD[i]); i++; setTimeout(nextL, 360);
-    })();
+    var wrap=document.getElementById('word');
+    var spans=wrap.querySelectorAll('.wl');
+    var word=WORD.split('');
+    function afterLetters(){ wrap.classList.add('shout'); sayWord();   // 단어 강조 + 글자 반짝 + 외치기
+      setTimeout(playAnimalVideo, 1800); }                              // 잠깐 뒤 그 동물 영상
+    function playLetter(i){
+      if(i>=word.length){ setTimeout(afterLetters, 300); return; }
+      spans[i].classList.add('show');
+      loadLetter(word[i]).then(function(info){
+        var dur=600;   // 디코드 실패 시 폴백
+        if(info){ try{ var c=actx(), src=c.createBufferSource(), g=c.createGain();
+            src.buffer=info.buffer; g.gain.value=0.5; src.connect(g); g.connect(c.destination);
+            src.start(0, info.start, info.end-info.start);    // 묵음 잘라낸 발음 구간만 재생
+            dur=(info.end-info.start)*1000;
+          }catch(e){ try{ var a=new Audio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
+        } else { try{ var a2=new Audio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
+        setTimeout(function(){ playLetter(i+1); }, dur+LETTER_GAP);   // 발음 끝나면 GAP만 쉬고 다음
+      });
+    }
+    setTimeout(function(){ playLetter(0); }, 450);        // 완성 직후 잠깐 뒤 시작
+  }
+
+  // === 완성 후 그 동물 영상 재생 (과일 게임 wpPlayEnding 방식) ===
+  // 동물 추가 시 ANIMAL_ORDER에 순서대로 넣고 VIDEO에 경로 추가. 마지막 동물 영상 뒤에만 다시하기 버튼,
+  // 그 외에는 다음 동물 퍼즐로 자동 진행(현재는 코끼리 1마리뿐이라 바로 다시하기 버튼).
+  var ANIMAL_ORDER=['elephant'];
+  var animalIdx=0;
+  var VIDEO={ elephant:'assets/images/elefant_movie.mp4' };
+  function playAnimalVideo(){
+    var cur=ANIMAL_ORDER[animalIdx];
+    var isLast=animalIdx>=ANIMAL_ORDER.length-1;
+    var done=false, ov=null, safetyId=0;
+    function showReplay(){
+      if(document.getElementById('avReplay')) return;
+      var rb=document.createElement('button'); rb.id='avReplay'; rb.className='av-replay'; rb.textContent='🔄';
+      rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); location.reload(); };  // 프로토: 처음부터 다시
+      document.body.appendChild(rb);
+      setTimeout(function(){ rb.classList.add('show'); }, 300);
+    }
+    function finish(){ if(done)return; done=true;
+      try{ clearTimeout(safetyId); }catch(_){}
+      // 영상을 정지그림(캔버스)으로 교체 → 멈춘 영상 미세 떨림 제거
+      try{ if(ov){ var fv=ov.querySelector('video');
+        if(fv){ try{fv.pause();}catch(_){}
+          try{ if(fv.videoWidth){ var c=document.createElement('canvas'); c.width=fv.videoWidth; c.height=fv.videoHeight; c.className='av-still'; c.getContext('2d').drawImage(fv,0,0,c.width,c.height); ov.insertBefore(c,fv); } }catch(_){}
+          fv.style.display='none';
+        }
+      } }catch(_){}
+      if(isLast) showReplay();
+      // else: 동물 추가되면 여기서 다음 동물 퍼즐 빌드(animalIdx++ 후 재시작)
+    }
+    try{
+      ov=document.createElement('div'); ov.className='av-video'; ov.id='avVideo';
+      var vid=document.createElement('video');
+      vid.src=VIDEO[cur];
+      vid.setAttribute('playsinline',''); vid.playsInline=true;     // iOS 전체화면 강제 방지
+      vid.controls=false; vid.preload='auto'; vid.volume=1;          // 영상 자체 소리 재생(무음 아님)
+      ov.appendChild(vid);
+      // 덮개 없음: 로딩 동안엔 뒤의 완성된 퍼즐 화면이 그대로 보이고, 영상은 첫 프레임 나올 때 페이드인
+      document.body.appendChild(ov);
+      ov.addEventListener('click', finish);                          // 탭하면 건너뛰기
+      vid.addEventListener('ended', finish);
+      vid.addEventListener('error', finish);
+      // 영상 길이에 맞춰 안전장치 재설정(짧은 영상이 잘리지 않게)
+      vid.addEventListener('loadedmetadata', function(){ try{ clearTimeout(safetyId); safetyId=setTimeout(finish, (vid.duration||10)*1000+3000); }catch(_){} });
+      var shown=false;
+      function reveal(){ if(shown)return; shown=true; vid.style.opacity='1'; }   // 실제 프레임 나오면 영상 페이드인
+      function chk(){ if(vid.currentTime>0 && !vid.paused) reveal(); }
+      vid.addEventListener('timeupdate', chk);
+      vid.addEventListener('playing', chk);
+      setTimeout(reveal, 1500);                                      // 안전장치: 1.5초 내 확인 못 해도 영상 표시
+      var pr=vid.play();
+      if(pr&&pr.catch) pr.catch(function(){                          // 소리 포함 자동재생이 막히면 → 음소거로 재시도(영상은 보이게)
+        try{ vid.muted=true; vid.defaultMuted=true; var p2=vid.play(); if(p2&&p2.catch) p2.catch(function(){ finish(); }); }catch(e){ finish(); }
+      });
+    }catch(e){ finish(); }
+    safetyId=setTimeout(finish, 12000);   // 초기 안전장치(메타데이터 로드되면 영상 길이 기준으로 교체됨)
   }
 
   var img=new Image();
@@ -196,7 +297,7 @@
         setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
         clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
         placedCount++;
-        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(spellThenSay, 400); }
+        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(spellThenSay, 300); }
       } else {
         p.el.style.zIndex='';
       }
