@@ -41,10 +41,12 @@
   // === 사운드 (프로토타입용 — 진짜 게임은 엔진 사운드 사용) ===
   var ac=null;
   function actx(){ try{ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac&&ac.state==='suspended') ac.resume(); }catch(e){} return ac; }
-  function blip(freq,dur,vol){ var c=actx(); if(!c)return; try{ var o=c.createOscillator(),g=c.createGain(); o.type='triangle'; o.frequency.value=freq; o.connect(g); g.connect(c.destination); var t=c.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol||0.3,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+(dur||0.18)); o.start(t); o.stop(t+(dur||0.18)+0.03);}catch(e){} }
-  function snapSound(){ blip(680,0.16,0.32); setTimeout(function(){blip(940,0.12,0.22);},70); }     // 딸깍
-  function winSound(){ [523,659,784,1047].forEach(function(f,i){ setTimeout(function(){blip(f,0.24,0.3);}, i*130); }); }
-  var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=0.18;
+  // 과일 퍼즐과 동일한 스냅 클릭음 (wpClick 복제: triangle 1500→440Hz, gain 0.76, ~0.11s)
+  function clickSound(){ var c=actx(); if(!c)return; try{ var t=c.currentTime; var o=c.createOscillator(),g=c.createGain();
+    o.type='triangle'; o.frequency.setValueAtTime(1500,t); o.frequency.exponentialRampToValueAtTime(440,t+0.05);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.76,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.11);}catch(e){} }
+  var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=0.25;     // 과일 퍼즐과 동일 볼륨
   var bgmOn=false; function startBgm(){ if(bgmOn)return; bgmOn=true; try{var p=bgm.play(); if(p&&p.catch)p.catch(function(){});}catch(e){} actx(); }
   var muteBtn=document.getElementById('mute');
   if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
@@ -163,9 +165,9 @@
         // 스냅
         p.el.classList.add('placed'); p.placed=true; p.el.style.zIndex=10;
         setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
-        snapSound();                                  // 딸깍 효과음
+        clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
         placedCount++;
-        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(function(){ winSound(); document.getElementById('done').style.display='flex'; }, 250); }
+        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(function(){ document.getElementById('done').style.display='flex'; }, 250); }
       } else {
         p.el.style.zIndex='';
       }
