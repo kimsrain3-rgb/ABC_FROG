@@ -21,6 +21,13 @@
   #done{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
         background:rgba(255,255,255,.0);z-index:50;pointer-events:none}
   #done .msg{background:#fff;border:4px solid #8bc34a;border-radius:20px;padding:18px 26px;font-size:24px;font-weight:800;color:#558b2f;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  /* 완성 시 단어 스펠링(과일 퍼즐과 동일 스타일) */
+  #word{position:fixed;left:50%;top:31%;transform:translate(-50%,-50%);display:flex;gap:1px;z-index:55;pointer-events:none;white-space:nowrap}
+  #word .wl{font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive;font-weight:900;line-height:1;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.3),0 0 3px #B25800;opacity:0;transform:scale(0)}
+  #word .wl.show{animation:wpop .42s cubic-bezier(.175,.885,.32,1.275) forwards}
+  @keyframes wpop{0%{opacity:0;transform:scale(0) rotate(-15deg)}70%{opacity:1;transform:scale(1.3) rotate(6deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+  #word.shout{animation:wshout .6s cubic-bezier(.175,.885,.32,1.275)}
+  @keyframes wshout{0%{transform:translate(-50%,-50%) scale(1)}45%{transform:translate(-50%,-50%) scale(1.18)}100%{transform:translate(-50%,-50%) scale(1.08)}}
 </style>
 </head>
 <body>
@@ -29,6 +36,7 @@
   <div id="tray"><div id="traylabel">drag pieces up to the picture ↑</div></div>
 </div>
 <div id="layer"></div>
+<div id="word"></div>
 <button id="mute" style="position:fixed;top:8px;right:8px;z-index:60;font-size:18px;background:rgba(255,255,255,.82);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)">🔊</button>
 <div id="done"><div class="msg">🐘 Long nose! Elephant!</div></div>
 <script>
@@ -51,6 +59,24 @@
   var muteBtn=document.getElementById('mute');
   if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
 
+  // === 완성 시 스펠링 + 단어 읽기 (과일 퍼즐 방식) ===
+  var WORD='ELEPHANT';
+  function playLetterSound(ch){ try{ var a=new Audio('assets/sounds/letter_'+ch.toLowerCase()+'.mp3'); a.volume=0.5; var p=a.play(); if(p&&p.catch)p.catch(function(){}); }catch(e){} }
+  function sayWord(){
+    var settled=false;
+    function tts(){ if(settled)return; settled=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance('Elephant'); u.lang='en-US'; u.rate=0.85; u.pitch=1.1; u.volume=1; speechSynthesis.speak(u); } }catch(e){} }
+    try{ var a=new Audio('assets/sounds/voice_elephant.mp3'); a.volume=1;   // 녹음 파일 있으면 그걸로, 없으면 TTS
+      a.addEventListener('error',tts); a.play().then(function(){settled=true;}).catch(tts);
+    }catch(e){ tts(); }
+  }
+  function spellThenSay(){
+    var spans=document.querySelectorAll('#word .wl'); var i=0;
+    (function nextL(){
+      if(i>=spans.length){ document.getElementById('word').classList.add('shout'); setTimeout(sayWord,300); return; }
+      spans[i].classList.add('show'); playLetterSound(WORD[i]); i++; setTimeout(nextL, 360);
+    })();
+  }
+
   var img=new Image();
   img.onload=function(){
     var bw=board.clientWidth, bh=board.clientHeight;
@@ -67,6 +93,9 @@
     var g=document.createElement('img'); g.src=IMG; g.className='ghost';
     g.style.cssText='left:'+imgX+'px;top:'+imgY+'px;width:'+coverW+'px;height:'+coverH+'px';
     board.appendChild(g);
+    // 단어 스펠링 글자 미리 생성(숨김 상태) — 폭에 맞춰 글자 크기 결정(긴 단어도 안 잘리게)
+    (function(){ var w=document.getElementById('word'); var fs=Math.min(bw*0.11, (bw*0.86)/(WORD.length*0.62));
+      w.style.fontSize=fs+'px'; w.innerHTML=''; WORD.split('').forEach(function(ch){ var s=document.createElement('span'); s.className='wl'; s.textContent=ch; w.appendChild(s); }); })();
 
     // knobs (이웃 공유)
     var knobH=[],knobV=[];
@@ -167,7 +196,7 @@
         setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
         clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
         placedCount++;
-        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(function(){ document.getElementById('done').style.display='flex'; }, 250); }
+        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(spellThenSay, 400); }
       } else {
         p.el.style.zIndex='';
       }
