@@ -7,7 +7,7 @@
 <style>
   html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;display:flex;flex-direction:column;background:#fff;overflow:hidden}
-  #board{position:relative;flex:0 0 62%;background:linear-gradient(180deg,#eef6e8,#e0ecd9)}
+  #board{position:relative;flex:0 0 62%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);overflow:hidden}
   #title{position:absolute;top:8px;left:0;width:100%;text-align:center;font-weight:700;color:#3a5a2a;font-size:15px;z-index:5;text-shadow:0 1px 2px #fff}
   #tray{position:relative;flex:1 1 auto;background:#c3cdd2;border-top:3px solid #aab6bc}
   #traylabel{position:absolute;top:4px;left:0;width:100%;text-align:center;font-size:11px;color:#5d6a70;font-weight:600;pointer-events:none}
@@ -40,15 +40,18 @@
   var img=new Image();
   img.onload=function(){
     var bw=board.clientWidth, bh=board.clientHeight;
-    var ir=img.width/img.height, rw,rh;
-    if(bw/bh>ir){ rh=bh*0.9; rw=rh*ir; } else { rw=bw*0.9; rh=rw/ir; }
-    var ox=(bw-rw)/2, oy=(bh-rh)/2;
+    var ir=img.width/img.height;
+    // 그림판을 꽉 채움(cover): 퍼즐 영역 = 보드 전체, 그림은 넘치는 쪽(위/아래)만 잘라 채움
+    var rw=bw, rh=bh, ox=0, oy=0;
+    var coverW, coverH;
+    if(bw/bh > ir){ coverW=bw; coverH=bw/ir; } else { coverH=bh; coverW=bh*ir; }
+    var imgX=ox-(coverW-rw)/2, imgY=oy-(coverH-rh)/2;
     var uw=rw/COLS, uh=rh/ROWS, mg=Math.min(uw,uh)*0.34;
     var trayTop=board.getBoundingClientRect().height;
 
     // ghost
     var g=document.createElement('img'); g.src=IMG; g.className='ghost';
-    g.style.cssText='left:'+ox+'px;top:'+oy+'px;width:'+rw+'px;height:'+rh+'px';
+    g.style.cssText='left:'+imgX+'px;top:'+imgY+'px;width:'+coverW+'px;height:'+coverH+'px';
     board.appendChild(g);
 
     // knobs (이웃 공유)
@@ -105,7 +108,7 @@
       el.innerHTML='<svg width="'+fullW+'" height="'+fullH+'" viewBox="0 0 '+fullW+' '+fullH+'">'
         +'<defs><clipPath id="cp'+idx+'" clipPathUnits="userSpaceOnUse"><path d="'+p.d+'"/></clipPath></defs>'
         +'<g transform="translate('+(-bx0)+' '+(-by0)+')">'
-        +'<image href="'+IMG+'" x="'+ox+'" y="'+oy+'" width="'+rw+'" height="'+rh+'" preserveAspectRatio="none" clip-path="url(#cp'+idx+')"/>'
+        +'<image href="'+IMG+'" x="'+imgX+'" y="'+imgY+'" width="'+coverW+'" height="'+coverH+'" preserveAspectRatio="none" clip-path="url(#cp'+idx+')"/>'
         +'</g></svg>';
       layer.appendChild(el);
       p.el=el; p.scale=st; p.placed=false;
