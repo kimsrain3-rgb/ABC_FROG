@@ -50,10 +50,17 @@
 <button id="mute" style="position:fixed;top:8px;right:8px;z-index:60;font-size:18px;background:rgba(255,255,255,.82);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)">🔊</button>
 <div id="done"><div class="msg">🐘 Long nose! Elephant!</div></div>
 <script>
-  var IMG='assets/images/animal_elifant1.jpeg';
+  // === 동물 목록 (에셋 들어오면 여기에 추가만 하면 자동으로 순서 진행) ===
+  // say=영상 전 외칠 단어, sound=직접 녹음 mp3(없으면 TTS 폴백)
+  var ANIMALS=[
+    { key:'elephant', word:'ELEPHANT', title:'🐘 Make the Elephant!', img:'assets/images/animal_elifant1.jpeg', video:'assets/images/elefant_movie.mp4', say:'Elephant', sound:'assets/sounds/sound_elefant.mp3' },
+    { key:'koala',    word:'KOALA',    title:'🐨 Make the Koala!',     img:'assets/images/animal_coala.jpg',      video:'assets/images/coala_movie.mp4',  say:'Koala',    sound:'' }
+  ];
+  var animalIdx=0;
+  function curA(){ return ANIMALS[animalIdx]; }
+
   var COLS=2, ROWS=3;
   var board=document.getElementById('board'), tray=document.getElementById('tray'), layer=document.getElementById('layer');
-  document.getElementById('title').textContent='🐘 Make the Elephant!';
   function rnd(){return Math.random()<0.5?1:-1;}
 
   // === 사운드 (프로토타입용 — 진짜 게임은 엔진 사운드 사용) ===
@@ -65,19 +72,18 @@
     g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.76,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.11);}catch(e){} }
   var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=0.25;     // 과일 퍼즐과 동일 볼륨
-  var bgmOn=false; function startBgm(){ if(bgmOn)return; bgmOn=true; try{var p=bgm.play(); if(p&&p.catch)p.catch(function(){});}catch(e){} actx();
-    try{ WORD.split('').forEach(loadLetter); }catch(e){} }   // 글자 음성 미리 디코드(첫 글자 지연 방지)
+  var bgmOn=false; function startBgm(){ if(bgmOn)return; bgmOn=true; try{var p=bgm.play(); if(p&&p.catch)p.catch(function(){});}catch(e){} actx(); }
   var muteBtn=document.getElementById('mute');
   if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
 
   // === 완성 시 스펠링 + 단어 읽기 (과일 퍼즐 방식) ===
-  var WORD='ELEPHANT';
-  function sayWord(){   // 단어 외치기: 넣어둔 mp3 우선, 없으면 TTS 폴백 (과일 퍼즐 wpSayWord 방식)
-    var settled=false;
-    function tts(){ if(settled)return; settled=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance('Elephant'); u.lang='en-US'; u.rate=0.85; u.pitch=1.15; u.volume=1; speechSynthesis.speak(u); } }catch(e){} }
-    try{ var a=new Audio('assets/sounds/sound_elefant.mp3'); a.volume=1;   // 사운드 폴더에 넣어둔 elephant mp3
-      a.addEventListener('error',tts); a.play().then(function(){settled=true;}).catch(tts);
-    }catch(e){ tts(); }
+  function sayWord(){   // 단어 외치기: 동물별 mp3 있으면 그걸로, 없으면 TTS 폴백
+    var A=curA(), settled=false;
+    function tts(){ if(settled)return; settled=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(A.say); u.lang='en-US'; u.rate=0.85; u.pitch=1.15; u.volume=1; speechSynthesis.speak(u); } }catch(e){} }
+    if(A.sound){ try{ var a=new Audio(A.sound); a.volume=1;
+        a.addEventListener('error',tts); a.play().then(function(){settled=true;}).catch(tts);
+      }catch(e){ tts(); }
+    } else tts();
   }
   // 스펠링: 글자 음성의 앞/뒤 묵음을 '자동 감지'해 잘라내고 발음만 이어붙임.
   //  → 발음 길이·음정은 그대로 두고 '간격(죽은 묵음)'만 줄여 빠르고 자연스러움. 모든 단어 자동 적용.
@@ -101,7 +107,7 @@
   function spellThenSay(){
     var wrap=document.getElementById('word');
     var spans=wrap.querySelectorAll('.wl');
-    var word=WORD.split('');
+    var word=curA().word.split('');
     function afterLetters(){ wrap.classList.add('shout'); sayWord();   // 단어 강조 + 글자 반짝 + 외치기
       setTimeout(playAnimalVideo, 1800); }                              // 잠깐 뒤 그 동물 영상
     function playLetter(i){
@@ -122,38 +128,39 @@
   }
 
   // === 완성 후 그 동물 영상 재생 (과일 게임 wpPlayEnding 방식) ===
-  // 동물 추가 시 ANIMAL_ORDER에 순서대로 넣고 VIDEO에 경로 추가. 마지막 동물 영상 뒤에만 다시하기 버튼,
-  // 그 외에는 다음 동물 퍼즐로 자동 진행(현재는 코끼리 1마리뿐이라 바로 다시하기 버튼).
-  var ANIMAL_ORDER=['elephant'];
-  var animalIdx=0;
-  var VIDEO={ elephant:'assets/images/elefant_movie.mp4' };
+  // 마지막 동물 영상 뒤에만 다시하기 버튼, 그 외에는 다음 동물 퍼즐로 자동 진행.
   function playAnimalVideo(){
-    var cur=ANIMAL_ORDER[animalIdx];
-    var isLast=animalIdx>=ANIMAL_ORDER.length-1;
+    var A=curA();
+    var isLast=animalIdx>=ANIMALS.length-1;
     var done=false, ov=null, safetyId=0;
     function showReplay(){
       if(document.getElementById('avReplay')) return;
       var rb=document.createElement('button'); rb.id='avReplay'; rb.className='av-replay'; rb.textContent='🔄';
-      rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); location.reload(); };  // 프로토: 처음부터 다시
+      rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); animalIdx=0; var o=document.getElementById('avVideo'); if(o)o.remove(); rb.remove(); buildAnimal(); };  // 처음 동물부터 다시
       document.body.appendChild(rb);
       setTimeout(function(){ rb.classList.add('show'); }, 300);
     }
     function finish(){ if(done)return; done=true;
       try{ clearTimeout(safetyId); }catch(_){}
-      // 영상을 정지그림(캔버스)으로 교체 → 멈춘 영상 미세 떨림 제거
-      try{ if(ov){ var fv=ov.querySelector('video');
-        if(fv){ try{fv.pause();}catch(_){}
-          try{ if(fv.videoWidth){ var c=document.createElement('canvas'); c.width=fv.videoWidth; c.height=fv.videoHeight; c.className='av-still'; c.getContext('2d').drawImage(fv,0,0,c.width,c.height); ov.insertBefore(c,fv); } }catch(_){}
-          fv.style.display='none';
-        }
-      } }catch(_){}
-      if(isLast) showReplay();
-      // else: 동물 추가되면 여기서 다음 동물 퍼즐 빌드(animalIdx++ 후 재시작)
+      if(isLast){
+        // 마지막 동물: 영상을 정지그림(캔버스)으로 교체 + 다시하기 버튼
+        try{ if(ov){ var fv=ov.querySelector('video');
+          if(fv){ try{fv.pause();}catch(_){}
+            try{ if(fv.videoWidth){ var c=document.createElement('canvas'); c.width=fv.videoWidth; c.height=fv.videoHeight; c.className='av-still'; c.getContext('2d').drawImage(fv,0,0,c.width,c.height); ov.insertBefore(c,fv); } }catch(_){}
+            fv.style.display='none';
+          }
+        } }catch(_){}
+        showReplay();
+      } else {
+        // 다음 동물로 자동 진행
+        try{ if(ov) ov.remove(); }catch(_){}
+        animalIdx++; buildAnimal();
+      }
     }
     try{
       ov=document.createElement('div'); ov.className='av-video'; ov.id='avVideo';
       var vid=document.createElement('video');
-      vid.src=VIDEO[cur];
+      vid.src=A.video;
       vid.setAttribute('playsinline',''); vid.playsInline=true;     // iOS 전체화면 강제 방지
       vid.controls=false; vid.preload='auto'; vid.volume=1;          // 영상 자체 소리 재생(무음 아님)
       ov.appendChild(vid);
@@ -178,8 +185,28 @@
     safetyId=setTimeout(finish, 12000);   // 초기 안전장치(메타데이터 로드되면 영상 길이 기준으로 교체됨)
   }
 
-  var img=new Image();
-  img.onload=function(){
+  // 조각 위치/크기 (전역 — 동물 바뀌어도 같은 핸들러 사용)
+  function setPos(p,l,t){ p.left=l; p.top=t; p.el.style.left=l+'px'; p.el.style.top=t+'px'; }
+  function setScale(p,s){ p.scale=s; p.el.style.transform='scale('+s+')'; }
+  var PZ=null;   // 현재 퍼즐 상태 {uw,uh,placedCount,total,drag}
+
+  // === 한 동물 퍼즐 빌드 (이미지 로드 후) — 동물 바뀔 때마다 호출 ===
+  function buildAnimal(){
+    var A=curA(), IMG=A.img, WORD=A.word;
+    // 이전 퍼즐 정리
+    var og=board.querySelector('.ghost'); if(og) og.remove();
+    var os=document.getElementById('slots'); if(os) os.remove();
+    Array.prototype.slice.call(layer.querySelectorAll('.piece')).forEach(function(el){ el.remove(); });
+    var wEl=document.getElementById('word'); wEl.classList.remove('shout'); wEl.innerHTML='';
+    var ovv=document.getElementById('avVideo'); if(ovv) ovv.remove();
+    var rbb=document.getElementById('avReplay'); if(rbb) rbb.remove();
+    document.getElementById('title').textContent=A.title;
+    PZ=null;
+    try{ if(bgmOn && !bgm.muted) bgm.play().catch(function(){}); }catch(e){}   // 음악 이어재생
+    try{ WORD.split('').forEach(loadLetter); }catch(e){}                        // 글자 음성 미리 디코드
+
+    var img=new Image();
+    img.onload=function(){
     var bw=board.clientWidth, bh=board.clientHeight;
     var ir=img.width/img.height;
     // 그림판을 꽉 채움(cover): 퍼즐 영역 = 보드 전체, 그림은 넘치는 쪽(위/아래)만 잘라 채움
@@ -269,44 +296,47 @@
       setScale(p, st);
     });
 
-    function setPos(p,l,t){ p.left=l; p.top=t; p.el.style.left=l+'px'; p.el.style.top=t+'px'; }
-    function setScale(p,s){ p.scale=s; p.el.style.transform='scale('+s+')'; }
+    // 이 동물 퍼즐 상태를 전역 드래그 핸들러에 연결
+    PZ={ uw:uw, uh:uh, placedCount:0, total:total, drag:null };
+    };
+    img.src=IMG;
+  }
 
-    // 드래그
-    var drag=null;
-    layer.addEventListener('pointerdown',function(e){
-      var el=e.target.closest('.piece'); if(!el||el._p.placed) return;
-      startBgm();                                   // 첫 터치에 배경음악 시작 + 오디오 잠금해제
-      var p=el._p; drag={p:p, sx:e.clientX, sy:e.clientY, ol:p.left, ot:p.top};
-      el.style.zIndex=999; el.style.cursor='grabbing';
-      try{el.setPointerCapture(e.pointerId);}catch(_){}
-      e.preventDefault();
-    });
-    layer.addEventListener('pointermove',function(e){
-      if(!drag) return;
-      setPos(drag.p, drag.ol+(e.clientX-drag.sx), drag.ot+(e.clientY-drag.sy));
-    });
-    function endDrag(e){
-      if(!drag) return; var p=drag.p; p.el.style.cursor='grab';
-      // 조각 중심(현재 스케일) vs 홈 중심(풀사이즈)
-      var cx=p.left+p.fullW*p.scale/2, cy=p.top+p.fullH*p.scale/2;
-      var hx=p.homeLeft+p.fullW/2, hy=p.homeTop+p.fullH/2;
-      if(Math.hypot(cx-hx,cy-hy) < Math.min(uw,uh)*0.55){
-        // 스냅
-        p.el.classList.add('placed'); p.placed=true; p.el.style.zIndex=10;
-        setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
-        clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
-        placedCount++;
-        if(placedCount===total){ try{bgm.pause();}catch(e){} setTimeout(spellThenSay, 300); }
-      } else {
-        p.el.style.zIndex='';
-      }
-      drag=null;
+  // === 드래그 (한 번만 등록, 현재 PZ 기준으로 동작) ===
+  layer.addEventListener('pointerdown',function(e){
+    if(!PZ) return;
+    var el=e.target.closest('.piece'); if(!el||el._p.placed) return;
+    startBgm();                                   // 첫 터치에 배경음악 시작 + 오디오 잠금해제
+    var p=el._p; PZ.drag={p:p, sx:e.clientX, sy:e.clientY, ol:p.left, ot:p.top};
+    el.style.zIndex=999; el.style.cursor='grabbing';
+    try{el.setPointerCapture(e.pointerId);}catch(_){}
+    e.preventDefault();
+  });
+  layer.addEventListener('pointermove',function(e){
+    if(!PZ||!PZ.drag) return;
+    setPos(PZ.drag.p, PZ.drag.ol+(e.clientX-PZ.drag.sx), PZ.drag.ot+(e.clientY-PZ.drag.sy));
+  });
+  function endDrag(e){
+    if(!PZ||!PZ.drag) return; var p=PZ.drag.p; p.el.style.cursor='grab';
+    // 조각 중심(현재 스케일) vs 홈 중심(풀사이즈)
+    var cx=p.left+p.fullW*p.scale/2, cy=p.top+p.fullH*p.scale/2;
+    var hx=p.homeLeft+p.fullW/2, hy=p.homeTop+p.fullH/2;
+    if(Math.hypot(cx-hx,cy-hy) < Math.min(PZ.uw,PZ.uh)*0.55){
+      // 스냅
+      p.el.classList.add('placed'); p.placed=true; p.el.style.zIndex=10;
+      setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
+      clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
+      PZ.placedCount++;
+      if(PZ.placedCount===PZ.total){ try{bgm.pause();}catch(e){} setTimeout(spellThenSay, 300); }
+    } else {
+      p.el.style.zIndex='';
     }
-    layer.addEventListener('pointerup',endDrag);
-    layer.addEventListener('pointercancel',endDrag);
-  };
-  img.src=IMG;
+    PZ.drag=null;
+  }
+  layer.addEventListener('pointerup',endDrag);
+  layer.addEventListener('pointercancel',endDrag);
+
+  buildAnimal();   // 시작!
 </script>
 </body>
 </html>
