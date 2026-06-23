@@ -78,7 +78,12 @@
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.11);}catch(e){} }
   var BGM_FULL=0.25, BGM_DUCK=0.20;   // 평소 / 음성·영상 구간(원래보다 20% 낮춤 — 음악 끊지 않고 이어감)
   var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=BGM_FULL;
-  var bgmOn=false; function startBgm(){ if(bgmOn)return; bgmOn=true; try{var p=bgm.play(); if(p&&p.catch)p.catch(function(){});}catch(e){} actx(); }
+  var bgmOn=false;
+  function startBgm(){ if(bgmOn)return; actx();   // 실제 재생 성공해야 bgmOn=true (막히면 다음 제스처에 재시도)
+    try{ var p=bgm.play(); if(p&&p.then){ p.then(function(){bgmOn=true;}).catch(function(){}); } else { bgmOn=true; } }catch(e){} }
+  // 화면 진입 즉시 음악: 자동재생 시도 + (모바일은 보통 막히니) 화면 첫 터치/클릭에 즉시 시작
+  function armBgm(){ startBgm();
+    ['pointerdown','touchstart','click','keydown'].forEach(function(ev){ document.addEventListener(ev, startBgm, {once:true, capture:true, passive:true}); }); }
   var muteBtn=document.getElementById('mute');
   if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
 
@@ -360,6 +365,7 @@
   layer.addEventListener('pointerup',endDrag);
   layer.addEventListener('pointercancel',endDrag);
 
+  armBgm();        // 진입 즉시 배경음악(자동재생 시도 + 첫 터치 폴백)
   buildAnimal();   // 시작!
 </script>
 </body>
