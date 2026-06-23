@@ -61,6 +61,7 @@
     { key:'koala',    word:'KOALA',    title:'🐨 Make the Koala!',     img:'assets/images/animal_coala.jpg',      video:'assets/images/koala.mp4',  say:'Koala',    sound:'assets/sounds/sound_koala.mp3', ghost:0.42 }
   ];
   var animalIdx=0;
+  var demoDone=false;   // 첫 퍼즐에서 조각 하나 스르륵 들어가는 시범 — 1회만
   function curA(){ return ANIMALS[animalIdx]; }
 
   var COLS=2, ROWS=3;
@@ -303,6 +304,24 @@
 
     // 이 동물 퍼즐 상태를 전역 드래그 핸들러에 연결
     PZ={ uw:uw, uh:uh, placedCount:0, total:total, drag:null };
+
+    // === 첫 퍼즐에서만: 조각 하나가 스르륵 제자리로 들어가는 시범(무슨 게임인지 보여주기) ===
+    if(!demoDone){ demoDone=true;
+      var demoP=list[Math.floor(list.length/2)];   // 가운데쯤 조각(동물 몸통/얼굴)
+      setTimeout(function(){
+        if(!demoP||demoP.placed) return;
+        demoP.el.style.pointerEvents='none';        // 시범 중엔 못 잡게
+        demoP.el.style.zIndex=500;
+        demoP.el.style.transition='left .8s cubic-bezier(.22,.61,.36,1),top .8s cubic-bezier(.22,.61,.36,1),transform .8s cubic-bezier(.22,.61,.36,1)';
+        setScale(demoP,1); setPos(demoP, demoP.homeLeft, demoP.homeTop);   // 트레이→제자리로 슈욱(+확대)
+        setTimeout(function(){
+          if(demoP.placed) return;
+          demoP.el.classList.add('placed'); demoP.placed=true; demoP.el.style.zIndex=10;
+          demoP.el.style.transition='';             // 원래 snap 트랜지션으로 복귀
+          clickSound(); PZ.placedCount++;           // 딸깍 + 1조각 완료 처리
+        }, 860);
+      }, 1000);   // 흩어진 조각 잠깐 보여준 뒤 시범 시작
+    }
     };
     img.src=IMG;
   }
