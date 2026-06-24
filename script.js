@@ -1883,6 +1883,22 @@ function buildPuzzle(key){
   });
 }
 
+// 글자 음성(letter_*.mp3)의 앞/뒤 묵음을 자동 감지해 잘라내고 발음만 이어붙이기 위한 캐시/로더
+// (동물 퍼즐 proto-animal.html과 동일 방식 — 발음 길이·음정 그대로, 죽은 묵음만 제거)
+var _wpLbuf={};
+function wpLoadLetter(ch){
+  ch=ch.toLowerCase(); if(_wpLbuf[ch]) return _wpLbuf[ch];
+  _wpLbuf[ch]=fetch('assets/sounds/letter_'+ch+'.mp3').then(function(r){return r.arrayBuffer();})
+    .then(function(ab){ ea(); if(!ax) return null; return new Promise(function(res,rej){ ax.decodeAudioData(ab,res,rej); }); })
+    .then(function(buf){ if(!buf) return null;
+      var d=buf.getChannelData(0), sr=buf.sampleRate, win=Math.floor(sr*0.01), thr=0.015, first=-1, last=0;
+      for(var i=0;i<d.length;i+=win){ var s=0,n=0; for(var j=i;j<i+win&&j<d.length;j++){s+=d[j]*d[j];n++;}
+        if(Math.sqrt(s/n)>thr){ last=i+win; if(first<0)first=i; } }
+      return { buffer:buf, start:(first<0?0:Math.max(0,first/sr-0.03)), end:Math.min(buf.duration,last/sr+0.04) };
+    }).catch(function(){ return null; });
+  return _wpLbuf[ch];
+}
+
 function wpComplete(){
   try{gtag('event','word_puzzle_complete',{word:wpCurrent});}catch(e){}
   var data=WP_WORDS[wpCurrent];
@@ -1926,24 +1942,23 @@ function wpComplete(){
       setTimeout(function(){ wpPlayEnding(stage); }, 1800);
     }
   }
-  // 글자 간격을 '균일'하게: 글자마다 같은 간격(LETTER_INTERVAL)으로 진행하되,
-  // 그보다 긴 글자(E 등)만 안 잘리게 끝날 때까지 더 기다림 → PP 등도 다른 글자와 같은 리듬
-  var SPEED=3.0;                                        // 스펠링 빠르게: 음성 톤은 원래대로, '간격'만 단축 (1.5→1.7→2.2→2.5→2.8→3.0, 사실상 한계)
-  var LETTER_INTERVAL=Math.round(950/SPEED), LETTER_GAP=Math.round(70/SPEED);
+  // === 글자 음성의 앞/뒤 묵음을 자동 감지해 잘라내고 발음만 이어붙임 (동물 퍼즐과 동일 속도감) ===
+  //  발음 길이·음정은 그대로, '죽은 묵음'만 제거 → 빠르고 자연스러움. ▶ 속도는 LETTER_GAP만 조절.
+  var LETTER_GAP=90;
+  word.forEach(function(ch){ wpLoadLetter(ch); });      // 미리 디코드(첫 글자 지연 방지)
   function playLetter(i){
-    if(i>=word.length){ setTimeout(afterLetters, 320); return; }
+    if(i>=word.length){ setTimeout(afterLetters, 300); return; }
     spans[i].classList.add('show');
-    var t0=performance.now(), advanced=false;
-    function go(){ if(advanced)return; advanced=true; playLetter(i+1); }
-    var fb=setTimeout(go, 1600);                        // onended가 안 와도 진행(안전장치)
-    try{
-      var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5;   // 단어 음성(1.0)이 글자의 2배로 들리도록 글자는 절반
-      a.onended=function(){ clearTimeout(fb);
-        var el=performance.now()-t0;
-        setTimeout(go, Math.max(LETTER_INTERVAL-el, LETTER_GAP));   // 짧은 글자는 간격 채우고, 긴 글자는 GAP만
-      };
-      var pr=a.play(); if(pr&&pr.catch) pr.catch(function(){});
-    }catch(e){}
+    wpLoadLetter(word[i]).then(function(info){
+      var dur=600;   // 디코드 실패 시 폴백
+      if(info && ax){ try{ var src=ax.createBufferSource(), g=ax.createGain();
+          src.buffer=info.buffer; g.gain.value=0.5; src.connect(g); g.connect(ax.destination);
+          src.start(0, info.start, info.end-info.start);   // 묵음 잘라낸 발음 구간만 재생
+          dur=(info.end-info.start)*1000;
+        }catch(e){ try{ var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
+      } else { try{ var a2=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
+      setTimeout(function(){ playLetter(i+1); }, dur+LETTER_GAP);   // 발음 끝나면 GAP만 쉬고 다음
+    });
   }
   setTimeout(function(){ playLetter(0); }, 450);        // 완성 직후 잠깐 뒤 시작
 }
