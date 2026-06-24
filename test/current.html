@@ -26,7 +26,7 @@
   .ghost{position:absolute;opacity:.30;filter:saturate(.8);pointer-events:none}
   #slots{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
   #layer{position:fixed;inset:0;pointer-events:none}
-  .piece{position:absolute;transform-origin:top left;pointer-events:auto;cursor:grab;touch-action:none;
+  .piece{position:absolute;transform-origin:top left;pointer-events:auto;cursor:grab;touch-action:none;z-index:20;
          filter:drop-shadow(0 3px 4px rgba(0,0,0,.4));transition:filter .15s}
   .piece.placed{pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.2));transition:left .18s,top .18s,transform .18s}
   .piece svg{display:block;overflow:visible}
@@ -370,7 +370,7 @@
       PZ.placedCount++;
       if(PZ.placedCount===PZ.total){ try{bgm.volume=BGM_DUCK;}catch(e){} setTimeout(spellThenSay, 300); }   // 음악 끊지 않고 볼륨만 낮춤(스펠링·영상 구간 내내 이어짐)
     } else {
-      p.el.style.zIndex='';
+      p.el.style.zIndex=20;   // 안 맞춘 채 내려놔도 맞춰진 조각(10) 위에 유지 (과일 퍼즐 방식)
     }
     PZ.drag=null;
   }
