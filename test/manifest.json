@@ -1,0 +1,17 @@
+{
+  "name": "ABC Frog TEST",
+  "short_name": "Frog TEST",
+  "description": "ABC Frog 테스트 환경 (홈화면 추가 시 전체화면, 항상 최신 테스트본)",
+  "start_url": "/ABC_FROG/test/",
+  "scope": "/ABC_FROG/test/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#4CAF50",
+  "theme_color": "#4CAF50",
+  "icons": [
+    { "src": "../assets/icons/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../assets/icons/icon-192x192-maskable.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "../assets/icons/icon-512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "../assets/icons/icon-512x512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

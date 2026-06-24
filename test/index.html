@@ -8,6 +8,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ABC Frog (TEST)</title>
 <meta name="theme-color" content="#4CAF50">
+<!-- 홈 화면에 추가하면 라이브 앱처럼 전체화면(주소창 없음) → 크기·글자 라이브와 동일 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABC Frog TEST">
+<link rel="manifest" href="test/manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
 <!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기 (style.css는 라이브 공유) -->
 <script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>
 </head>
