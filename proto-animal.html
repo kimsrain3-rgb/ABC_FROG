@@ -55,12 +55,16 @@
   // say=영상 전 외칠 단어, sound=직접 녹음 mp3(없으면 TTS 폴백)
   var ANIMALS=[
     // ghost = 밑그림 투명도(기본 0.30). 밝은 그림은 묻혀 보이니 동물별로 올려줌.
-    { key:'lion',     word:'LION',     title:'🦁 Make the Lion!',      img:'assets/images/animal_lion.jpg',       video:'assets/images/lion_movie.mp4',   say:'Lion',     sound:'assets/sounds/sound_lion.mp3', ghost:0.30, alignY:0.62 },   // alignY 0.5=가운데, 1=아래(발)쪽 / 사자는 발 보이되 머리 위 헤드룸 남게 0.62
+    // ★ 시즌1 순서(친근한 동물 10종): 코끼리·사자·곰·토끼·[다람쥐]·기린·호랑이·고양이·강아지·코알라(피날레). [다람쥐]=에셋 대기.
     { key:'elephant', word:'ELEPHANT', title:'🐘 Make the Elephant!', img:'assets/images/animal_elifant1.jpeg', video:'assets/images/elefant_movie.mp4', say:'Elephant', sound:'assets/sounds/sound_elefant.mp3', ghost:0.30 },
-    { key:'giraffe',  word:'GIRAFFE',  title:'🦒 Make the Giraffe!',   img:'assets/images/animal_giraffe.jpg',    video:'assets/images/Giraffe_movie.mp4', say:'Giraffe',  sound:'assets/sounds/sound_giraffe.mp3', ghost:0.30, alignY:0.00 },   // 목 길어 머리 위 헤드룸 주려고 최대 아래로(0) → 다리 더 잘림(의도)
-    { key:'tiger',    word:'TIGER',    title:'🐯 Make the Tiger!',     img:'assets/images/animal_tiger.jpg',      video:'assets/images/tiger_movie.mp4',   say:'Tiger',    sound:'assets/sounds/sound_tiger.mp3', ghost:0.30, alignY:0.55 },
+    { key:'lion',     word:'LION',     title:'🦁 Make the Lion!',      img:'assets/images/animal_lion.jpg',       video:'assets/images/lion_movie.mp4',   say:'Lion',     sound:'assets/sounds/sound_lion.mp3', ghost:0.30, alignY:0.62 },   // alignY 0.5=가운데, 1=아래(발)쪽 / 사자는 발 보이되 머리 위 헤드룸 남게 0.62
     { key:'bear',     word:'BEAR',     title:'🐻 Make the Bear!',      img:'assets/images/animal_bear.png',       video:'assets/images/bear_movie.mp4',    say:'Bear',     sound:'assets/sounds/sound_bear.mp3', ghost:0.30, alignY:0.50 },
     { key:'rabbit',   word:'RABBIT',   title:'🐰 Make the Rabbit!',    img:'assets/images/animal_rabbit.png',     video:'assets/images/rabbit_movie.mp4',  say:'Rabbit',   sound:'assets/sounds/sound_rabbit.mp3', ghost:0.42, alignY:0.50 },   // 흰 토끼라 밑그림 진하게(코알라처럼)
+    // [5] 🐿️ 다람쥐 Squirrel — 에셋 대기(여기 삽입 예정)
+    { key:'giraffe',  word:'GIRAFFE',  title:'🦒 Make the Giraffe!',   img:'assets/images/animal_giraffe.jpg',    video:'assets/images/Giraffe_movie.mp4', say:'Giraffe',  sound:'assets/sounds/sound_giraffe.mp3', ghost:0.30, alignY:0.00 },   // 목 길어 머리 위 헤드룸 주려고 최대 아래로(0) → 다리 더 잘림(의도)
+    { key:'tiger',    word:'TIGER',    title:'🐯 Make the Tiger!',     img:'assets/images/animal_tiger.jpg',      video:'assets/images/tiger_movie.mp4',   say:'Tiger',    sound:'assets/sounds/sound_tiger.mp3', ghost:0.30, alignY:0.55 },
+    { key:'cat',      word:'CAT',      title:'🐱 Make the Cat!',       img:'assets/images/animal_cat.png',        video:'assets/images/cat_movie.mp4',     say:'Cat',      sound:'assets/sounds/sound_cat.mp3', ghost:0.30, alignY:0.50 },
+    { key:'dog',      word:'DOG',      title:'🐶 Make the Dog!',       img:'assets/images/animal_dog.png',        video:'assets/images/dog_movie.mp4',     say:'Dog',      sound:'assets/sounds/sound_dog.mp3', ghost:0.30, alignY:0.50 },
     { key:'koala',    word:'KOALA',    title:'🐨 Make the Koala!',     img:'assets/images/animal_coala.jpg',      video:'assets/images/koala.mp4',  say:'Koala',    sound:'assets/sounds/sound_koala.mp3', ghost:0.42 }
   ];
   var animalIdx=0;
