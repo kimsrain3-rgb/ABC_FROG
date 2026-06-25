@@ -81,6 +81,11 @@
   var demoDone=false;   // 첫 퍼즐에서 조각 하나 스르륵 들어가는 시범 — 1회만
   function curA(){ return ANIMALS[animalIdx]; }
 
+  // [테스트 전용] 에셋 캐시버스터: 같은 파일명으로 영상/그림을 덮어써도 /test/에선 항상 최신으로 보이게.
+  // (페이지 1회 로드당 토큰 1개 → 세션 안에선 한 번만 받음. 다음에 런처로 새로 들어오면 새 토큰=새로 받음)
+  var ASSET_CB = Date.now();
+  function bust(u){ return u ? u + (u.indexOf('?')<0?'?':'&') + 'cb=' + ASSET_CB : u; }
+
   var COLS=2, ROWS=3;
   var board=document.getElementById('board'), tray=document.getElementById('tray'), layer=document.getElementById('layer');
   function rnd(){return Math.random()<0.5?1:-1;}
@@ -108,7 +113,7 @@
   function sayWord(){   // 단어 외치기: 동물별 mp3 있으면 그걸로, 없으면 TTS 폴백
     var A=curA(), settled=false;
     function tts(){ if(settled)return; settled=true; try{ if(window.speechSynthesis){ speechSynthesis.cancel(); var u=new SpeechSynthesisUtterance(A.say); u.lang='en-US'; u.rate=0.85; u.pitch=1.15; u.volume=1; speechSynthesis.speak(u); } }catch(e){} }
-    if(A.sound){ try{ var a=new Audio(A.sound); a.volume=1;
+    if(A.sound){ try{ var a=new Audio(bust(A.sound)); a.volume=1;
         a.addEventListener('error',tts); a.play().then(function(){settled=true;}).catch(tts);
       }catch(e){ tts(); }
     } else tts();
@@ -188,7 +193,7 @@
     try{
       ov=document.createElement('div'); ov.className='av-video'; ov.id='avVideo';
       var vid=document.createElement('video');
-      vid.src=A.video;
+      vid.src=bust(A.video);
       vid.setAttribute('playsinline',''); vid.playsInline=true;     // iOS 전체화면 강제 방지
       vid.controls=false; vid.preload='auto'; vid.volume=1;          // 영상 자체 소리 재생(무음 아님)
       ov.appendChild(vid);
@@ -246,7 +251,7 @@
     var trayTop=board.getBoundingClientRect().height;
 
     // ghost
-    var g=document.createElement('img'); g.src=IMG; g.className='ghost';
+    var g=document.createElement('img'); g.src=bust(IMG); g.className='ghost';
     g.style.cssText='left:'+imgX+'px;top:'+imgY+'px;width:'+coverW+'px;height:'+coverH+'px;opacity:'+(A.ghost||0.30);
     board.appendChild(g);
     // 단어 스펠링 글자 미리 생성(숨김 상태) — 폭에 맞춰 글자 크기 결정(긴 단어도 안 잘리게)
@@ -345,7 +350,7 @@
       }, 1000);   // 흩어진 조각 잠깐 보여준 뒤 시범 시작
     }
     };
-    img.src=IMG;
+    img.src=bust(IMG);
   }
 
   // === 드래그 (한 번만 등록, 현재 PZ 기준으로 동작) ===
