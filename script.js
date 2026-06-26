@@ -51,6 +51,21 @@ SND_FROG.volume=0.5;
 let bgmStarted=false;
 function startBGM(){if(!bgmStarted){SND_BGM.play().catch(()=>{});bgmStarted=true;}}
 
+// 앱을 닫거나 배경으로 보낼 때(홈버튼/멀티태스킹/화면끔) 모든 소리 정지 — WebView에서 앱 닫아도 BGM이 계속 나오는 문제 방지.
+// 화면이 다시 보이면, 멈추기 전 재생 중이던 BGM만 다시 켬.
+var _bgmWasPlaying=false;
+function _pauseAllSound(){
+  try{ _bgmWasPlaying = !SND_BGM.paused; }catch(e){ _bgmWasPlaying=false; }
+  try{ SND_BGM.pause(); }catch(e){}
+  try{ document.querySelectorAll('video,audio').forEach(function(m){ try{m.pause();}catch(e){} }); }catch(e){}
+  try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ _pauseAllSound(); }
+  else if(_bgmWasPlaying){ try{ SND_BGM.play().catch(function(){}); }catch(e){} }
+});
+window.addEventListener('pagehide',_pauseAllSound);
+
 function playFlyBuzz(){
   const s=[SND_FLY1,SND_FLY2][Math.floor(Math.random()*2)];
   const c=s.cloneNode();c.volume=0.4+Math.random()*0.2;

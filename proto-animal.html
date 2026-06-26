@@ -93,6 +93,17 @@
     ['pointerdown','touchstart','click','keydown'].forEach(function(ev){ document.addEventListener(ev, startBgm, {once:true, capture:true, passive:true}); }); }
   var muteBtn=document.getElementById('mute');
   if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
+  // 앱 닫기/배경전환/화면끔 시 소리 정지(WebView에서 닫아도 BGM 계속 나오는 문제 방지). 돌아오면 BGM만 복구.
+  document.addEventListener('visibilitychange',function(){
+    try{
+      if(document.hidden){
+        try{bgm.pause();}catch(e){}
+        try{document.querySelectorAll('video,audio').forEach(function(m){try{m.pause();}catch(e){}});}catch(e){}
+        try{if(window.speechSynthesis) speechSynthesis.cancel();}catch(e){}
+      } else if(bgmOn && !bgm.muted){ try{bgm.play().catch(function(){});}catch(e){} }
+    }catch(e){}
+  });
+  window.addEventListener('pagehide',function(){ try{bgm.pause();}catch(e){} });
 
   // === 완성 시 스펠링 + 단어 읽기 (과일 퍼즐 방식) ===
   function sayWord(){   // 단어 외치기: 동물별 mp3 있으면 그걸로, 없으면 TTS 폴백
