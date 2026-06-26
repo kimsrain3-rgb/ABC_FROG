@@ -1374,6 +1374,35 @@ function wcLocked(el){
   }catch(e){}
 }
 
+// === 동물 퍼즐 (독립 페이지 animal.html을 전체화면 오버레이로) ===
+// 기존 게임 코드와 완전 분리(iframe) → 충돌/크래시 위험 0. HTML은 ?b=로 항상 최신, 내부 그림/영상은 캐시 사용.
+var _apOverlay=null;
+function goAnimalPuzzle(){
+  try{
+    if(_apOverlay) return;                       // 중복 열기 방지
+    var ov=document.createElement('div');
+    ov.id='apOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    var fr=document.createElement('iframe');
+    fr.setAttribute('allow','autoplay; fullscreen');
+    fr.style.cssText='border:0;width:100%;height:100%;display:block;';
+    fr.src='animal.html?b='+Date.now();          // HTML 항상 최신(미디어는 내부에서 캐시)
+    var bk=document.createElement('button');
+    bk.textContent='‹'; bk.setAttribute('aria-label','back');
+    bk.onclick=closeAnimalPuzzle;
+    bk.style.cssText='position:fixed;top:8px;left:8px;z-index:100000;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.85);color:#333;font-size:26px;line-height:42px;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3)';
+    ov.appendChild(fr); ov.appendChild(bk);
+    document.body.appendChild(ov);
+    _apOverlay=ov;
+    try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
+    try{gtag('event','animal_puzzle_open');}catch(e){}
+  }catch(e){}
+}
+function closeAnimalPuzzle(){
+  try{ if(_apOverlay&&_apOverlay.parentNode){ _apOverlay.parentNode.removeChild(_apOverlay); } }catch(e){}
+  _apOverlay=null;
+}
+
 // === ABC 모드 선택 화면 ===
 function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }
