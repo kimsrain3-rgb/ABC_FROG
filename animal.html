@@ -98,7 +98,8 @@
   var BGM_FULL=0.25, BGM_DUCK=0.20;   // 평소 / 음성·영상 구간(원래보다 20% 낮춤 — 음악 끊지 않고 이어감)
   var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=BGM_FULL;
   var bgmOn=false;
-  function startBgm(){ actx(); }   // ★ 배경음악 끔(요청): bgm.play() 안 함. actx()로 오디오 잠금만 해제(효과음·스펠링·영상 소리는 유지).
+  function startBgm(){ if(bgmOn)return; actx();   // 실제 재생 성공해야 bgmOn=true (막히면 다음 제스처에 재시도)
+    try{ var p=bgm.play(); if(p&&p.then){ p.then(function(){bgmOn=true;}).catch(function(){}); } else { bgmOn=true; } }catch(e){} }
   // 화면 진입 즉시 음악: 자동재생 시도 + (모바일은 보통 막히니) 화면 첫 터치/클릭에 즉시 시작
   function armBgm(){ startBgm();
     ['pointerdown','touchstart','click','keydown'].forEach(function(ev){ document.addEventListener(ev, startBgm, {once:true, capture:true, passive:true}); }); }
