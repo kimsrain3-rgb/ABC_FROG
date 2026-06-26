@@ -1417,6 +1417,25 @@ function closeAnimalPuzzle(){
   try{ if(_apOverlay&&_apOverlay.parentNode){ _apOverlay.parentNode.removeChild(_apOverlay); } }catch(e){}
   _apOverlay=null;
 }
+// ★ Animal 카드 잠금해제를 '실행 중에' 직접 수행 — script.js는 항상 최신으로 받으므로,
+//   옛 index.html(잠긴 버튼)이 캐시된 폰에서도 이게 버튼을 풀어줌(즉시 모든 폰 반영).
+function _unlockAnimalCard(){
+  try{
+    var cards=document.querySelectorAll('.wc-card');
+    for(var i=0;i<cards.length;i++){
+      var lbl=cards[i].querySelector('.card-label');
+      if(lbl && lbl.textContent.trim().toLowerCase()==='animal'){
+        var c=cards[i];
+        c.classList.remove('wc-locked'); c.classList.add('wc-animal');
+        var lock=c.querySelector('.wc-lock'); if(lock&&lock.parentNode) lock.parentNode.removeChild(lock);
+        c.onclick=function(){ goAnimalPuzzle(); };
+        break;
+      }
+    }
+  }catch(e){}
+}
+try{ _unlockAnimalCard(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',_unlockAnimalCard); }catch(e){}
 
 // === ABC 모드 선택 화면 ===
 function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
