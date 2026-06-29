@@ -138,3 +138,11 @@
   - **문제**: 같은 파일명으로 에셋을 덮어쓰면 폰/브라우저 캐시가 옛 파일을 보여줌(이 프로젝트의 반복 이슈, [배포·캐시 규칙] 참고). always-fresh 로더는 코드(js/css)만 커버, 영상/그림/소리는 plain 경로(`vid.src=A.video` 등)라 캐시됨.
   - **해결(테스트 전용)**: `test/current.html`에 `bust(u)` 헬퍼 추가 → 영상·그림(밑그림 포함)·소리 로드 시 `?cb=<페이지로드시각>` 자동 부착. **페이지 1회 로드당 토큰 1개**(세션 내 1회만 다운로드, 런처로 새로 들어오면 새 토큰=새로 받음). → **앞으로 같은 이름으로 에셋만 갈아끼우면 코드 수정 없이 /test/에서 항상 최신.**
   - ⚠️ `bust`는 **/test/ 전용**. 본게임 통합 시엔 실유저가 매번 영상 재다운 안 받게 라이브용 캐시 방식(파일명/`?v=`) 별도 적용. proto-animal.html(원본)엔 미적용.
+
+### 2026-06-29
+- **GA4 분석: 과일 vs 동물 퍼즐 구분값(`category`) 추가** (시즌2 콘텐츠 결정용 데이터). 그동안 `word_puzzle_complete`엔 과일만 집계되고 **동물 완성은 아예 미집계**라 비교 불가였음 → 해결.
+  - 과일(`script.js`): `goWordPuzzle`의 `word_puzzle_open`, `wpComplete`의 `word_puzzle_complete`에 `category:'fruit'` 추가.
+  - 동물 열기: `animal_puzzle_open` → `word_puzzle_open`+`category:'animal'`로 **이름 통일**(과거 과일 데이터와 같은 이벤트에서 category로 갈라 비교 가능하게. 결정: 사장님). 기존 `animal_puzzle_open`은 더 안 보냄.
+  - 동물 완성(신규): `animal.html`은 별도 iframe이라 부모(본게임)의 gtag를 못 부름 → 완성 순간 `parent.postMessage({t:'animal_done',key})` 전송, `script.js`에 message 리스너 추가해 `word_puzzle_complete`+`category:'animal',word:key` 기록. (GA 코드는 본게임 한 곳에만 유지 — 기존 `animal_puzzle_open`도 부모에서 쏘던 방식과 일관.)
+  - **테스트 방식 결정**: 분석 신호만 추가(게임 화면·동작 변화 0, 전부 try-catch라 깨질 위험 0)라 /test/ 미러(=script.js 2개로 갈라지는 옛 드리프트 문제 재발) 대신 **본게임 파일에 바로 반영 + GA4 실시간 검증**으로 진행(사장님 결정). 커밋 `15eddb8`.
+  - ⏳ **남은 일**: ① 폰에서 실제 게임으로 과일1·동물1 플레이 → GA4 실시간에서 `category=fruit/animal` 확인. ② GA4 관리 > 맞춤정의에서 `category`를 **맞춤 측정기준(이벤트 범위)** 으로 등록해야 일반 보고서에서 비교표가 보임(등록 후 ~24h). 클로드가 화면 보며 도울 예정.
