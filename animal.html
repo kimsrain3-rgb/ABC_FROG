@@ -386,7 +386,10 @@
       setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
       clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
       PZ.placedCount++;
-      if(PZ.placedCount===PZ.total){ try{bgm.volume=BGM_DUCK;}catch(e){} setTimeout(spellThenSay, 300); }   // 음악 끊지 않고 볼륨만 낮춤(스펠링·영상 구간 내내 이어짐)
+      if(PZ.placedCount===PZ.total){
+        try{ parent.postMessage({t:'animal_done', key:curA().key}, '*'); }catch(e){}   // 본게임(부모)에게 "이 동물 완성" 알림 → GA category=animal 기록
+        try{bgm.volume=BGM_DUCK;}catch(e){} setTimeout(spellThenSay, 300);              // 음악 끊지 않고 볼륨만 낮춤(스펠링·영상 구간 내내 이어짐)
+      }
     } else {
       p.el.style.zIndex=20;   // 안 맞춘 채 내려놔도 맞춰진 조각(10) 위에 유지 (과일 퍼즐 방식)
     }

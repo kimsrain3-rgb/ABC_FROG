@@ -1367,7 +1367,7 @@ let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
 
 function goWordPuzzle(){
   document.getElementById('wp').classList.add('show');
-  try{gtag('event','word_puzzle_open',{word:wpCurrent});}catch(e){}
+  try{gtag('event','word_puzzle_open',{category:'fruit',word:wpCurrent});}catch(e){}
   // 세로 방향 잠금 시도(지원 브라우저/설치앱) — 미지원 시 무시
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
   // 배경음악 (메인 게임과 동일한 bgm.mp3 재사용)
@@ -1410,13 +1410,18 @@ function goAnimalPuzzle(){
     document.body.appendChild(ov);
     _apOverlay=ov;
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
-    try{gtag('event','animal_puzzle_open');}catch(e){}
+    try{gtag('event','word_puzzle_open',{category:'animal'});}catch(e){}
   }catch(e){}
 }
 function closeAnimalPuzzle(){
   try{ if(_apOverlay&&_apOverlay.parentNode){ _apOverlay.parentNode.removeChild(_apOverlay); } }catch(e){}
   _apOverlay=null;
 }
+// 동물 퍼즐(별도 iframe animal.html)이 완성을 알려오면 GA로 기록.
+// 과일과 같은 신호 이름(word_puzzle_complete) + category:'animal' 로 → GA4에서 과일 vs 동물 비교 가능.
+window.addEventListener('message',function(ev){
+  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){ gtag('event','word_puzzle_complete',{category:'animal',word:d.key}); } }catch(e){}
+});
 // ★ Animal 카드 잠금해제를 '실행 중에' 직접 수행 — script.js는 항상 최신으로 받으므로,
 //   옛 index.html(잠긴 버튼)이 캐시된 폰에서도 이게 버튼을 풀어줌(즉시 모든 폰 반영).
 function _unlockAnimalCard(){
@@ -1963,7 +1968,7 @@ function wpLoadLetter(ch){
 }
 
 function wpComplete(){
-  try{gtag('event','word_puzzle_complete',{word:wpCurrent});}catch(e){}
+  try{gtag('event','word_puzzle_complete',{category:'fruit',word:wpCurrent});}catch(e){}
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
