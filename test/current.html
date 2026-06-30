@@ -7,7 +7,7 @@
 <!-- 자동번역 차단: 영어 스펠링 글자가 한글로 번역되는 것 방지 -->
 <meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Animal Puzzle (TEST)</title>
+<title>Dino Puzzle (TEST)</title>
 <meta name="theme-color" content="#4CAF50">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -23,7 +23,7 @@
   #title{position:absolute;top:8px;left:0;width:100%;text-align:center;font-weight:700;color:#3a5a2a;font-size:15px;z-index:5;text-shadow:0 1px 2px #fff}
   #tray{position:relative;flex:1 1 auto;background:#c3cdd2;border-top:3px solid #aab6bc}
   #traylabel{position:absolute;top:4px;left:0;width:100%;text-align:center;font-size:11px;color:#5d6a70;font-weight:600;pointer-events:none}
-  .ghost{position:absolute;opacity:.30;filter:saturate(.8);pointer-events:none}
+  .ghost{position:absolute;opacity:.30;filter:grayscale(.45) brightness(1.22) contrast(.8) saturate(.5);pointer-events:none}   /* 화석 밑그림: 톤다운(연하게+탈색)해 안 무섭게 */
   #slots{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
   #layer{position:fixed;inset:0;pointer-events:none}
   .piece{position:absolute;transform-origin:top left;pointer-events:auto;cursor:grab;touch-action:none;z-index:20;
@@ -59,23 +59,19 @@
 <div id="layer"></div>
 <div id="word"></div>
 <button id="mute" style="position:fixed;top:8px;right:8px;z-index:60;font-size:18px;background:rgba(255,255,255,.82);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)">🔊</button>
-<div id="done"><div class="msg">🐘 Long nose! Elephant!</div></div>
+<div id="done"><div class="msg">🦖 Tyrannosaurus!</div></div>
 <script>
-  // === 동물 목록 (에셋 들어오면 여기에 추가만 하면 자동으로 순서 진행) ===
-  // say=영상 전 외칠 단어, sound=직접 녹음 mp3(없으면 TTS 폴백)
+  // === 🦕 공룡 화석 시리즈 — 프로토타입 (엔진 변수명은 animal 그대로 재활용) ===
+  //  ⭐ 동물 퍼즐과 다른 점: bone=화석(밑그림), img=실사 공룡(퍼즐 조각). 완성하면 화석 위에 공룡이 되살아남.
+  //  스펠링 없음 → 완성 후 '이름만' 1번 읽고(say/sound) → 살아있는 공룡 영상.
+  //  ghost=화석 밑그림 투명도(톤다운 위해 낮게). boneScale/boneShiftX/boneShiftY=화석을 실사 위에 겹치게 미세조정(폰에서 맞춤).
   var ANIMALS=[
-    // ghost = 밑그림 투명도(기본 0.30). 밝은 그림은 묻혀 보이니 동물별로 올려줌.
-    // ★ 시즌1 순서(친근한 동물 10종): 코끼리·사자·곰·토끼·[너구리]·기린·호랑이·고양이·강아지·코알라(피날레). [너구리]=에셋 대기.
-    { key:'elephant', word:'ELEPHANT', title:'🐘 Make the Elephant!', img:'assets/images/animal_elifant.jpg', video:'assets/images/elefant_movie.mp4', say:'Elephant', sound:'assets/sounds/sound_elefant.mp3', ghost:0.30 },
-    { key:'lion',     word:'LION',     title:'🦁 Make the Lion!',      img:'assets/images/animal_lion.jpg',       video:'assets/images/lion_movie.mp4',   say:'Lion',     sound:'assets/sounds/sound_lion.mp3', ghost:0.30, alignY:0.62 },   // alignY 0.5=가운데, 1=아래(발)쪽 / 사자는 발 보이되 머리 위 헤드룸 남게 0.62
-    { key:'bear',     word:'BEAR',     title:'🐻 Make the Bear!',      img:'assets/images/animal_bear.jpg',       video:'assets/images/bear_movie.mp4',    say:'Bear',     sound:'assets/sounds/sound_bear.mp3', ghost:0.30, alignY:0.50 },
-    { key:'rabbit',   word:'RABBIT',   title:'🐰 Make the Rabbit!',    img:'assets/images/animal_rabbit.jpg',     video:'assets/images/rabbit_movie.mp4',  say:'Rabbit',   sound:'assets/sounds/sound_rabbit.mp3', ghost:0.42, alignY:0.50 },   // 흰 토끼라 밑그림 진하게(코알라처럼)
-    { key:'raccoon',  word:'RACCOON',  title:'🦝 Make the Raccoon!', img:'assets/images/animal_raccoon.png',    video:'assets/images/raccoon_movie.mp4', say:'Raccoon',  sound:'assets/sounds/sound_raccoon.mp3', ghost:0.30, alignY:0.50 },   // [5] 너구리
-    { key:'giraffe',  word:'GIRAFFE',  title:'🦒 Make the Giraffe!',   img:'assets/images/animal_giraffe.jpg',    video:'assets/images/Giraffe_movie.mp4', say:'Giraffe',  sound:'assets/sounds/sound_giraffe.mp3', ghost:0.30, alignY:0.00 },   // 목 길어 머리 위 헤드룸 주려고 최대 아래로(0) → 다리 더 잘림(의도)
-    { key:'tiger',    word:'TIGER',    title:'🐯 Make the Tiger!',     img:'assets/images/animal_tiger.jpg',      video:'assets/images/tiger_movie.mp4',   say:'Tiger',    sound:'assets/sounds/sound_tiger.mp3', ghost:0.30, alignY:0.55 },
-    { key:'cat',      word:'CAT',      title:'🐱 Make the Cat!',       img:'assets/images/animal_cat.jpg',        video:'assets/images/cat_movie.mp4',     say:'Cat',      sound:'assets/sounds/sound_cat.mp3', ghost:0.30, alignY:0.50 },
-    { key:'dog',      word:'DOG',      title:'🐶 Make the Dog!',       img:'assets/images/animal_dog.jpg',        video:'assets/images/dog_movie.mp4',     say:'Dog',      sound:'assets/sounds/sound_dog.mp3', ghost:0.30, alignY:0.50 },
-    { key:'koala',    word:'KOALA',    title:'🐨 Make the Koala!',     img:'assets/images/animal_coala.jpg',      video:'assets/images/koala.mp4',  say:'Koala',    sound:'assets/sounds/sound_koala.mp3', ghost:0.42 }
+    { key:'tyrannosaurus', say:'Tyrannosaurus', title:'🦖 Make the T-Rex!',
+      bone:'assets/images/image_TYRANNOSAURUS-bone.jpg',   // 밑그림(화석)
+      img:'assets/images/image_TYRANNOSAURUS.jpeg',        // 퍼즐 조각(살아있는 공룡)
+      video:'assets/images/movie_tyrannosaurus.mp4',
+      sound:'assets/sounds/sound_tyronnosaurus.mp3',
+      ghost:0.22, alignY:0.50, boneScale:1, boneShiftX:0, boneShiftY:0 }
   ];
   var animalIdx=0;
   var demoDone=false;   // 첫 퍼즐에서 조각 하나 스르륵 들어가는 시범 — 1회만
@@ -148,27 +144,10 @@
       }).catch(function(){ return null; });
     return _lbuf[ch];
   }
+  // 공룡: 스펠링 없이 완성 후 '이름만' 1번 읽고 → 살아있는 공룡 영상.
   function spellThenSay(){
-    var wrap=document.getElementById('word');
-    var spans=wrap.querySelectorAll('.wl');
-    var word=curA().word.split('');
-    function afterLetters(){ wrap.classList.add('shout'); sayWord();   // 단어 강조 + 글자 반짝 + 외치기
-      setTimeout(playAnimalVideo, 1800); }                              // 잠깐 뒤 그 동물 영상
-    function playLetter(i){
-      if(i>=word.length){ setTimeout(afterLetters, 300); return; }
-      spans[i].classList.add('show');
-      loadLetter(word[i]).then(function(info){
-        var dur=600;   // 디코드 실패 시 폴백
-        if(info){ try{ var c=actx(), src=c.createBufferSource(), g=c.createGain();
-            src.buffer=info.buffer; g.gain.value=0.5; src.connect(g); g.connect(c.destination);
-            src.start(0, info.start, info.end-info.start);    // 묵음 잘라낸 발음 구간만 재생
-            dur=(info.end-info.start)*1000;
-          }catch(e){ try{ var a=new Audio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
-        } else { try{ var a2=new Audio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
-        setTimeout(function(){ playLetter(i+1); }, dur+LETTER_GAP);   // 발음 끝나면 GAP만 쉬고 다음
-      });
-    }
-    setTimeout(function(){ playLetter(0); }, 450);        // 완성 직후 잠깐 뒤 시작
+    setTimeout(sayWord, 350);                 // 완성 직후 잠깐 뒤 이름 읽기("Tyrannosaurus!")
+    setTimeout(playAnimalVideo, 1900);        // 이름 끝날 즈음 영상으로
   }
 
   // === 완성 후 그 동물 영상 재생 (과일 게임 wpPlayEnding 방식) ===
@@ -247,7 +226,7 @@
     document.getElementById('title').textContent=A.title;
     PZ=null;
     try{ if(bgmOn && !bgm.muted){ bgm.volume=BGM_FULL; bgm.play().catch(function(){}); } }catch(e){}   // 다음 퍼즐: 볼륨 원복 + 이어재생
-    try{ WORD.split('').forEach(loadLetter); }catch(e){}                        // 글자 음성 미리 디코드
+    // (공룡은 스펠링 없음 — 글자 음성 미리 디코드 불필요)
 
     var img=new Image();
     img.onload=function(){
@@ -261,13 +240,12 @@
     var uw=rw/COLS, uh=rh/ROWS, mg=Math.min(uw,uh)*0.34;
     var trayTop=board.getBoundingClientRect().height;
 
-    // ghost
-    var g=document.createElement('img'); g.src=bust(IMG); g.className='ghost';
-    g.style.cssText='left:'+imgX+'px;top:'+imgY+'px;width:'+coverW+'px;height:'+coverH+'px;opacity:'+(A.ghost||0.30);
+    // ghost = 화석(밑그림). 조각(실사)과 겹치게 boneScale/boneShift로 미세조정 가능.
+    var g=document.createElement('img'); g.src=bust(A.bone||IMG); g.className='ghost';
+    var bsc=(A.boneScale!=null?A.boneScale:1), gW=coverW*bsc, gH=coverH*bsc;
+    var gX=imgX-(gW-coverW)/2+(A.boneShiftX||0), gY=imgY-(gH-coverH)/2+(A.boneShiftY||0);
+    g.style.cssText='left:'+gX+'px;top:'+gY+'px;width:'+gW+'px;height:'+gH+'px;opacity:'+(A.ghost||0.22);
     board.appendChild(g);
-    // 단어 스펠링 글자 미리 생성(숨김 상태) — 폭에 맞춰 글자 크기 결정(긴 단어도 안 잘리게)
-    (function(){ var w=document.getElementById('word'); var fs=Math.min(bw*0.11, (bw*0.86)/(WORD.length*0.62));
-      w.style.fontSize=fs+'px'; w.innerHTML=''; WORD.split('').forEach(function(ch){ var s=document.createElement('span'); s.className='wl'; s.textContent=ch; w.appendChild(s); }); })();
 
     // knobs (이웃 공유)
     var knobH=[],knobV=[];
@@ -389,7 +367,10 @@
       setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
       clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
       PZ.placedCount++;
-      if(PZ.placedCount===PZ.total){ try{bgm.volume=BGM_DUCK;}catch(e){} setTimeout(spellThenSay, 300); }   // 음악 끊지 않고 볼륨만 낮춤(스펠링·영상 구간 내내 이어짐)
+      if(PZ.placedCount===PZ.total){
+        try{ parent.postMessage({t:'dino_done', key:curA().key}, '*'); }catch(e){}   // (본게임 통합 시) GA category=dino 기록용
+        try{bgm.volume=BGM_DUCK;}catch(e){} setTimeout(spellThenSay, 300);            // 음악 끊지 않고 볼륨만 낮춤(이름·영상 구간 내내 이어짐)
+      }
     } else {
       p.el.style.zIndex=20;   // 안 맞춘 채 내려놔도 맞춰진 조각(10) 위에 유지 (과일 퍼즐 방식)
     }
