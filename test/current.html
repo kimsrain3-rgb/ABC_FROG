@@ -66,7 +66,7 @@
   //  스펠링 없음 → 완성 후 '이름만' 1번 읽고(say/sound) → 살아있는 공룡 영상.
   //  ghost=화석 밑그림 투명도(톤다운 위해 낮게). boneScale/boneShiftX/boneShiftY=화석을 실사 위에 겹치게 미세조정(폰에서 맞춤).
   var ANIMALS=[
-    { key:'tyrannosaurus', say:'Tyrannosaurus', title:'🦖 Make the T-Rex!',
+    { key:'tyrannosaurus', word:'TYRANNOSAURUS', say:'Tyrannosaurus', title:'🦖 Make the T-Rex!',
       bone:'assets/images/image_TYRANNOSAURUS-bone.jpg',   // 밑그림(화석)
       img:'assets/images/image_TYRANNOSAURUS.jpeg',        // 퍼즐 조각(살아있는 공룡)
       video:'assets/images/movie_tyrannosaurus.mp4',
@@ -144,10 +144,14 @@
       }).catch(function(){ return null; });
     return _lbuf[ch];
   }
-  // 공룡: 스펠링 없이 완성 후 '이름만' 1번 읽고 → 살아있는 공룡 영상.
+  // 공룡: 글자별 발음 없이 → 단어(TYRANNOSAURUS)를 글자 톡톡 보여주며 + 이름 1번 읽기(동시) → 영상.
   function spellThenSay(){
-    setTimeout(sayWord, 350);                 // 완성 직후 잠깐 뒤 이름 읽기("Tyrannosaurus!")
-    setTimeout(playAnimalVideo, 1900);        // 이름 끝날 즈음 영상으로
+    var wrap=document.getElementById('word');
+    var spans=wrap.querySelectorAll('.wl');
+    spans.forEach(function(s,i){ setTimeout(function(){ s.classList.add('show'); }, 250+i*60); });  // 글자 하나씩 등장(발음X)
+    var after=250+spans.length*60+150;
+    setTimeout(function(){ wrap.classList.add('shout'); sayWord(); }, after);   // 단어 다 뜨면 강조·반짝 + 이름 1번 읽기
+    setTimeout(playAnimalVideo, after+1700);                                     // 잠깐 뒤 살아있는 공룡 영상
   }
 
   // === 완성 후 그 동물 영상 재생 (과일 게임 wpPlayEnding 방식) ===
@@ -246,6 +250,10 @@
     var gX=imgX-(gW-coverW)/2+(A.boneShiftX||0), gY=imgY-(gH-coverH)/2+(A.boneShiftY||0);
     g.style.cssText='left:'+gX+'px;top:'+gY+'px;width:'+gW+'px;height:'+gH+'px;opacity:'+(A.ghost||0.22);
     board.appendChild(g);
+    // 완성 시 보여줄 단어 글자 미리 생성(숨김) — 폭에 맞춰 글자 크기(긴 이름도 안 잘리게)
+    (function(){ var w=document.getElementById('word'); if(!WORD){ w.innerHTML=''; return; }
+      var fs=Math.min(bw*0.10, (bw*0.86)/(WORD.length*0.70));   // 0.70=긴 이름(13~18글자)도 양끝 여백 남게
+      w.style.fontSize=fs+'px'; w.innerHTML=''; WORD.split('').forEach(function(ch){ var s=document.createElement('span'); s.className='wl'; s.textContent=ch; w.appendChild(s); }); })();
 
     // knobs (이웃 공유)
     var knobH=[],knobV=[];
