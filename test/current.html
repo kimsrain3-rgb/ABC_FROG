@@ -82,7 +82,7 @@
   var ASSET_CB = Date.now();
   function bust(u){ return u ? u + (u.indexOf('?')<0?'?':'&') + 'cb=' + ASSET_CB : u; }
 
-  var COLS=2, ROWS=3;
+  var COLS=3, ROWS=3;   // 공룡=9조각(과일·동물 6조각과 다르게, 살짝 더 도전적)
   var board=document.getElementById('board'), tray=document.getElementById('tray'), layer=document.getElementById('layer');
   function rnd(){return Math.random()<0.5?1:-1;}
 
@@ -291,11 +291,14 @@
     }
     board.appendChild(slots);
 
-    // 트레이 스케일(조각 6개가 트레이에 들어가게)
+    // 트레이 스케일(조각이 트레이에 다 들어가게)
     var th=tray.clientHeight-20, tw=tray.clientWidth-16;
     var st=Math.min(0.62, Math.sqrt(0.30*(tw*th)/(rw*rh)));
     var fullW=uw+2*mg, fullH=uh+2*mg;
     var placedCount=0, total=list.length;
+    // 조각 수 늘면(9·12개) 트레이 행이 화면 밖으로 넘쳐 잘리지 않게 스케일 자동 보정 (아래 흩뿌리기 3열 기준)
+    var _trows=Math.ceil(total/3), _fitSt=(tray.clientHeight-44-(_trows-1)*10)/(_trows*fullH);
+    if(_fitSt<st) st=_fitSt;
 
     // 조각 엘리먼트 생성
     var order=list.map(function(_,i){return i;});
