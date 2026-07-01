@@ -1442,6 +1442,35 @@ function _unlockAnimalCard(){
 try{ _unlockAnimalCard(); }catch(e){}
 try{ document.addEventListener('DOMContentLoaded',_unlockAnimalCard); }catch(e){}
 
+// ★ Dino(공룡) 예고편 카드를 '실행 중에' 보장 — script.js는 항상 최신이라,
+//   옛 index.html(카드 없음/이모지 아이콘)이 캐시된 폰에서도 즉시 Dino 카드(실루엣)가 뜸.
+function _ensureDinoCard(){
+  try{
+    var iconHTML='<img class="dino-sil-ic" src="assets/icons/dino_silhouette.png" alt="dino">';
+    var cards=document.querySelectorAll('.wc-card'), dino=null;
+    for(var i=0;i<cards.length;i++){
+      var lbl=cards[i].querySelector('.card-label');
+      if(lbl && lbl.textContent.trim().toLowerCase()==='dino'){ dino=cards[i]; break; }
+    }
+    if(dino){
+      dino.classList.add('wc-locked','wc-dino');
+      var ic=dino.querySelector('.card-icon');
+      if(ic && !ic.querySelector('.dino-sil-ic')){ ic.innerHTML=iconHTML; }   // 옛 이모지/두개골 → 실루엣 통일
+    } else {
+      var wrap=document.querySelector('.wc-cards');
+      if(wrap){
+        var b=document.createElement('button');
+        b.className='game-card wc-card wc-locked wc-dino';
+        b.setAttribute('onclick','wcLocked(this)');
+        b.innerHTML='<span class="card-icon">'+iconHTML+'</span><span class="card-label">Dino</span><span class="wc-lock">🔒</span>';
+        wrap.appendChild(b);
+      }
+    }
+  }catch(e){}
+}
+try{ _ensureDinoCard(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',_ensureDinoCard); }catch(e){}
+
 // === ABC 모드 선택 화면 ===
 function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }
