@@ -165,6 +165,16 @@
   - ⚠️ **출시 전 남은 일**: ① 영상 압축(→ 사장님이 11MB→**4.8MB로 이미 교체**, ~2MB까진 더 줄일 여지). ② 화석↔실사 정렬 폰에서 확인 후 `boneScale` 조정. ③ 나머지 9종(트리케라톱스·스테고·브라키오·안킬로·파라사우롤로푸스·벨로키랍토르·스피노·파키케팔로·이구아노돈) 에셋 추가. ④ 본게임 통합(시작화면 Dino 카드 잠금해제 + `dino_done` postMessage→GA category=dino).
   - 폰 테스트: 고정주소 `https://kimsrain3-rgb.github.io/ABC_FROG/test/` (홈화면 추가 전체화면). 동물 테스트판은 라이브 본게임에 이미 통합돼 슬롯 비어 있었음.
 
+### 2026-07-01 (에셋 폴더 재구성)
+- **📁 assets 폴더 주제별 대개편** (커밋 `5b7c3c1`, 196파일 이동 + 코드 185건 자동수정). 프로젝트 커지기 전 정리(사장님 요청, "균형" 범위).
+  - **백업 먼저**: 브랜치 `backup/before-assets-reorg` + 태그 `backup-before-assets-reorg-20260701`(로컬·원격). 문제 시 `git reset --hard` 로 즉시 복구.
+  - **구조**: `assets/<주제>/<images|videos|sounds>/`. 주제=frog·fruit·animal·dino·**bugs**(파리·나비·애벌레·거미·잠자리)·**abc**(letter_a~z)·**game**(칭찬/안내 음성+bgm)·ui(아이콘·bg·연잎). (5주제로 안 담기던 파리잡기 게임 94개에 bugs/abc/game 신설.)
+  - **이름통일(정적 44개)**: animal·dino·fruit그림 → `topic_name_type`. 예: `lion_movie.mp4`→`animal/videos/animal_lion_movie.mp4`, `image_TYRANNOSAURUS.jpeg`→`dino/images/dino_trex_image.jpg`. 오타수정 elifant→elephant, coala→koala, Giraffe→giraffe.
+  - **이름유지 이동(152개)**: 알파벳·음성·개구리/벌레 프레임·앱아이콘(PWA안전)은 폴더만 이동.
+  - **동적 참조 교정**: `letter_`→abc/sounds, 과일 `voice_`→fruit/sounds, 시작개구리 `frog_4`→frog/images (코드 접두사 수정). 정적은 전체경로 정확 치환.
+  - **검증(Playwright)**: 시작화면·파리잡기(이미지 42개 0깨짐)·동물퍼즐(밑그림·영상·소리)·공룡테스트 전부 정상. 참조 174건 전부 존재, 옛 flat경로 잔존 0.
+  - ⚠️ **전환 주의**: index.html의 정적 img(개구리 프레임 등)는 always-fresh(js/css) 밖이라, **옛 index.html이 캐시된 폰은 앱 재시작 1~2회 전까지 그림이 잠깐 깨질 수 있음**(옛 경로 404) → index.html 재요청되면 자동 복구(~10분/재시작). 신규·캐시만료 로드는 즉시 정상.
+
 ### 2026-07-01
 - **티라노 영상 교체 반영** — 같은 파일명(`movie_tyrannosaurus.mp4`)으로 **11MB→4.8MB** 교체(사장님 압축). /test/는 캐시버스터(`?cb=`) 있어 런처 재진입 시 새 영상 자동 수신(라이브였다면 같은이름 교체=캐시 문제 났을 것). 라이브 Content-Length 4.8MB 확인.
 - **🦖 시작화면 퍼즐 메뉴에 공룡(Dino) 예고편 카드 추가 — 라이브 반영** (`index.html`). 채소(Vegetable) 옆에 잠긴 카드로: `wc-locked` 회색 + 🦖 + Dino + 🔒, 누르면 "곧 나와요 🔜" 토스트. **출시예정 티저 역할**(실플레이는 아직 /test/ 시제품).
