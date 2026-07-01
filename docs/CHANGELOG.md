@@ -169,4 +169,5 @@
 - **티라노 영상 교체 반영** — 같은 파일명(`movie_tyrannosaurus.mp4`)으로 **11MB→4.8MB** 교체(사장님 압축). /test/는 캐시버스터(`?cb=`) 있어 런처 재진입 시 새 영상 자동 수신(라이브였다면 같은이름 교체=캐시 문제 났을 것). 라이브 Content-Length 4.8MB 확인.
 - **🦖 시작화면 퍼즐 메뉴에 공룡(Dino) 예고편 카드 추가 — 라이브 반영** (`index.html`). 채소(Vegetable) 옆에 잠긴 카드로: `wc-locked` 회색 + 🦖 + Dino + 🔒, 누르면 "곧 나와요 🔜" 토스트. **출시예정 티저 역할**(실플레이는 아직 /test/ 시제품).
   - 디자인: 시안 3종(회색 잠금 / 화석 모래색+SOON뱃지 / 보라 강조+SOON뱃지)을 실제 CSS로 렌더해 보여드림 → 사장님 **"출시 전 컬러는 무조건 회색으로 통일"** 결정. → 규칙화([[feedback_locked_card_gray]]). 4카드(Fruit·Animal·Vegetable·Dino) 폰(390×844) 다 들어감 Playwright 확인.
+  - **아이콘 = 화석 두개골(원형·회색)**: 🦖 이모지가 "전달력 약함"(사장님) → 티라노 화석 그림에서 **두개골을 Pillow로 크롭+흑백+원형 마스크**해 전용 아이콘 `assets/icons/dino_skull.png`(220px, 61KB) 생성. 화석 시리즈 테마에 딱 + 잠긴 회색톤과 자연스럽게 통일. (시안 4종: 작은이모지/큰이모지/실사얼굴/화석두개골 → **화석 두개골** 선택). CSS 우선순위(`.game-card .card-icon img{width:100%}`) 눌러서 `.game-card .card-icon img.dino-skull-ic{width:44px}`로 오버라이드 + `.wc-dino{padding-top/bottom:8px}`로 4카드 높이 68px 통일. Playwright 검증.
   - 본게임 통합 때 이 회색 Dino 카드를 열림(고유색+공룡 퍼즐 연결)으로 전환하면 됨.
