@@ -162,5 +162,11 @@
   - 구현: `test/current.html`(동물 테스트판) → 공룡판으로 교체(엔진 변수명은 animal 그대로 재활용, 안정 우선). ghost에 `boneScale/boneShiftX/boneShiftY` 노브 추가(화석↔실사 미세정렬용). Playwright 390×844 렌더 검증(에러 0, 톤다운·되살리기 효과 확인).
   - **퍼즐 9조각(3×3)** — 과일·동물(6조각)과 다르게(사장님 요청 "너무 똑같다"). 트레이 스케일을 조각수 따라 자동보정(`_fitSt`)해 행 넘쳐 잘림 방지(9·12조각 대비). Playwright로 9조각 트레이 다 들어감 확인.
   - **에셋(파일명 철자 제각각 주의 — 코드에 정확히 박음)**: `image_TYRANNOSAURUS-bone.jpg`(화석) · `image_TYRANNOSAURUS.jpeg`(실사, .jpeg) · `movie_tyrannosaurus.mp4`(소문자) · `sound_tyronnosaurus.mp3`(tyronno).
-  - ⚠️ **출시 전 남은 일**: ① 영상 `movie_tyrannosaurus.mp4` **11.2MB → ~2MB 압축**(비트레이트↓, 동물 교훈). ② 화석↔실사 정렬 폰에서 확인 후 `boneScale` 조정. ③ 나머지 9종(트리케라톱스·스테고·브라키오·안킬로·파라사우롤로푸스·벨로키랍토르·스피노·파키케팔로·이구아노돈) 에셋 추가. ④ 본게임 통합(시작화면 Dino 카드 + `dino_done` postMessage→GA category=dino).
+  - ⚠️ **출시 전 남은 일**: ① 영상 압축(→ 사장님이 11MB→**4.8MB로 이미 교체**, ~2MB까진 더 줄일 여지). ② 화석↔실사 정렬 폰에서 확인 후 `boneScale` 조정. ③ 나머지 9종(트리케라톱스·스테고·브라키오·안킬로·파라사우롤로푸스·벨로키랍토르·스피노·파키케팔로·이구아노돈) 에셋 추가. ④ 본게임 통합(시작화면 Dino 카드 잠금해제 + `dino_done` postMessage→GA category=dino).
   - 폰 테스트: 고정주소 `https://kimsrain3-rgb.github.io/ABC_FROG/test/` (홈화면 추가 전체화면). 동물 테스트판은 라이브 본게임에 이미 통합돼 슬롯 비어 있었음.
+
+### 2026-07-01
+- **티라노 영상 교체 반영** — 같은 파일명(`movie_tyrannosaurus.mp4`)으로 **11MB→4.8MB** 교체(사장님 압축). /test/는 캐시버스터(`?cb=`) 있어 런처 재진입 시 새 영상 자동 수신(라이브였다면 같은이름 교체=캐시 문제 났을 것). 라이브 Content-Length 4.8MB 확인.
+- **🦖 시작화면 퍼즐 메뉴에 공룡(Dino) 예고편 카드 추가 — 라이브 반영** (`index.html`). 채소(Vegetable) 옆에 잠긴 카드로: `wc-locked` 회색 + 🦖 + Dino + 🔒, 누르면 "곧 나와요 🔜" 토스트. **출시예정 티저 역할**(실플레이는 아직 /test/ 시제품).
+  - 디자인: 시안 3종(회색 잠금 / 화석 모래색+SOON뱃지 / 보라 강조+SOON뱃지)을 실제 CSS로 렌더해 보여드림 → 사장님 **"출시 전 컬러는 무조건 회색으로 통일"** 결정. → 규칙화([[feedback_locked_card_gray]]). 4카드(Fruit·Animal·Vegetable·Dino) 폰(390×844) 다 들어감 Playwright 확인.
+  - 본게임 통합 때 이 회색 Dino 카드를 열림(고유색+공룡 퍼즐 연결)으로 전환하면 됨.
