@@ -1471,6 +1471,34 @@ function _ensureDinoCard(){
 try{ _ensureDinoCard(); }catch(e){}
 try{ document.addEventListener('DOMContentLoaded',_ensureDinoCard); }catch(e){}
 
+// ★ Insect(곤충) 예고편 카드도 런타임 보장 (Dino와 동일 방식 — 캐시된 옛 index.html 폰도 즉시 반영).
+function _ensureInsectCard(){
+  try{
+    var iconHTML='<img class="insect-sil-ic" src="assets/icons/insect_silhouette.svg" alt="insect">';
+    var cards=document.querySelectorAll('.wc-card'), ins=null;
+    for(var i=0;i<cards.length;i++){
+      var lbl=cards[i].querySelector('.card-label');
+      if(lbl && lbl.textContent.trim().toLowerCase()==='insect'){ ins=cards[i]; break; }
+    }
+    if(ins){
+      ins.classList.add('wc-locked','wc-insect');
+      var ic=ins.querySelector('.card-icon');
+      if(ic && !ic.querySelector('.insect-sil-ic')){ ic.innerHTML=iconHTML; }
+    } else {
+      var wrap=document.querySelector('.wc-cards');
+      if(wrap){
+        var b=document.createElement('button');
+        b.className='game-card wc-card wc-locked wc-insect';
+        b.setAttribute('onclick','wcLocked(this)');
+        b.innerHTML='<span class="card-icon">'+iconHTML+'</span><span class="card-label">Insect</span><span class="wc-lock">🔒</span>';
+        wrap.appendChild(b);
+      }
+    }
+  }catch(e){}
+}
+try{ _ensureInsectCard(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',_ensureInsectCard); }catch(e){}
+
 // === ABC 모드 선택 화면 ===
 function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }

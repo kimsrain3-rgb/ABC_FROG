@@ -160,10 +160,10 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wc-locked{background:linear-gradient(180deg,#C4C4C4,#9E9E9E);border-color:#757575}
 .wc-locked .card-icon,.wc-locked .card-label{opacity:.7;filter:grayscale(.4)}
 .wc-lock{position:absolute;right:8px;top:6px;font-size:18px}
-.wc-dino{padding-top:8px;padding-bottom:8px}   /* 큰 아이콘 써도 다른 카드와 높이 맞게 */
-.wc-dino .card-icon{opacity:1;filter:none}      /* 검정 실루엣은 흐리지 않게(또렷) */
+.wc-dino,.wc-insect{padding-top:8px;padding-bottom:8px}   /* 큰 실루엣 아이콘 써도 다른 카드와 높이 맞게 */
+.wc-dino .card-icon,.wc-insect .card-icon{opacity:1;filter:none}      /* 검정 실루엣은 흐리지 않게(또렷) */
 .game-card .card-icon img.dino-skull-ic{width:44px;height:44px;display:block;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.35);object-fit:cover}
-.game-card .card-icon img.dino-sil-ic{width:auto;height:44px;display:block;object-fit:contain}
+.game-card .card-icon img.dino-sil-ic,.game-card .card-icon img.insect-sil-ic{width:auto;height:44px;display:block;object-fit:contain}
 .wc-card-shake{animation:wcShake .4s ease}
 @keyframes wcShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-9px)}30%{transform:translateX(9px)}45%{transform:translateX(-7px)}60%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
 .wc-toast{position:absolute;bottom:11%;left:50%;transform:translateX(-50%) translateY(18px);background:rgba(0,0,0,.82);color:#fff;padding:12px 24px;border-radius:30px;font-size:20px;font-weight:bold;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap}
