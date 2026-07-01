@@ -4,7 +4,7 @@ window.onerror=function(msg,src,line,col,err){console.warn('Error caught:',msg);
 window.addEventListener('unhandledrejection',function(e){e.preventDefault();console.warn('Promise rejected:',e.reason);});
 
 // === 인트로 개구리 숨쉬기 ===
-(function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{t=!t;f.src='assets/images/frog_4'+(t?'b':'a')+'.png'},800);})();
+(function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{t=!t;f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.png'},800);})();
 
 // === 디버그 도구 ===
 // debugStage(4) → 4단계로 점프
@@ -40,10 +40,10 @@ window.debugSet=function(x,y){
 
 // === 사운드 에셋 (안전 로딩) ===
 function safeAudio(src){try{var a=new Audio(src);a.onerror=function(){};return a;}catch(e){return {play:function(){return Promise.resolve()},pause:function(){},cloneNode:function(){return this},volume:0,currentTime:0,loop:false,onerror:null,onended:null};}}
-const SND_FLY1=safeAudio('assets/sounds/fly_buzz1.mp3');
-const SND_FLY2=safeAudio('assets/sounds/fly_buzz2.mp3');
-const SND_FROG=safeAudio('assets/sounds/frog_tongue.mp3');
-const SND_BGM=safeAudio('assets/sounds/bgm.mp3');
+const SND_FLY1=safeAudio('assets/bugs/sounds/fly_buzz1.mp3');
+const SND_FLY2=safeAudio('assets/bugs/sounds/fly_buzz2.mp3');
+const SND_FROG=safeAudio('assets/frog/sounds/frog_tongue.mp3');
+const SND_BGM=safeAudio('assets/game/sounds/bgm.mp3');
 SND_BGM.loop=true;SND_BGM.volume=0.25;
 SND_FLY1.volume=0.5;SND_FLY2.volume=0.5;
 SND_FROG.volume=0.5;
@@ -87,16 +87,16 @@ function startFlyBuzz(){function loop(){playFlyBuzz();flyBuzzInterval=setTimeout
 function stopFlyBuzz(){if(flyBuzzInterval)clearTimeout(flyBuzzInterval);}
 
 const FLY_IMGS={
-  left:["assets/images/fly_left.png","assets/images/fly_left2.png"],
-  right:["assets/images/fly_right.png","assets/images/fly_right2.png"],
-  front:["assets/images/fly_front.png","assets/images/fly_front2.png"]
+  left:["assets/bugs/images/fly_left.png","assets/bugs/images/fly_left2.png"],
+  right:["assets/bugs/images/fly_right.png","assets/bugs/images/fly_right2.png"],
+  front:["assets/bugs/images/fly_front.png","assets/bugs/images/fly_front2.png"]
 };
 const DRAGONFLY_IMGS={
-  left:["assets/images/dregon1.png","assets/images/dregon1-1.png"],
-  right:["assets/images/dregon2.png","assets/images/dregon2-1.png"],
-  front:["assets/images/dregon1.png","assets/images/dregon1-1.png"]
+  left:["assets/bugs/images/dregon1.png","assets/bugs/images/dregon1-1.png"],
+  right:["assets/bugs/images/dregon2.png","assets/bugs/images/dregon2-1.png"],
+  front:["assets/bugs/images/dregon1.png","assets/bugs/images/dregon1-1.png"]
 };
-const SPIDER_IMGS=["assets/images/spider1.png","assets/images/spider1-1.png"];
+const SPIDER_IMGS=["assets/bugs/images/spider1.png","assets/bugs/images/spider1-1.png"];
 const DIRS=['left','right','front'];
 
 const PHRASES=[
@@ -121,8 +121,8 @@ const LETTER_SOUND={
 };
 
 const BUTTERFLY_FRAMES=[
-  'assets/images/butterfly_frame1.png',
-  'assets/images/butterfly_frame2.png'
+  'assets/bugs/images/butterfly_frame1.png',
+  'assets/bugs/images/butterfly_frame2.png'
 ];
 
 // 나비 (파리 사이 날아다님)
@@ -325,55 +325,55 @@ function updateButterfly(){
 }
 
 const VOICE={
-  where_is:safeAudio('assets/sounds/voice_where_is.mp3'),
-  find_for_me:safeAudio('assets/sounds/voice_find_for_me.mp3'),
-  i_see:safeAudio('assets/sounds/voice_i_see.mp3'),
-  tap:safeAudio('assets/sounds/voice_tap.mp3'),
-  can_you_see:safeAudio('assets/sounds/voice_can_you_see.mp3'),
-  help_me_find:safeAudio('assets/sounds/voice_help_me_find.mp3'),
-  look:safeAudio('assets/sounds/voice_look.mp3'),
-  over_there:safeAudio('assets/sounds/voice_over_there.mp3'),
-  catch_v:safeAudio('assets/sounds/voice_catch_v.mp3'),
-  congrats:safeAudio('assets/sounds/voice_congrats.mp3'),
-  you_did_it:safeAudio('assets/sounds/voice_you_did_it.mp3'),
-  hooray:safeAudio('assets/sounds/voice_hooray.mp3'),
-  tap_the_letter:safeAudio('assets/sounds/voice_tap_the_letter.mp3'),
-  excellent:safeAudio('assets/sounds/voice_excellent.mp3'),
-  good_job:safeAudio('assets/sounds/voice_good_job.mp3'),
-  nice:safeAudio('assets/sounds/voice_nice.mp3'),
-  awesome:safeAudio('assets/sounds/voice_awesome.mp3'),
-  great_catch:safeAudio('assets/sounds/voice_great_catch.mp3'),
-  youre_a_genius:safeAudio('assets/sounds/voice_youre_a_genius.mp3'),
-  thats_right:safeAudio('assets/sounds/voice_thats_right.mp3'),
-  amazing:safeAudio('assets/sounds/voice_amazing.mp3'),
-  well_done:safeAudio('assets/sounds/voice_well_done.mp3'),
-  super:safeAudio('assets/sounds/voice_super.mp3'),
-  fantastic:safeAudio('assets/sounds/voice_fantastic.mp3'),
-  you_got_it:safeAudio('assets/sounds/voice_you_got_it.mp3'),
-  perfect:safeAudio('assets/sounds/voice_perfect.mp3'),
-  brilliant:safeAudio('assets/sounds/voice_brilliant.mp3'),
-  way_to_go:safeAudio('assets/sounds/voice_way_to_go.mp3'),
-  bingo:safeAudio('assets/sounds/voice_bingo.mp3'),
-  yummy:safeAudio('assets/sounds/voice_yummy.mp3'),
-  yummy_yummy:safeAudio('assets/sounds/voice_yummy_yummy.mp3'),
-  i_wanna_eat:safeAudio('assets/sounds/voice_i_wanna_eat.mp3'),
-  give_me:safeAudio('assets/sounds/voice_give_me.mp3'),
-  i_need:safeAudio('assets/sounds/voice_i_need.mp3'),
-  find:safeAudio('assets/sounds/voice_find.mp3'),
-  looks_so_yummy:safeAudio('assets/sounds/voice_looks_so_yummy.mp3'),
-  gimme:safeAudio('assets/sounds/voice_gimme.mp3'),
-  bring_me:safeAudio('assets/sounds/voice_bring_me.mp3'),
-  please_v:safeAudio('assets/sounds/voice_please_v.mp3'),
-  im_so_hungry:safeAudio('assets/sounds/voice_im_so_hungry.mp3'),
-  im_hungry:safeAudio('assets/sounds/voice_im_hungry.mp3'),
-  im_so_full:safeAudio('assets/sounds/voice_im_so_full.mp3'),
+  where_is:safeAudio('assets/game/sounds/voice_where_is.mp3'),
+  find_for_me:safeAudio('assets/game/sounds/voice_find_for_me.mp3'),
+  i_see:safeAudio('assets/game/sounds/voice_i_see.mp3'),
+  tap:safeAudio('assets/game/sounds/voice_tap.mp3'),
+  can_you_see:safeAudio('assets/game/sounds/voice_can_you_see.mp3'),
+  help_me_find:safeAudio('assets/game/sounds/voice_help_me_find.mp3'),
+  look:safeAudio('assets/game/sounds/voice_look.mp3'),
+  over_there:safeAudio('assets/game/sounds/voice_over_there.mp3'),
+  catch_v:safeAudio('assets/game/sounds/voice_catch_v.mp3'),
+  congrats:safeAudio('assets/game/sounds/voice_congrats.mp3'),
+  you_did_it:safeAudio('assets/game/sounds/voice_you_did_it.mp3'),
+  hooray:safeAudio('assets/game/sounds/voice_hooray.mp3'),
+  tap_the_letter:safeAudio('assets/game/sounds/voice_tap_the_letter.mp3'),
+  excellent:safeAudio('assets/game/sounds/voice_excellent.mp3'),
+  good_job:safeAudio('assets/game/sounds/voice_good_job.mp3'),
+  nice:safeAudio('assets/game/sounds/voice_nice.mp3'),
+  awesome:safeAudio('assets/game/sounds/voice_awesome.mp3'),
+  great_catch:safeAudio('assets/game/sounds/voice_great_catch.mp3'),
+  youre_a_genius:safeAudio('assets/game/sounds/voice_youre_a_genius.mp3'),
+  thats_right:safeAudio('assets/game/sounds/voice_thats_right.mp3'),
+  amazing:safeAudio('assets/game/sounds/voice_amazing.mp3'),
+  well_done:safeAudio('assets/game/sounds/voice_well_done.mp3'),
+  super:safeAudio('assets/game/sounds/voice_super.mp3'),
+  fantastic:safeAudio('assets/game/sounds/voice_fantastic.mp3'),
+  you_got_it:safeAudio('assets/game/sounds/voice_you_got_it.mp3'),
+  perfect:safeAudio('assets/game/sounds/voice_perfect.mp3'),
+  brilliant:safeAudio('assets/game/sounds/voice_brilliant.mp3'),
+  way_to_go:safeAudio('assets/game/sounds/voice_way_to_go.mp3'),
+  bingo:safeAudio('assets/game/sounds/voice_bingo.mp3'),
+  yummy:safeAudio('assets/game/sounds/voice_yummy.mp3'),
+  yummy_yummy:safeAudio('assets/game/sounds/voice_yummy_yummy.mp3'),
+  i_wanna_eat:safeAudio('assets/game/sounds/voice_i_wanna_eat.mp3'),
+  give_me:safeAudio('assets/game/sounds/voice_give_me.mp3'),
+  i_need:safeAudio('assets/game/sounds/voice_i_need.mp3'),
+  find:safeAudio('assets/game/sounds/voice_find.mp3'),
+  looks_so_yummy:safeAudio('assets/game/sounds/voice_looks_so_yummy.mp3'),
+  gimme:safeAudio('assets/game/sounds/voice_gimme.mp3'),
+  bring_me:safeAudio('assets/game/sounds/voice_bring_me.mp3'),
+  please_v:safeAudio('assets/game/sounds/voice_please_v.mp3'),
+  im_so_hungry:safeAudio('assets/game/sounds/voice_im_so_hungry.mp3'),
+  im_hungry:safeAudio('assets/game/sounds/voice_im_hungry.mp3'),
+  im_so_full:safeAudio('assets/game/sounds/voice_im_so_full.mp3'),
 };
 function playVoice(k,vol){var v=VOICE[k];if(!v)return;v.currentTime=0;v.volume=vol||0.8;v.play().catch(function(){});}
 
-const SND_WOOWECK=safeAudio('assets/sounds/wooweck.mp3');
+const SND_WOOWECK=safeAudio('assets/game/sounds/wooweck.mp3');
 const BF_VOICES=[
-  safeAudio('assets/sounds/butterfly_voice1.mp3'),
-  safeAudio('assets/sounds/butterfly_voice2.mp3')
+  safeAudio('assets/bugs/sounds/butterfly_voice1.mp3'),
+  safeAudio('assets/bugs/sounds/butterfly_voice2.mp3')
 ];
 let bfVoiceIdx=0;
 function playBfVoice(){
@@ -383,16 +383,16 @@ function playBfVoice(){
 }
 
 const BUTTERFLY_SHOCK=[
-  'assets/images/butterfly_shock1.png',
-  'assets/images/butterfly_shock2.png'
+  'assets/bugs/images/butterfly_shock1.png',
+  'assets/bugs/images/butterfly_shock2.png'
 ];
 
 const CATERPILLAR_FRAMES=[
-  'assets/images/caterpillar_frame1.png',
-  'assets/images/caterpillar_frame2.png',
-  'assets/images/caterpillar_frame3.png',
-  'assets/images/caterpillar_frame4.png',
-  'assets/images/caterpillar_frame5.png'
+  'assets/bugs/images/caterpillar_frame1.png',
+  'assets/bugs/images/caterpillar_frame2.png',
+  'assets/bugs/images/caterpillar_frame3.png',
+  'assets/bugs/images/caterpillar_frame4.png',
+  'assets/bugs/images/caterpillar_frame5.png'
 ];
 
 // 애벌레 (연잎 위)
@@ -526,32 +526,32 @@ function initCaterpillar(){
 }
 
 const LETTER_AUDIO={
-  A:'assets/sounds/letter_a.mp3',
-  B:'assets/sounds/letter_b.mp3',
-  C:'assets/sounds/letter_c.mp3',
-  D:'assets/sounds/letter_d.mp3',
-  E:'assets/sounds/letter_e.mp3',
-  F:'assets/sounds/letter_f.mp3',
-  G:'assets/sounds/letter_g.mp3',
-  H:'assets/sounds/letter_h.mp3',
-  I:'assets/sounds/letter_i.mp3',
-  J:'assets/sounds/letter_j.mp3',
-  K:'assets/sounds/letter_k.mp3',
-  L:'assets/sounds/letter_l.mp3',
-  M:'assets/sounds/letter_m.mp3',
-  N:'assets/sounds/letter_n.mp3',
-  O:'assets/sounds/letter_o.mp3',
-  P:'assets/sounds/letter_p.mp3',
-  Q:'assets/sounds/letter_q.mp3',
-  R:'assets/sounds/letter_r.mp3',
-  S:'assets/sounds/letter_s.mp3',
-  T:'assets/sounds/letter_t.mp3',
-  U:'assets/sounds/letter_u.mp3',
-  V:'assets/sounds/letter_v.mp3',
-  W:'assets/sounds/letter_w.mp3',
-  X:'assets/sounds/letter_x.mp3',
-  Y:'assets/sounds/letter_y.mp3',
-  Z:'assets/sounds/letter_z.mp3'
+  A:'assets/abc/sounds/letter_a.mp3',
+  B:'assets/abc/sounds/letter_b.mp3',
+  C:'assets/abc/sounds/letter_c.mp3',
+  D:'assets/abc/sounds/letter_d.mp3',
+  E:'assets/abc/sounds/letter_e.mp3',
+  F:'assets/abc/sounds/letter_f.mp3',
+  G:'assets/abc/sounds/letter_g.mp3',
+  H:'assets/abc/sounds/letter_h.mp3',
+  I:'assets/abc/sounds/letter_i.mp3',
+  J:'assets/abc/sounds/letter_j.mp3',
+  K:'assets/abc/sounds/letter_k.mp3',
+  L:'assets/abc/sounds/letter_l.mp3',
+  M:'assets/abc/sounds/letter_m.mp3',
+  N:'assets/abc/sounds/letter_n.mp3',
+  O:'assets/abc/sounds/letter_o.mp3',
+  P:'assets/abc/sounds/letter_p.mp3',
+  Q:'assets/abc/sounds/letter_q.mp3',
+  R:'assets/abc/sounds/letter_r.mp3',
+  S:'assets/abc/sounds/letter_s.mp3',
+  T:'assets/abc/sounds/letter_t.mp3',
+  U:'assets/abc/sounds/letter_u.mp3',
+  V:'assets/abc/sounds/letter_v.mp3',
+  W:'assets/abc/sounds/letter_w.mp3',
+  X:'assets/abc/sounds/letter_x.mp3',
+  Y:'assets/abc/sounds/letter_y.mp3',
+  Z:'assets/abc/sounds/letter_z.mp3'
 };
 
 // 알파벳 mp3 재생 함수
@@ -1154,15 +1154,15 @@ function go(mode){
   const gc=document.getElementById('gc');
   gc.classList.remove('mode-abc','mode-ABc');
   if(gameMode==='abc'){
-    document.body.style.background="url('assets/images/bg_4.png') center bottom/cover no-repeat";
+    document.body.style.background="url('assets/ui/images/bg_4.png') center bottom/cover no-repeat";
     document.body.style.backgroundColor="#87CEEB";
     gc.classList.add('mode-abc');
   } else if(gameMode==='ABc'){
-    document.body.style.background="url('assets/images/bg_5.png') center/cover no-repeat";
+    document.body.style.background="url('assets/ui/images/bg_5.png') center/cover no-repeat";
     document.body.style.backgroundColor="#2a3a1a";
     gc.classList.add('mode-ABc');
   } else {
-    document.body.style.background="url('assets/images/bg_1.png') center/cover no-repeat";
+    document.body.style.background="url('assets/ui/images/bg_1.png') center/cover no-repeat";
     document.body.style.backgroundColor="#2D6B5E";
   }
   frogStage=1;setFrame('a');
@@ -1316,16 +1316,16 @@ function pineappleSil(){return `
 
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
-  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/images/fruit_apple.png?v=1'},
-  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/images/fruit_banana.png?v=1',cut:'bsp',parts:6},
-  grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/images/fruit_grape.png?v=1'},
-  orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/images/fruit_orange.png?v=1'},
-  strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/images/fruit_strawberry.png?v=1'},
-  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/images/fruit_watermelon.png?v=1'},
-  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/images/fruit_peach.png?v=1'},
-  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/images/fruit_lemon.png?v=1'},
-  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/images/fruit_mango.png?v=1'},
-  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/images/fruit_pineapple.png?v=1',scale:1.3}
+  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/fruit/images/fruit_apple_image.png?v=1'},
+  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/fruit/images/fruit_banana_image.png?v=1',cut:'bsp',parts:6},
+  grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/fruit/images/fruit_grape_image.png?v=1'},
+  orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/fruit/images/fruit_orange_image.png?v=1'},
+  strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/fruit/images/fruit_strawberry_image.png?v=1'},
+  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/fruit/images/fruit_watermelon_image.png?v=1'},
+  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/fruit/images/fruit_peach_image.png?v=1'},
+  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/fruit/images/fruit_lemon_image.png?v=1'},
+  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/fruit/images/fruit_mango_image.png?v=1'},
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/fruit/images/fruit_pineapple_image.png?v=1',scale:1.3}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
@@ -1446,7 +1446,7 @@ try{ document.addEventListener('DOMContentLoaded',_unlockAnimalCard); }catch(e){
 //   옛 index.html(카드 없음/이모지 아이콘)이 캐시된 폰에서도 즉시 Dino 카드(실루엣)가 뜸.
 function _ensureDinoCard(){
   try{
-    var iconHTML='<img class="dino-sil-ic" src="assets/icons/dino_silhouette.png" alt="dino">';
+    var iconHTML='<img class="dino-sil-ic" src="assets/ui/icons/dino_silhouette.png" alt="dino">';
     var cards=document.querySelectorAll('.wc-card'), dino=null;
     for(var i=0;i<cards.length;i++){
       var lbl=cards[i].querySelector('.card-label');
@@ -1474,7 +1474,7 @@ try{ document.addEventListener('DOMContentLoaded',_ensureDinoCard); }catch(e){}
 // ★ Insect(곤충) 예고편 카드도 런타임 보장 (Dino와 동일 방식 — 캐시된 옛 index.html 폰도 즉시 반영).
 function _ensureInsectCard(){
   try{
-    var iconHTML='<img class="insect-sil-ic" src="assets/icons/insect_silhouette.svg" alt="insect">';
+    var iconHTML='<img class="insect-sil-ic" src="assets/ui/icons/insect_silhouette.svg" alt="insect">';
     var cards=document.querySelectorAll('.wc-card'), ins=null;
     for(var i=0;i<cards.length;i++){
       var lbl=cards[i].querySelector('.card-label');
@@ -2013,7 +2013,7 @@ function buildPuzzle(key){
 var _wpLbuf={};
 function wpLoadLetter(ch){
   ch=ch.toLowerCase(); if(_wpLbuf[ch]) return _wpLbuf[ch];
-  _wpLbuf[ch]=fetch('assets/sounds/letter_'+ch+'.mp3').then(function(r){return r.arrayBuffer();})
+  _wpLbuf[ch]=fetch('assets/abc/sounds/letter_'+ch+'.mp3').then(function(r){return r.arrayBuffer();})
     .then(function(ab){ ea(); if(!ax) return null; return new Promise(function(res,rej){ ax.decodeAudioData(ab,res,rej); }); })
     .then(function(buf){ if(!buf) return null;
       var d=buf.getChannelData(0), sr=buf.sampleRate, win=Math.floor(sr*0.01), thr=0.015, first=-1, last=0;
@@ -2080,8 +2080,8 @@ function wpComplete(){
           src.buffer=info.buffer; g.gain.value=0.5; src.connect(g); g.connect(ax.destination);
           src.start(0, info.start, info.end-info.start);   // 묵음 잘라낸 발음 구간만 재생
           dur=(info.end-info.start)*1000;
-        }catch(e){ try{ var a=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
-      } else { try{ var a2=safeAudio('assets/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
+        }catch(e){ try{ var a=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
+      } else { try{ var a2=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
       setTimeout(function(){ playLetter(i+1); }, dur+LETTER_GAP);   // 발음 끝나면 GAP만 쉬고 다음
     });
   }
@@ -2132,7 +2132,7 @@ function wpPlayEnding(stage){
   _wpEndingStop=endingStop;   // 이 시점부터 화면 이탈 시 정리 가능
   // "Thanks friend, yummy fruit!" 음성 — 이 음성이 끝나면 마무리(타이밍 지휘자)
   try{
-    voice=safeAudio('assets/sounds/Thanks-friend-Yummy-fruit.mp3'); voice.volume=1;
+    voice=safeAudio('assets/fruit/sounds/Thanks-friend-Yummy-fruit.mp3'); voice.volume=1;
     voice.onended=finish;
     var vpr=voice.play();
     if(vpr&&vpr.then){ vpr.then(function(){ voiceOk=true; }).catch(function(){ voiceOk=false; }); }
@@ -2142,7 +2142,7 @@ function wpPlayEnding(stage){
   try{
     ov=document.createElement('div'); ov.className='wp-video'; ov.id='wpVideo';
     var vid=document.createElement('video');
-    vid.src='assets/images/frog-baskit.mp4';
+    vid.src='assets/frog/videos/frog-baskit.mp4';
     vid.muted=true; vid.defaultMuted=true; vid.setAttribute('muted','');     // 무음 → 폰 자동재생 허용
     vid.setAttribute('playsinline',''); vid.playsInline=true;                 // iOS 전체화면 강제 방지
     vid.autoplay=true; vid.controls=false; vid.preload='auto';
@@ -2169,7 +2169,7 @@ function wpPlayEnding(stage){
 
 // 단어 음성: voice_<word>.mp3 → .wav 순으로 파일 재생, 둘 다 없으면 브라우저 TTS
 function wpSayWord(w){
-  var base='assets/sounds/voice_'+w.toLowerCase();
+  var base='assets/fruit/sounds/voice_'+w.toLowerCase();
   var settled=false;
   function tts(){ if(settled)return; settled=true;
     try{ if(window.speechSynthesis){ speechSynthesis.cancel();

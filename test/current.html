@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ABC Frog TEST">
 <link rel="manifest" href="test/manifest.json">
-<link rel="apple-touch-icon" href="assets/icons/icon-192x192.png">
+<link rel="apple-touch-icon" href="assets/ui/icons/icon-192x192.png">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
 <style>
   html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
@@ -67,10 +67,10 @@
   //  ghost=화석 밑그림 투명도(톤다운 위해 낮게). boneScale/boneShiftX/boneShiftY=화석을 실사 위에 겹치게 미세조정(폰에서 맞춤).
   var ANIMALS=[
     { key:'tyrannosaurus', word:'TYRANNOSAURUS', say:'Tyrannosaurus', title:'🦖 Make the T-Rex!',
-      bone:'assets/images/image_TYRANNOSAURUS-bone.jpg',   // 밑그림(화석)
-      img:'assets/images/image_TYRANNOSAURUS.jpeg',        // 퍼즐 조각(살아있는 공룡)
-      video:'assets/images/movie_tyrannosaurus.mp4',
-      sound:'assets/sounds/sound_tyronnosaurus.mp3',
+      bone:'assets/dino/images/dino_trex_bone_image.jpg',   // 밑그림(화석)
+      img:'assets/dino/images/dino_trex_image.jpg',        // 퍼즐 조각(살아있는 공룡)
+      video:'assets/dino/videos/dino_trex_movie.mp4',
+      sound:'assets/dino/sounds/dino_trex_sound.mp3',
       ghost:0.22, alignY:0.50, boneScale:1, boneShiftX:0, boneShiftY:0 }
   ];
   var animalIdx=0;
@@ -95,7 +95,7 @@
     g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.76,t+0.005); g.gain.exponentialRampToValueAtTime(0.0001,t+0.09);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+0.11);}catch(e){} }
   var BGM_FULL=0.25, BGM_DUCK=0.20;   // 평소 / 음성·영상 구간(원래보다 20% 낮춤 — 음악 끊지 않고 이어감)
-  var bgm=new Audio('assets/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=BGM_FULL;
+  var bgm=new Audio('assets/game/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=BGM_FULL;
   var bgmOn=false;
   function startBgm(){ if(bgmOn)return; actx();   // 실제 재생 성공해야 bgmOn=true (막히면 다음 제스처에 재시도)
     try{ var p=bgm.play(); if(p&&p.then){ p.then(function(){bgmOn=true;}).catch(function(){}); } else { bgmOn=true; } }catch(e){} }
@@ -132,7 +132,7 @@
   var _lbuf={};   // 글자별 {buffer,start,end} 캐시(중복 디코드 방지)
   function loadLetter(ch){
     ch=ch.toLowerCase(); if(_lbuf[ch]) return _lbuf[ch];
-    _lbuf[ch]=fetch('assets/sounds/letter_'+ch+'.mp3').then(function(r){return r.arrayBuffer();})
+    _lbuf[ch]=fetch('assets/abc/sounds/letter_'+ch+'.mp3').then(function(r){return r.arrayBuffer();})
       .then(function(ab){ var c=actx(); return new Promise(function(res,rej){ c.decodeAudioData(ab,res,rej); }); })
       .then(function(buf){
         var d=buf.getChannelData(0), sr=buf.sampleRate, win=Math.floor(sr*0.01), thr=0.015, first=-1, last=0;
