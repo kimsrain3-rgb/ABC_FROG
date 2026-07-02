@@ -23,7 +23,7 @@
   #title{position:absolute;top:8px;left:0;width:100%;text-align:center;font-weight:700;color:#3a5a2a;font-size:15px;z-index:5;text-shadow:0 1px 2px #fff}
   #tray{position:relative;flex:1 1 auto;background:#c3cdd2;border-top:3px solid #aab6bc}
   #traylabel{position:absolute;top:4px;left:0;width:100%;text-align:center;font-size:11px;color:#5d6a70;font-weight:600;pointer-events:none}
-  .ghost{position:absolute;opacity:.30;filter:grayscale(.45) brightness(1.22) contrast(.8) saturate(.5);pointer-events:none}   /* 화석 밑그림: 톤다운(연하게+탈색)해 안 무섭게 */
+  .ghost{position:absolute;opacity:.30;filter:saturate(.8);pointer-events:none}   /* 밑그림 = 실물 이미지 흐리게(동물 퍼즐 방식). 화석 안 씀 */
   #slots{position:absolute;left:0;top:0;overflow:visible;pointer-events:none}
   #layer{position:fixed;inset:0;pointer-events:none}
   .piece{position:absolute;transform-origin:top left;pointer-events:auto;cursor:grab;touch-action:none;z-index:20;
@@ -61,17 +61,16 @@
 <button id="mute" style="position:fixed;top:8px;right:8px;z-index:60;font-size:18px;background:rgba(255,255,255,.82);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)">🔊</button>
 <div id="done"><div class="msg">🦖 Tyrannosaurus!</div></div>
 <script>
-  // === 🦕 공룡 화석 시리즈 — 프로토타입 (엔진 변수명은 animal 그대로 재활용) ===
-  //  ⭐ 동물 퍼즐과 다른 점: bone=화석(밑그림), img=실사 공룡(퍼즐 조각). 완성하면 화석 위에 공룡이 되살아남.
+  // === 🦕 공룡 퍼즐 시리즈 — 프로토타입 (엔진 변수명은 animal 그대로 재활용) ===
+  //  ⭐ 동물 퍼즐과 동일 방식: img=실물 공룡(퍼즐 조각 + 흐린 밑그림 겸용). 화석 이미지는 안 씀(싱크 맞추기 어려워 폐기).
   //  스펠링 없음 → 완성 후 '이름만' 1번 읽고(say/sound) → 살아있는 공룡 영상.
-  //  ghost=화석 밑그림 투명도(톤다운 위해 낮게). boneScale/boneShiftX/boneShiftY=화석을 실사 위에 겹치게 미세조정(폰에서 맞춤).
+  //  ghost=밑그림 투명도(0.30 기본, 밝은 색 공룡은 진하게). alignY=세로 정렬(0.5=가운데,1=아래).
   var ANIMALS=[
     { key:'tyrannosaurus', word:'TYRANNOSAURUS', say:'Tyrannosaurus', title:'🦖 Make the T-Rex!',
-      bone:'assets/dino/images/dino_trex_bone_image.jpg',   // 밑그림(화석)
-      img:'assets/dino/images/dino_trex_image.jpg',        // 퍼즐 조각(살아있는 공룡)
+      img:'assets/dino/images/dino_trex_image.jpg',        // 실물 공룡 (퍼즐 조각 + 흐린 밑그림 겸용)
       video:'assets/dino/videos/dino_trex_movie.mp4',
       sound:'assets/dino/sounds/dino_trex_sound.mp3',
-      ghost:0.22, alignY:0.50, boneScale:1, boneShiftX:0, boneShiftY:0 }
+      ghost:0.30, alignY:0.50 }
   ];
   var animalIdx=0;
   var demoDone=false;   // 첫 퍼즐에서 조각 하나 스르륵 들어가는 시범 — 1회만
@@ -244,11 +243,11 @@
     var uw=rw/COLS, uh=rh/ROWS, mg=Math.min(uw,uh)*0.34;
     var trayTop=board.getBoundingClientRect().height;
 
-    // ghost = 화석(밑그림). 조각(실사)과 겹치게 boneScale/boneShift로 미세조정 가능.
+    // ghost = 실물 이미지(img)를 흐리게 깔아 밑그림으로. 조각과 같은 이미지라 항상 정확히 겹침(동물 퍼즐 방식).
     var g=document.createElement('img'); g.src=bust(A.bone||IMG); g.className='ghost';
     var bsc=(A.boneScale!=null?A.boneScale:1), gW=coverW*bsc, gH=coverH*bsc;
     var gX=imgX-(gW-coverW)/2+(A.boneShiftX||0), gY=imgY-(gH-coverH)/2+(A.boneShiftY||0);
-    g.style.cssText='left:'+gX+'px;top:'+gY+'px;width:'+gW+'px;height:'+gH+'px;opacity:'+(A.ghost||0.22);
+    g.style.cssText='left:'+gX+'px;top:'+gY+'px;width:'+gW+'px;height:'+gH+'px;opacity:'+(A.ghost||0.30);
     board.appendChild(g);
     // 완성 시 보여줄 단어 글자 미리 생성(숨김) — 폭에 맞춰 글자 크기(긴 이름도 안 잘리게)
     (function(){ var w=document.getElementById('word'); if(!WORD){ w.innerHTML=''; return; }
