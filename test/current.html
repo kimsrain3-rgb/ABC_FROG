@@ -187,8 +187,9 @@
     var done=false, ov=null, safetyId=0;
     function showReplay(){
       if(document.getElementById('avReplay')) return;
+      try{ bgm.pause(); bgmOn=false; }catch(e){}   // 🎬 완료(마지막 공룡까지 끝) → BGM 정지. 다시하기 누르면 복구
       var rb=document.createElement('button'); rb.id='avReplay'; rb.className='av-replay'; rb.textContent='🔄';
-      rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); animalIdx=0; var o=document.getElementById('avVideo'); if(o)o.remove(); rb.remove(); buildAnimal(); };  // 처음 동물부터 다시
+      rb.onclick=function(ev){ if(ev&&ev.stopPropagation) ev.stopPropagation(); animalIdx=0; var o=document.getElementById('avVideo'); if(o)o.remove(); rb.remove(); buildAnimal(); if(!bgmOff){ bgmOn=false; startBgm(); } };  // 처음 공룡부터 다시 + 음악 복구
       document.body.appendChild(rb);
       setTimeout(function(){ rb.classList.add('show'); }, 300);
     }
