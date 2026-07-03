@@ -109,13 +109,23 @@
   var BGM_FULL=0.25, BGM_DUCK=0.20;   // 평소 / 음성·영상 구간(원래보다 20% 낮춤 — 음악 끊지 않고 이어감)
   var bgm=new Audio('assets/game/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=BGM_FULL;
   var bgmOn=false;
-  function startBgm(){ if(bgmOn)return; actx();   // 실제 재생 성공해야 bgmOn=true (막히면 다음 제스처에 재시도)
+  var bgmOff=false; try{ bgmOff=(localStorage.getItem('dino_bgm_off')==='1'); }catch(e){}   // 유저가 끈 상태(세션 유지). '음소거'가 아니라 '진짜 멈춤'
+  function startBgm(){ if(bgmOn||bgmOff)return; actx();   // 껐으면 시작 안 함. 실제 재생 성공해야 bgmOn=true (막히면 다음 제스처에 재시도)
     try{ var p=bgm.play(); if(p&&p.then){ p.then(function(){bgmOn=true;}).catch(function(){}); } else { bgmOn=true; } }catch(e){} }
   // 화면 진입 즉시 음악: 자동재생 시도 + (모바일은 보통 막히니) 화면 첫 터치/클릭에 즉시 시작
   function armBgm(){ startBgm();
     ['pointerdown','touchstart','click','keydown'].forEach(function(ev){ document.addEventListener(ev, startBgm, {once:true, capture:true, passive:true}); }); }
   var muteBtn=document.getElementById('mute');
-  if(muteBtn) muteBtn.onclick=function(){ bgm.muted=!bgm.muted; muteBtn.textContent=bgm.muted?'🔇':'🔊'; };
+  if(muteBtn){
+    muteBtn.textContent = bgmOff ? '🔇' : '🔊';
+    muteBtn.onclick=function(){
+      bgmOff=!bgmOff;
+      if(bgmOff){ try{bgm.pause();}catch(e){} }        // 🔇 = 진짜 멈춤(음소거 아님) → 데스크탑에서도 확실히 정지
+      else { bgmOn=false; startBgm(); }                // 🔊 = 다시 재생
+      muteBtn.textContent = bgmOff ? '🔇' : '🔊';
+      try{ localStorage.setItem('dino_bgm_off', bgmOff?'1':'0'); }catch(e){}
+    };
+  }
   // 앱 닫기/배경전환/화면끔 시 소리 정지(WebView에서 닫아도 BGM 계속 나오는 문제 방지). 돌아오면 BGM만 복구.
   document.addEventListener('visibilitychange',function(){
     try{
@@ -123,10 +133,13 @@
         try{bgm.pause();}catch(e){}
         try{document.querySelectorAll('video,audio').forEach(function(m){try{m.pause();}catch(e){}});}catch(e){}
         try{if(window.speechSynthesis) speechSynthesis.cancel();}catch(e){}
-      } else if(bgmOn && !bgm.muted){ try{bgm.play().catch(function(){});}catch(e){} }
+      } else if(bgmOn && !bgmOff){ try{bgm.play().catch(function(){});}catch(e){} }
     }catch(e){}
   });
   window.addEventListener('pagehide',function(){ try{bgm.pause();}catch(e){} });
+  // 데스크탑: 다른 앱/창으로 전환(alt-tab)하면 visibilitychange가 안 떠 BGM이 계속 남 → 창 포커스 잃으면 정지, 돌아오면 복구(끈 상태면 유지)
+  window.addEventListener('blur',function(){ try{bgm.pause();}catch(e){} });
+  window.addEventListener('focus',function(){ try{ if(bgmOn && !bgmOff) bgm.play().catch(function(){}); }catch(e){} });
 
   // === 완성 시 스펠링 + 단어 읽기 (과일 퍼즐 방식) ===
   function sayWord(){   // 단어 외치기: 동물별 mp3 있으면 그걸로, 없으면 TTS 폴백
@@ -241,7 +254,7 @@
     var rbb=document.getElementById('avReplay'); if(rbb) rbb.remove();
     document.getElementById('title').textContent=A.title;
     PZ=null;
-    try{ if(bgmOn && !bgm.muted){ bgm.volume=BGM_FULL; bgm.play().catch(function(){}); } }catch(e){}   // 다음 퍼즐: 볼륨 원복 + 이어재생
+    try{ if(bgmOn && !bgmOff){ bgm.volume=BGM_FULL; bgm.play().catch(function(){}); } }catch(e){}   // 다음 퍼즐: 볼륨 원복 + 이어재생
     // (공룡은 스펠링 없음 — 글자 음성 미리 디코드 불필요)
 
     var img=new Image();
