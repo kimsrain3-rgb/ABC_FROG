@@ -59,6 +59,9 @@
 <div id="layer"></div>
 <div id="word"></div>
 <button id="mute" style="position:fixed;top:8px;right:8px;z-index:60;font-size:18px;background:rgba(255,255,255,.82);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)">🔊</button>
+<!-- [테스트 전용] 공룡 바로가기: 처음부터 안 깨도 원하는 공룡으로 점프 (실제 게임엔 없음) -->
+<button id="devjump" style="position:fixed;top:8px;left:8px;z-index:62;font-size:16px;background:rgba(255,255,255,.82);border:none;border-radius:50%;width:38px;height:38px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.25)">🦕</button>
+<div id="devpanel" style="display:none;position:fixed;top:52px;left:8px;z-index:90;background:rgba(20,28,32,.92);border-radius:10px;padding:6px;max-height:72vh;overflow:auto;box-shadow:0 3px 12px rgba(0,0,0,.4)"></div>
 <div id="done"><div class="msg">🦖 Tyrannosaurus!</div></div>
 <script>
   // === 🦕 공룡 퍼즐 시리즈 — 프로토타입 (엔진 변수명은 animal 그대로 재활용) ===
@@ -401,6 +404,26 @@
 
   armBgm();        // 진입 즉시 배경음악(자동재생 시도 + 첫 터치 폴백)
   buildAnimal();   // 시작!
+
+  // === [테스트 전용] 공룡 바로가기 패널 (실제 게임엔 없음 — /test/ 검증 편의용) ===
+  // 🦕 버튼 누르면 공룡 목록 → 탭하면 그 공룡 퍼즐로 바로 점프. 목록은 ANIMALS에서 자동 생성.
+  (function(){
+    var btn=document.getElementById('devjump'), panel=document.getElementById('devpanel');
+    if(!btn||!panel) return;
+    ANIMALS.forEach(function(a,i){
+      var b=document.createElement('button');
+      b.textContent=(i+1)+'. '+(a.say||a.key);
+      b.style.cssText='display:block;width:100%;text-align:left;margin:2px 0;padding:8px 14px;border:none;border-radius:6px;background:#3a4a52;color:#fff;font-size:14px;cursor:pointer;white-space:nowrap';
+      b.onclick=function(){
+        panel.style.display='none';
+        var v=document.getElementById('avVideo'); if(v)v.remove();          // 영상 엔딩 떠있으면 제거
+        var rb=document.querySelector('.av-replay'); if(rb)rb.remove();     // 리플레이 버튼 제거
+        animalIdx=i; demoDone=true; buildAnimal();                          // 그 공룡으로 바로
+      };
+      panel.appendChild(b);
+    });
+    btn.onclick=function(){ panel.style.display = (panel.style.display==='none' ? 'block' : 'none'); };
+  })();
 </script>
 <script>
 // 서비스워커/캐시 자동 정리 — 시크릿 탭 없이도 항상 최신 (테스트 환경 공통)
