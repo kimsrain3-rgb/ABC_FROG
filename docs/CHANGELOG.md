@@ -191,3 +191,8 @@
 - **✅ assets 폴더 재구성 라이브 푸시 완료** (사장님 "내일 검토" → 검토 후 진행). 미푸시 3커밋(`5b7c3c1` 재구성 + docs 2건)을 `git push origin main`(`aa7d326..474d080`). GitHub Pages 재빌드 반영 확인(새 경로 `assets/ui/icons/dino_silhouette.png` 404→200).
   - **푸시 전 안전점검**: 코드(script.js·index.html·style.css·animal.html) 옛 flat경로(`assets/images|sounds|videos|icons/`) 참조 **0건** 재확인. 재구성 커밋은 깨끗한 git rename(205파일). SW는 캐시 안 하는 킬스위치라 경로 하드코딩 없음. untracked 파일(`assets/icons/ICON-1.png`, 옛 위치 `dog.mp4`·`fruit_basket.png`·`movie_tyrannosaurus.mp4`)은 **옛 위치 잔존물**이라 푸시 무관(코드가 참조 안 함).
   - **라이브 에셋 전수검증**: 코드에서 뽑은 정적 참조 **167개** + 동적조합(개구리 `frog_4a/b`, 알파벳 `letter_a~z` 26개, 과일음성 `voice_<10종>`) **38개** = **총 205개 전부 라이브 HTTP 200/206**. 실브라우저 로드(Playwright)에서도 전 에셋 요청 200/206, **404 없음**(콘솔 error는 무관한 루트 `favicon.ico` 404 하나뿐). → **깨진 것 0, 되돌리기 불필요.** (되돌림 대비 백업 태그 `backup-before-assets-reorg-20260701` 그대로 유지.)
+
+### 2026-07-06
+- **🦕 공룡 #6 파라사우롤로퍼스 추가 — /test/ 배포** (커밋 `5700584`). 시즌1 **6/10** 완료(1티라노·2트리케라톱스·3스테고·4브라키오·5안킬로·**6파라사우롤로퍼스**). 에셋 3종(`dino_parasaurolophus_image.jpg`·`_movie.mp4`·`_sound.mp3`) 사장님 업로드 → `test/current.html` `ANIMALS` 배열에 한 줄 추가(`ghost:0.30, alignY:0.50`). 점프 패널·마지막판정(`isLast`)은 배열 자동생성이라 코드 추가 불필요. **본게임 미통합**(시제품).
+  - ⚠️ **영상 6.9MB** — 목표 ~2MB보다 큼([[10]] 동물 영상 교훈). 출시 전 비트레이트↓ 압축 대상. ⚠️ 머리 볏이 위로 길어 폰에서 잘리면 `alignY` 낮춰 조정 필요(주석 표시).
+  - **남은 일**: 나머지 4종(7벨로키랍토르·8스피노·9파키케팔로·10이구아노돈) 에셋 + 본게임 통합(Dino 카드 잠금해제 + `dino_done`→GA).
