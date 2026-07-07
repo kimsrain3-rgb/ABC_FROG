@@ -205,3 +205,7 @@
   - **남은 일**: 이구아노돈(#10)만 추가하면 시즌1 10/10 완성. 이후 본게임 통합.
 - **🦕 공룡 #10 이구아노돈 추가 — 🎉 시즌1 10/10 완성!** (커밋 `d9ed0eb`). 에셋 3종(image 0.2MB·movie 2.3MB·sound 0.1MB) → 배열 한 줄 추가(`ghost:0.30, alignY:0.50`). 육지공룡 10종(1티라노~10이구아노돈) 전부 /test/ 배포 완료. (파키케팔로 image는 png→jpg 교체 `c6edee6`, 1.3MB→0.1MB.)
   - **다음 큰 단계 = 본게임 통합**: 시작화면 Dino 카드 잠금해제 + script.js 통합 + `dino_done` postMessage→GA(category=dino). 통합 전 영상 재점검(같은 파일명 교체 시 라이브는 캐시 — always-fresh는 js/css만 커버).
+- **🦕🚀 공룡 퍼즐 라이브 통합 — Dino 카드 잠금해제!** (커밋 `7283e7b`). 시제품 → **본게임 라이브** 승격. 백업태그 `backup-before-dino-live-20260707`(문제 시 복귀).
+  - **방식 = Animal 퍼즐과 완전 동일**(iframe 오버레이, 게임 코드와 분리 → 크래시 위험 0). 새 파일 **`dino.html`**(루트, 프로덕션판) = `test/current.html` 시제품에서 base href·dev점프버튼·manifest 제거 + 캐시버스터 no-op(미디어 캐시). `script.js`에 `goDinoPuzzle/closeDinoPuzzle` + `dino_done`→GA(category:dino) + `_unlockDinoCard`(런타임 카드 잠금해제) 추가. `index.html` Dino 카드 `wc-locked`/🔒 제거→`goDinoPuzzle()`. `style.css` `.wc-dino` 청록 배경(과일 주황·동물 초록과 구분).
+  - **라이브 검증(HTTP)**: dino.html HTTP 200·프로덕션판 확인, 에셋 30개(그림10·영상10·소리10) 전부 200/206, script.js goDinoPuzzle 반영, 단어 10개·dino_done 확인. **최종 시각확인은 실제 폰**에서(카드 열림·10종 그림/영상/단어 표시).
+  - **남은 일**: ① 폰 최종확인 ② 영상 용량 재점검(스피노 3.1MB 등, 필요시 압축) ③ 2단계 "먹이주기" 기획(1단계 안정 시).
