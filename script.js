@@ -1422,6 +1422,39 @@ function closeAnimalPuzzle(){
 window.addEventListener('message',function(ev){
   try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){ gtag('event','word_puzzle_complete',{category:'animal',word:d.key}); } }catch(e){}
 });
+
+// === 공룡 퍼즐 (독립 페이지 dino.html을 전체화면 오버레이로 — 동물 퍼즐과 완전 동일 구조) ===
+// 기존 게임 코드와 완전 분리(iframe) → 충돌/크래시 위험 0. HTML은 ?b=로 항상 최신, 내부 그림/영상은 캐시 사용.
+var _dpOverlay=null;
+function goDinoPuzzle(){
+  try{
+    if(_dpOverlay) return;                       // 중복 열기 방지
+    var ov=document.createElement('div');
+    ov.id='dpOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    var fr=document.createElement('iframe');
+    fr.setAttribute('allow','autoplay; fullscreen');
+    fr.style.cssText='border:0;width:100%;height:100%;display:block;';
+    fr.src='dino.html?b='+Date.now();            // HTML 항상 최신(미디어는 내부에서 캐시)
+    var bk=document.createElement('button');
+    bk.textContent='‹'; bk.setAttribute('aria-label','back');
+    bk.onclick=closeDinoPuzzle;
+    bk.style.cssText='position:fixed;top:8px;left:8px;z-index:100000;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.85);color:#333;font-size:26px;line-height:42px;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3)';
+    ov.appendChild(fr); ov.appendChild(bk);
+    document.body.appendChild(ov);
+    _dpOverlay=ov;
+    try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
+    try{gtag('event','word_puzzle_open',{category:'dino'});}catch(e){}
+  }catch(e){}
+}
+function closeDinoPuzzle(){
+  try{ if(_dpOverlay&&_dpOverlay.parentNode){ _dpOverlay.parentNode.removeChild(_dpOverlay); } }catch(e){}
+  _dpOverlay=null;
+}
+// 공룡 퍼즐(별도 iframe dino.html)이 완성을 알려오면 GA로 기록. (과일·동물과 같은 신호 이름 + category:'dino')
+window.addEventListener('message',function(ev){
+  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key}); } }catch(e){}
+});
 // ★ Animal 카드 잠금해제를 '실행 중에' 직접 수행 — script.js는 항상 최신으로 받으므로,
 //   옛 index.html(잠긴 버튼)이 캐시된 폰에서도 이게 버튼을 풀어줌(즉시 모든 폰 반영).
 function _unlockAnimalCard(){
@@ -1444,7 +1477,9 @@ try{ document.addEventListener('DOMContentLoaded',_unlockAnimalCard); }catch(e){
 
 // ★ Dino(공룡) 예고편 카드를 '실행 중에' 보장 — script.js는 항상 최신이라,
 //   옛 index.html(카드 없음/이모지 아이콘)이 캐시된 폰에서도 즉시 Dino 카드(실루엣)가 뜸.
-function _ensureDinoCard(){
+// ★ Dino 카드 잠금해제(실제 열기) — Animal 카드와 동일 방식. script.js는 항상 최신이라
+//   옛 index.html(잠긴 Dino 카드/카드 없음)이 캐시된 폰에서도 즉시 Dino가 열림.
+function _unlockDinoCard(){
   try{
     var iconHTML='<img class="dino-sil-ic" src="assets/ui/icons/dino_silhouette.png" alt="dino">';
     var cards=document.querySelectorAll('.wc-card'), dino=null;
@@ -1453,23 +1488,25 @@ function _ensureDinoCard(){
       if(lbl && lbl.textContent.trim().toLowerCase()==='dino'){ dino=cards[i]; break; }
     }
     if(dino){
-      dino.classList.add('wc-locked','wc-dino');
+      dino.classList.remove('wc-locked'); dino.classList.add('wc-dino');
+      var lock=dino.querySelector('.wc-lock'); if(lock&&lock.parentNode) lock.parentNode.removeChild(lock);
       var ic=dino.querySelector('.card-icon');
-      if(ic && !ic.querySelector('.dino-sil-ic')){ ic.innerHTML=iconHTML; }   // 옛 이모지/두개골 → 실루엣 통일
+      if(ic && !ic.querySelector('.dino-sil-ic')){ ic.innerHTML=iconHTML; }   // 실루엣 아이콘 통일
+      dino.onclick=function(){ goDinoPuzzle(); };
     } else {
       var wrap=document.querySelector('.wc-cards');
       if(wrap){
         var b=document.createElement('button');
-        b.className='game-card wc-card wc-locked wc-dino';
-        b.setAttribute('onclick','wcLocked(this)');
-        b.innerHTML='<span class="card-icon">'+iconHTML+'</span><span class="card-label">Dino</span><span class="wc-lock">🔒</span>';
+        b.className='game-card wc-card wc-dino';
+        b.onclick=function(){ goDinoPuzzle(); };
+        b.innerHTML='<span class="card-icon">'+iconHTML+'</span><span class="card-label">Dino</span>';
         wrap.appendChild(b);
       }
     }
   }catch(e){}
 }
-try{ _ensureDinoCard(); }catch(e){}
-try{ document.addEventListener('DOMContentLoaded',_ensureDinoCard); }catch(e){}
+try{ _unlockDinoCard(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',_unlockDinoCard); }catch(e){}
 
 // ★ Insect(곤충) 예고편 카드도 런타임 보장 (Dino와 동일 방식 — 캐시된 옛 index.html 폰도 즉시 반영).
 function _ensureInsectCard(){

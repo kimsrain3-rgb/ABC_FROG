@@ -162,6 +162,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wc-lock{position:absolute;right:8px;top:6px;font-size:18px}
 .wc-dino,.wc-insect{padding-top:8px;padding-bottom:8px}   /* 큰 실루엣 아이콘 써도 다른 카드와 높이 맞게 */
 .wc-dino .card-icon,.wc-insect .card-icon{opacity:1;filter:none}      /* 검정 실루엣은 흐리지 않게(또렷) */
+.wc-dino{background:linear-gradient(180deg,#4DD0E1,#00ACC1);border-color:#00838F}   /* 잠금해제(라이브): 청록 배경 — 주황(과일)·초록(동물)과 구분, 검정 공룡 실루엣 또렷 */
 .game-card .card-icon img.dino-skull-ic{width:44px;height:44px;display:block;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.35);object-fit:cover}
 .game-card .card-icon img.dino-sil-ic,.game-card .card-icon img.insect-sil-ic{width:auto;height:44px;display:block;object-fit:contain}
 .wc-card-shake{animation:wcShake .4s ease}
