@@ -1481,7 +1481,7 @@ try{ document.addEventListener('DOMContentLoaded',_unlockAnimalCard); }catch(e){
 //   옛 index.html(잠긴 Dino 카드/카드 없음)이 캐시된 폰에서도 즉시 Dino가 열림.
 function _unlockDinoCard(){
   try{
-    var iconHTML='<img class="dino-sil-ic" src="assets/ui/icons/dino_silhouette.png" alt="dino">';
+    var iconHTML='<span class="dino-sil-ic" role="img" aria-label="dino"></span>';   // 컬러 마스크(초록)+눈점은 CSS가 처리
     var cards=document.querySelectorAll('.wc-card'), dino=null;
     for(var i=0;i<cards.length;i++){
       var lbl=cards[i].querySelector('.card-label');
@@ -1491,7 +1491,7 @@ function _unlockDinoCard(){
       dino.classList.remove('wc-locked'); dino.classList.add('wc-dino');
       var lock=dino.querySelector('.wc-lock'); if(lock&&lock.parentNode) lock.parentNode.removeChild(lock);
       var ic=dino.querySelector('.card-icon');
-      if(ic && !ic.querySelector('.dino-sil-ic')){ ic.innerHTML=iconHTML; }   // 실루엣 아이콘 통일
+      if(ic){ ic.innerHTML=iconHTML; }   // 항상 컬러 span으로 통일(옛 검정 img 캐시도 교체)
       dino.onclick=function(){ goDinoPuzzle(); };
     } else {
       var wrap=document.querySelector('.wc-cards');

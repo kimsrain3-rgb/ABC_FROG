@@ -209,3 +209,12 @@
   - **방식 = Animal 퍼즐과 완전 동일**(iframe 오버레이, 게임 코드와 분리 → 크래시 위험 0). 새 파일 **`dino.html`**(루트, 프로덕션판) = `test/current.html` 시제품에서 base href·dev점프버튼·manifest 제거 + 캐시버스터 no-op(미디어 캐시). `script.js`에 `goDinoPuzzle/closeDinoPuzzle` + `dino_done`→GA(category:dino) + `_unlockDinoCard`(런타임 카드 잠금해제) 추가. `index.html` Dino 카드 `wc-locked`/🔒 제거→`goDinoPuzzle()`. `style.css` `.wc-dino` 청록 배경(과일 주황·동물 초록과 구분).
   - **라이브 검증(HTTP)**: dino.html HTTP 200·프로덕션판 확인, 에셋 30개(그림10·영상10·소리10) 전부 200/206, script.js goDinoPuzzle 반영, 단어 10개·dino_done 확인. **최종 시각확인은 실제 폰**에서(카드 열림·10종 그림/영상/단어 표시).
   - **남은 일**: ① 폰 최종확인 ② 영상 용량 재점검(스피노 3.1MB 등, 필요시 압축) ③ 2단계 "먹이주기" 기획(1단계 안정 시).
+
+### 2026-07-08~09
+- **✅ 공룡 퍼즐 폰 실기기 최종확인 완료**(2026-07-08): Dino 카드 잠금해제·작동 정상. 시즌1 완전 마무리.
+- **🎨 시작화면 퍼즐 선택 메뉴 개선 — 라이브 push**. 백업태그 `backup-before-menu-improve-20260708`.
+  - **① 카드 순서 변경**: Fruit→Animal→**Dino**→Vegetable🔒→Insect🔒. 열린 카드 위·잠긴 회색 카드 아래로(중간 회색이 열린 Dino를 가리던 문제 해결). `index.html` 카드 블록 이동. (런타임 `_unlockDinoCard`/`_ensureInsectCard`는 없을 때만 append라 순서 유지.)
+  - **② 아이콘 "계열색" 시스템**: 잠금해제 카드 아이콘을 카드 바닥색과 같은 계열 짙은 색으로. **Dino** 검정 실루엣→**짙은 파랑 `#01579B`+흰 눈점**(png를 CSS mask로 따서 채움). **Animal** 발도장→**짙은 숲초록 `#14591E`**(🐾 이모지를 SVG-data-URI mask로 모양만 따서 채움). Fruit는 원래 🍎 이모지 유지.
+  - **③ 잠금 아이콘 통일**: 잠긴 카드(Vegetable·Insect) 아이콘 = **짙은 회색 실루엣**(`filter:brightness(0) invert(.28)` — 당근 이모지·곤충 SVG 모두 한 규칙으로). 열리면 각 카드가 제 색 표시(CSS로 규칙 강제).
+  - **④ 자물쇠 개선**: 글자 "e"와 겹치던 자물쇠 → 오른쪽 위 모서리로 이동 + 잠긴 카드 오른쪽 여백 확보(안 겹침). 이후 사장님 요청으로 자물쇠 **1.5배 확대**(15→22px, 여백 30→36px).
+  - **안전성**: 색/구조 변경은 style.css(always-fresh)로 즉시 반영, 아이콘 구조는 index.html 갱신 전 캐시 폰에선 기본 이모지로 **정상 폴백**(깨짐 없음). Dino 아이콘은 always-fresh script.js가 전 기기 span 주입.

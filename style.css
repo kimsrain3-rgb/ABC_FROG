@@ -158,13 +158,37 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wc-fruit{background:linear-gradient(180deg,#FFB74D,#FF7043);border-color:#E64A19}
 .wc-animal{background:linear-gradient(180deg,#81C784,#4CAF50);border-color:#2E7D32}
 .wc-locked{background:linear-gradient(180deg,#C4C4C4,#9E9E9E);border-color:#757575}
-.wc-locked .card-icon,.wc-locked .card-label{opacity:.7;filter:grayscale(.4)}
-.wc-lock{position:absolute;right:8px;top:6px;font-size:18px}
+.wc-locked .card-label{opacity:.7;filter:grayscale(.4)}                 /* 잠긴 글자: 흐린 회색 */
+.wc-locked .card-icon{filter:brightness(0) invert(.28);opacity:1}       /* 잠금=회색(#474747) 실루엣 통일(당근 이모지·곤충 SVG 모두). 열리면 각 카드가 제 색 지정 */
+/* 자물쇠: 오른쪽 위 모서리 작은 배지로. 글자와 안 겹치게 locked 카드는 오른쪽 여백 확보(내용이 왼쪽으로 재중앙정렬됨) */
+.wc-lock{position:absolute;right:7px;top:5px;font-size:22px}
+.wc-locked{padding-right:36px}
 .wc-dino,.wc-insect{padding-top:8px;padding-bottom:8px}   /* 큰 실루엣 아이콘 써도 다른 카드와 높이 맞게 */
-.wc-dino .card-icon,.wc-insect .card-icon{opacity:1;filter:none}      /* 검정 실루엣은 흐리지 않게(또렷) */
-.wc-dino{background:linear-gradient(180deg,#4DD0E1,#00ACC1);border-color:#00838F}   /* 잠금해제(라이브): 청록 배경 — 주황(과일)·초록(동물)과 구분, 검정 공룡 실루엣 또렷 */
+.wc-dino .card-icon{opacity:1;filter:none}      /* 열린 Dino: 초록 그대로(잠금 검정필터 미적용) */
+.wc-dino{background:linear-gradient(180deg,#4DD0E1,#00ACC1);border-color:#00838F}   /* 잠금해제(라이브): 청록 배경 */
 .game-card .card-icon img.dino-skull-ic{width:44px;height:44px;display:block;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.35);object-fit:cover}
-.game-card .card-icon img.dino-sil-ic,.game-card .card-icon img.insect-sil-ic{width:auto;height:44px;display:block;object-fit:contain}
+.game-card .card-icon img.insect-sil-ic{width:auto;height:44px;display:block;object-fit:contain}   /* 곤충(잠김): 검정 실루엣 유지 */
+/* Dino 아이콘: 실루엣 모양(240x240 png)을 마스크로 따서 초록으로 채움(검정→비활성처럼 보이던 문제 해결) + 눈 점 */
+.wc-dino .card-icon{position:relative}
+.wc-dino .card-icon .dino-sil-ic{
+  display:block;width:44px;height:44px;
+  -webkit-mask:url(assets/ui/icons/dino_silhouette.png) center/contain no-repeat;
+          mask:url(assets/ui/icons/dino_silhouette.png) center/contain no-repeat;
+  background:#01579B;   /* 청록 카드 → 짙은 파랑 몸통(같은 쿨톤 계열) */
+  filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.3));   /* 배경과 가장자리 분리 */
+}
+.wc-dino .card-icon::after{   /* 눈: 머리(왼쪽 위) 눈 위치에 작은 흰 점(짙은 파랑 몸통 위 대비) */
+  content:"";position:absolute;width:4px;height:4px;border-radius:50%;
+  background:#fff;left:10px;top:7px;pointer-events:none;
+}
+/* 아이콘 계열색: 카드 바닥색과 같은 계열의 짙은 색으로 이모지 모양(mask)을 채움 */
+.wc-card .ic-mask{display:block;width:32px;height:32px;
+  -webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;
+  mask-repeat:no-repeat;mask-position:center;mask-size:contain;
+  filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28));}
+.wc-animal .ic-mask{background:#14591E;   /* 사장님 지정 짙은 숲초록(카드 그림자색 계열), 테두리 없음 */
+  -webkit-mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><text x='50' y='54' font-size='78' text-anchor='middle' dominant-baseline='central'>🐾</text></svg>");
+          mask-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><text x='50' y='54' font-size='78' text-anchor='middle' dominant-baseline='central'>🐾</text></svg>");}
 .wc-card-shake{animation:wcShake .4s ease}
 @keyframes wcShake{0%,100%{transform:translateX(0)}15%{transform:translateX(-9px)}30%{transform:translateX(9px)}45%{transform:translateX(-7px)}60%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
 .wc-toast{position:absolute;bottom:11%;left:50%;transform:translateX(-50%) translateY(18px);background:rgba(0,0,0,.82);color:#fff;padding:12px 24px;border-radius:30px;font-size:20px;font-weight:bold;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap}
