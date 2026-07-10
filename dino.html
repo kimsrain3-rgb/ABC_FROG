@@ -184,9 +184,28 @@
       }).catch(function(){ return null; });
     return _lbuf[ch];
   }
+  // 긴 공룡 이름이 화면 밖으로 잘리지 않게: 글자 크기를 '실제 렌더된 폭'으로 재서 줄인다.
+  //  글자폭 추정(0.70em)에 의존하면 웹폰트가 안 뜨거나(폴백) 시스템 글꼴 확대가 걸린 폰에서 넘침.
+  //  ※ wpWordShout 은 45% 지점에서 1.25배(오버슛 포함 실측 1.27배)까지 순간 확대된다.
+  //    끝난 뒤 1배로 돌아오지만, 그 '한순간'에 잘리므로 최고점 기준으로 여백을 잡아야 한다.
+  var WORD_SHOUT=1.30, WORD_PAD=12;
+  function fitWord(){
+    var w=document.getElementById('word');
+    if(!w||!w.firstChild) return;
+    var vw=document.documentElement.clientWidth||window.innerWidth;
+    var allow=(vw-WORD_PAD*2)/WORD_SHOUT;
+    for(var i=0;i<4;i++){                       // 글자 사이 gap(1px)은 안 줄어드니 몇 번 반복해 수렴
+      var cur=w.getBoundingClientRect().width;
+      if(cur<=allow) break;
+      var fs=parseFloat(w.style.fontSize)||16;
+      w.style.fontSize=Math.max(9, fs*(allow/cur))+'px';
+    }
+  }
+
   // 공룡: 글자별 발음 없이 → 단어(TYRANNOSAURUS)를 글자 톡톡 보여주며 + 이름 1번 읽기(동시) → 영상.
   function spellThenSay(){
     var wrap=document.getElementById('word');
+    fitWord();                                  // 보여주기 직전 재확인(폰트 로드 완료·화면 크기 변동 반영)
     var spans=wrap.querySelectorAll('.wl');
     spans.forEach(function(s,i){ setTimeout(function(){ s.classList.add('show'); }, 250+i*60); });  // 글자 하나씩 등장(발음X)
     var after=250+spans.length*60+150;
@@ -290,10 +309,12 @@
     var gX=imgX-(gW-coverW)/2+(A.boneShiftX||0), gY=imgY-(gH-coverH)/2+(A.boneShiftY||0);
     g.style.cssText='left:'+gX+'px;top:'+gY+'px;width:'+gW+'px;height:'+gH+'px;opacity:'+(A.ghost||0.30);
     board.appendChild(g);
-    // 완성 시 보여줄 단어 글자 미리 생성(숨김) — 폭에 맞춰 글자 크기(긴 이름도 안 잘리게)
+    // 완성 시 보여줄 단어 글자 미리 생성(숨김) — 일단 넉넉히 잡고, fitWord()가 실제 폭 재서 줄임
     (function(){ var w=document.getElementById('word'); if(!WORD){ w.innerHTML=''; return; }
-      var fs=Math.min(bw*0.10, (bw*0.86)/(WORD.length*0.70));   // 0.70=긴 이름(13~18글자)도 양끝 여백 남게
-      w.style.fontSize=fs+'px'; w.innerHTML=''; WORD.split('').forEach(function(ch){ var s=document.createElement('span'); s.className='wl'; s.textContent=ch; w.appendChild(s); }); })();
+      w.style.fontSize=(bw*0.10)+'px'; w.innerHTML=''; WORD.split('').forEach(function(ch){ var s=document.createElement('span'); s.className='wl'; s.textContent=ch; w.appendChild(s); });
+      fitWord();
+      try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(fitWord); }catch(e){}   // 웹폰트 늦게 오면 다시 맞춤
+    })();
 
     // knobs (이웃 공유)
     var knobH=[],knobV=[];
