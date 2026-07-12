@@ -53,7 +53,8 @@ window.onerror=function(){return true};
 
 /* ── 데이터: 단어 추가는 여기에만 ─────────────────────────── */
 var WORDS=[
-  {word:'sat', traps:['p','i','n'], video:'word_sat.mp4'} // 영상: assets/phonics/videos/ 안 파일명
+  // videos: 완성 영상 후보(동물별) — 파일명 = word_단어_동물.mp4, 있는 것 중 랜덤 재생
+  {word:'sat', traps:['p','i','n'], videos:['dog','cat','rabbit']}
 ];
 var CUR=0;
 
@@ -213,17 +214,7 @@ function finish(){
     function arp(){ W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
     slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
     videoBox.style.display='flex';              // 영상 파일 있으면 재생, 없으면 회색 박스 유지
-    if(W.video){
-      try{
-        var v=document.createElement('video');
-        v.src=VID_BASE+W.video; v.autoplay=true; v.playsInline=true; v.setAttribute('playsinline','');
-        v.addEventListener('loadeddata',function(){
-          videoBox.textContent=''; videoBox.appendChild(v);
-          var p=v.play(); if(p&&p.catch) p.catch(function(){ v.muted=true; var q=v.play(); if(q&&q.catch)q.catch(function(){}); });
-        },{once:true});
-        // 파일 없으면 error → 아무것도 안 함(회색 박스 그대로)
-      }catch(e){}
-    }
+    playVideo(W);
     var sp=bigWord.querySelector('span');
     sp.textContent=W.word;
     bigWord.style.display='flex';
@@ -231,6 +222,24 @@ function finish(){
     replayBtn.style.display='block';
   }
   next();
+}
+/* 완성 영상: 후보(동물별)를 랜덤 순서로 시도 → 처음 성공하는 것 재생. 전부 없으면 회색 박스 유지 */
+function playVideo(W){
+  if(!W.videos||!W.videos.length) return;
+  var order=shuffle(W.videos.slice());
+  (function tryNext(k){
+    if(k>=order.length) return;                 // 전부 없음 → 회색 박스
+    try{
+      var v=document.createElement('video');
+      v.src=VID_BASE+'word_'+W.word+'_'+order[k]+'.mp4';
+      v.autoplay=true; v.playsInline=true; v.setAttribute('playsinline','');
+      v.addEventListener('loadeddata',function(){
+        videoBox.textContent=''; videoBox.appendChild(v);
+        var p=v.play(); if(p&&p.catch) p.catch(function(){ v.muted=true; var q=v.play(); if(q&&q.catch)q.catch(function(){}); });
+      },{once:true});
+      v.addEventListener('error',function(){ tryNext(k+1); },{once:true});
+    }catch(e){ tryNext(k+1); }
+  })(0);
 }
 /* 실측 글자 맞춤(fitWord 패턴): 공식 대신 실제 폭을 재서 줄임 */
 function fitWord(sp){
