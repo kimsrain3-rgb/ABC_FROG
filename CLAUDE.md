@@ -68,6 +68,7 @@ ABC_FROG/
 - [ ] 🟢 `wpSayWord`가 `new Audio()` 직접 사용 → `safeAudio()`로 통일 권장 (위험 낮음)
 - [ ] 🟢 `buildPuzzle` 비동기 race(잠재): `_im.onload`가 전역 `wpCurrent` 참조 → 빌드 겹치면 엉뚱한 과일. 실플레이 미발생, 우선순위 낮음. (※ 퍼즐이 '깨진 이미지'면 거의 항상 **로컬 테스트서버 꺼짐**이 원인, 코드버그 아님)
 - [ ] ➕ **안드로이드(MainActivity.java)**: 오프라인 시 `onReceivedError` 비어있어 깨진 에러화면 노출 → 안내화면 추가 (Play 업데이트 때 묶어 처리)
+- [ ] ➕ **안드로이드(MainActivity.java)**: `setTextZoom(100)` 추가 — WebView가 폰 '글자 크기' 설정을 웹 글자에 곱해 UI가 커지는 것 차단(2026-07-10 공룡 이름 잘림의 근본 원인, 웹쪽 fitWord로 이미 방어됨. Play 업데이트 때 묶어 처리)
 - [ ] 🔴🔐 **서명키 비밀번호 교체**: `twa-project/app/build.gradle`에 `abcfrog123` 평문 노출(깃 히스토리 포함). keytool로 비번 변경 → Secret 재등록 → build.gradle 평문 제거(환경변수 참조) → AAB 재빌드. (서명키 자체는 교체 불가, 비번만)
 - [ ] 🔵 refactor 브랜치(`data-word-fruits.js` 데이터 분리) main 병합 — 검증 완료, always-fresh 방식과 정합 확인 후 머지
 - [ ] 🔵 **동물 퍼즐 시즌1 (친근한 동물 10종)** — **10/10 완성 ✅** (2026-06-25, /test/ 라이브 배포 확인). 배경 통째 직소퍼즐 + 이름 스펠링 + 동물 영상 보상. 코드=`test/current.html`(테스트 배포본)+`proto-animal.html`(원본) 의 `ANIMALS` 배열(둘 동기화). **본게임 미통합**(테스트=고정주소 /test/). 순서:
@@ -93,6 +94,7 @@ ABC_FROG/
 - **새 게임(동물·공룡 등)도 이 같은 주소에 내용만 갈아끼운다.** 새 테스트 주소 만들지 말 것.
 - **시크릿 탭**이나 **매번 바뀌는 긴 githack 주소** 방식은 쓰지 말 것. (githack은 전체게임에서 "Open the page" 경고+캐시로 깨짐)
 - 구현(Claude용): 테스트 환경 = main의 `test/` 폴더(`test/index.html` + `test/script.js`). 후보 코드를 `test/script.js`에 넣고 main에 push → Pages 자동배포. assets/style.css는 라이브 공유(`<base href="../">`), 캐시버스터+서비스워커 자동정리로 항상 최신. 라이브 루트(`/index.html`,`/script.js`)는 안 건드림. 검증 후 진짜 `script.js`에 반영해 라이브 배포.
+- ⚠️ **테스트 앱(크롬)의 사각지대**: 본게임 앱(WebView)은 폰 '글자 크기' 설정을 웹 글자에 곱하지만 크롬은 안 곱함(2026-07-10 공룡 이름 잘림). → **글자/레이아웃 수정은** ① 검증 시 글자확대 110~130% 조건 포함(Playwright로 재현 가능), ② 라이브 반영 후 **본게임 앱에서도 최종 확인**. (근본 차단 = MainActivity `setTextZoom(100)`, TODO 참고)
 
 ### Google Play 제출 규칙 (필수 준수)
 **절대 "검토 시작"을 바로 누르지 말 것!** 반드시 프리 런치 보고서를 먼저 확인한다.
@@ -112,6 +114,7 @@ ABC_FROG/
 5. **게임 루프(`gl`) try-catch 유지** — `uf()` 호출 감싸 한 프레임 에러가 전체 루프 안 멈추게
 6. **브라우저 API 사용 전 존재 확인** — `'speechSynthesis' in window`, `window.AudioContext||window.webkitAudioContext` 등
 7. **새 기능 추가 시** — `.play()`,`.speak()`,DOM API 등 실패 가능한 호출은 항상 `.catch(()=>{})` 또는 try-catch
+8. **화면 폭에 꽉 차는 글자는 공식(글자수×추정폭)으로 크기 정하지 말 것** — 실제 렌더 폭을 재서 줄이는 방식(`dino.html`의 `fitWord()` 패턴). WebView 글자확대·폰트 폴백·좁은 폰에서 공식은 반드시 어긋남. 확대 애니메이션이 있으면 **최고점 배율 실측**(wpWordShout는 명시 1.25지만 오버슛 포함 1.27) 기준으로 여유 확보
 
 ### 배포 / 캐시 규칙 (필수 준수)
 > 앱이 WebView(`setCacheMode(LOAD_DEFAULT)`)로 GitHub Pages를 로드 → 캐시 때문에 "수정했는데 폰엔 옛 코드"가 반복됐던 영역. **방법이 아니라 목적을 지킬 것.**
