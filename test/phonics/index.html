@@ -56,7 +56,8 @@ var WORDS=[
 ];
 var CUR=0;
 
-/* ── 소리: assets/phonics/sounds/{글자}.mp3 있으면 재생, 없으면 임시 삑소리 ── */
+/* ── 소리: assets/phonics/sounds/ 에 파일 있으면 재생, 없으면 임시 삑소리 ──
+   글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sat.mp3 */
 var SND_BASE='../../assets/phonics/sounds/';
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
@@ -86,7 +87,7 @@ function sound(key,freq){ // key='s' → s.mp3 시도, 실패 시 삑소리
       beep(freq); }};
   }
   return sndCache[key]; }
-function letterSound(ch){ sound(ch,FREQ[ch]||440).play(); }
+function letterSound(ch){ sound('phoneme_'+ch,FREQ[ch]||440).play(); }
 
 /* ── 판 만들기 ───────────────────────────────────────────── */
 var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tray'),
@@ -183,25 +184,24 @@ function drop(tile){
   }
 }
 
-/* ── 완성 연출: 소리 순서대로 → 큰 단어 + 영상 자리 ────────── */
+/* ── 완성 연출: ①음가 순서대로(스…애…트) → ②잠깐 쉬고 → ③단어 통발음 + 크게 표시 ── */
 function finish(){
   locked=true;
   var W=WORDS[CUR],i=0;
-  function next(){
+  function next(){                              // ① 음가 순차 재생 (빈칸 하나씩 통통)
     if(i<W.word.length){
       var ch=W.word[i],s=slots[i];
       s.el.classList.add('pulse'); (function(el){setTimeout(function(){el.classList.remove('pulse');},500);})(s.el);
       letterSound(ch); i++;
       setTimeout(next,550);
     }else{
-      setTimeout(showWord,350);
+      setTimeout(showWord,750);                 // ② 잠깐 쉬기
     }
   }
-  function showWord(){
-    // 단어 통소리: sat.mp3 있으면 재생, 없으면 글자음 빠른 연결(임시)
+  function showWord(){                          // ③ 단어 통발음(word_sat.mp3, 없으면 임시 연결음) + 크게 표시
     if(!SILENT){
       var a=null,bad=false;
-      try{ a=new Audio(SND_BASE+W.word+'.mp3');
+      try{ a=new Audio(SND_BASE+'word_'+W.word+'.mp3');
         a.addEventListener('error',function(){bad=true;arp();},{once:true});
         var p=a.play(); if(p&&p.catch) p.catch(function(){ if(!bad){bad=true;arp();} });
       }catch(e){ arp(); }
