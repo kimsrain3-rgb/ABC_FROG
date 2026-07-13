@@ -184,7 +184,7 @@ function drop(tile){
       tile.el.style.display='none';
       setTimeout(function(){ hit.el.classList.remove('pulse'); },500);
     },200);
-    if(slots.every(function(s){return s.filled;})) setTimeout(finish,650);
+    if(slots.every(function(s){return s.filled;})) setTimeout(finish,2000); // 글자이름 끝나고 음가 시작까지 약 2초 쉼
   }else{                                        // 오답/빈 곳: 제자리로
     if(hit) beep(196,0.25);
     tile.el.classList.add('back');
@@ -201,7 +201,7 @@ function finish(){
       var ch=W.word[i],s=slots[i];
       s.el.classList.add('pulse'); (function(el){setTimeout(function(){el.classList.remove('pulse');},500);})(s.el);
       phonemeSound(ch); i++;                     // 반짝이는 글자의 음가("스"·"애"·"트")
-      setTimeout(next,550);
+      setTimeout(next,850);                       // 음가 사이 간격(여유있게)
     }else{
       setTimeout(showWord,750);                 // ② 잠깐 쉬기
     }
