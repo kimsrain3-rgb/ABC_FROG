@@ -80,7 +80,7 @@ function beep(freq,dur){ if(SILENT) return;
     o.start(); o.stop(c.currentTime+(dur||0.22)+0.05);
   }catch(e){} }
 var sndCache={};
-function sound(key,freq){ // key='s' → s.mp3 시도, 실패 시 삑소리
+function sound(key,freq){ // key='phoneme_s' → phoneme_s.mp3 시도, 없으면 삑소리
   if(!sndCache[key]){
     var a=null,bad=false;
     try{ a=new Audio(SND_BASE+key+'.mp3'); a.preload='auto';
@@ -204,14 +204,14 @@ function finish(){
     }
   }
   function showWord(){                          // ③ 단어 통발음(word_sat.mp3, 없으면 임시 연결음) + 크게 표시
+    var arped=false;
+    function arp(){ if(arped) return; arped=true; W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
     if(!SILENT){
-      var a=null,bad=false;
-      try{ a=new Audio(SND_BASE+'word_'+W.word+'.mp3');
-        a.addEventListener('error',function(){bad=true;arp();},{once:true});
-        var p=a.play(); if(p&&p.catch) p.catch(function(){ if(!bad){bad=true;arp();} });
+      try{ var a=new Audio(SND_BASE+'word_'+W.word+'.mp3');
+        a.addEventListener('error',function(){ arp(); },{once:true});
+        var p=a.play(); if(p&&p.catch) p.catch(function(){ arp(); });
       }catch(e){ arp(); }
     }
-    function arp(){ W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
     slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
     videoBox.style.display='flex';              // 영상 파일 있으면 재생, 없으면 회색 박스 유지
     playVideo(W);
