@@ -12,8 +12,9 @@
 
   /* 위쪽: 단어 보드 */
   #board{position:relative;flex:0 0 58%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vh}
-  #videoBox{display:none;position:relative;overflow:hidden;width:70%;aspect-ratio:16/10;background:#9e9e9e;border-radius:14px;align-items:center;justify-content:center;color:#e0e0e0;font-size:5vw;box-shadow:inset 0 0 0 3px #8a8a8a}
-  #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;border-radius:14px}
+  /* 영상: 위쪽 board 영역을 꽉 채움 (세로 9:16 영상) */
+  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:#9e9e9e;align-items:center;justify-content:center;color:#e0e0e0;font-size:6vw}
+  #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
   #slots{display:flex;gap:3vw}
   .slot{position:relative;width:19vw;height:19vw;max-width:104px;max-height:104px;border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
   .slot .ghost{font-size:12vw;font-weight:700;color:#c5d4bb;line-height:1}
@@ -21,7 +22,8 @@
   .slot.filled .ghost{color:#F57F17}
   .slot.pulse{animation:pulse .45s ease}
   @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
-  #bigWord{display:none;align-items:center;justify-content:center;pointer-events:none}
+  /* 완성 단어: 아래쪽(조각 있던 빈 자리, board 아래 42%) 가운데. tray 밖(stage 직속)이라 리셋에도 안 지워짐 */
+  #bigWord{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:5;align-items:center;justify-content:center;pointer-events:none}
   #bigWord span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;transform:scale(0);animation:wordpop 1.5s ease forwards}
   /* 등장(팝) 후 두 번 반짝임 — 앉는 순간 단어 발음과 함께 */
   @keyframes wordpop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.12);opacity:1}32%{transform:scale(1)}48%{opacity:.25}60%{opacity:1}74%{opacity:.25}86%{opacity:1}100%{transform:scale(1);opacity:1}}
@@ -43,9 +45,9 @@
   <div id="board">
     <div id="videoBox">&#127916; 영상 자리</div>
     <div id="slots"></div>
-    <div id="bigWord"><span></span></div>
   </div>
   <div id="tray"></div>
+  <div id="bigWord"><span></span></div>
   <button id="replay">다시 하기</button>
 </div>
 <script>
@@ -196,6 +198,10 @@ function drop(tile){
 function finish(){
   locked=true;
   var W=WORDS[CUR],i=0;
+  tiles.forEach(function(t){ if(!t.placed){ // 남은 함정 글자 사라지게(아래 자리 비움 → sat 들어갈 자리)
+    t.el.style.transition='opacity .3s'; t.el.style.opacity='0';
+    setTimeout(function(){ t.el.style.display='none'; },300);
+  }});
   function next(){                              // ② 반짝임 + 음가 동기화 (빈칸 하나씩)
     if(i<W.word.length){
       var ch=W.word[i],s=slots[i];
@@ -208,16 +214,12 @@ function finish(){
   }
   function showWord(){                          // ③ 완성 후: sat 반짝+발음 → 영상(걷다가 앉기) → 앉는 순간 sat 반짝+발음
     slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
+    videoBox.style.display='flex';              // 위쪽: 영상 영역(회색 → 곧 영상)
     var sp=bigWord.querySelector('span'); sp.textContent=W.word;
-    // ③-1 영상 들어가기 전: 큰 sat 반짝임 + 발음 한 번
-    videoBox.style.display='none';
+    // ③-1 영상 들어가기 전: 아래쪽 sat 반짝 + 발음 한 번
     showBigWord(sp); sayWord();
-    // ③-2 잠깐 뒤 영상 시작 (단어 들려주고 들어감)
-    setTimeout(function(){
-      bigWord.style.display='none';             // 단어 잠깐 감추고
-      videoBox.style.display='flex';            // 동물 걷는 영상 등장
-      playVideo(W, reveal);                     // 영상 끝(앉는 순간)=reveal
-    },1600);
+    // ③-2 잠깐 뒤 위쪽에서 영상 재생 (sat은 아래 그대로 유지)
+    setTimeout(function(){ playVideo(W, reveal); },1600);
     var revealed=false;
     function reveal(){                           // ③-3 앉는 순간: sat 다시 반짝 + 발음
       if(revealed) return; revealed=true;
@@ -225,9 +227,10 @@ function finish(){
       replayBtn.style.display='block';
     }
   }
-  function showBigWord(sp){                      // 큰 단어 표시 + 반짝임(wordpop) 재시작(reflow로 애니메이션 리셋)
-    bigWord.style.display='none'; void bigWord.offsetWidth;
-    bigWord.style.display='flex'; fitWord(sp);
+  function showBigWord(sp){                      // 큰 단어 표시 + 반짝임(wordpop) 재시작 — 애니메이션 걸린 span 기준 리셋
+    bigWord.style.display='flex';
+    sp.style.animation='none'; void sp.offsetWidth; sp.style.animation=''; // span 리플로우로 애니메이션 재시작
+    fitWord(sp);
   }
   function sayWord(){                            // 단어 통발음(word_sat.mp3, 없으면 임시 연결음)
     if(SILENT) return;
