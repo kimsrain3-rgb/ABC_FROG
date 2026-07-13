@@ -60,7 +60,8 @@ var CUR=0;
 
 /* ── 소리: assets/phonics/sounds/ 에 파일 있으면 재생, 없으면 임시 삑소리 ──
    글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sat.mp3 */
-var SND_BASE='../../assets/phonics/sounds/';
+var SND_BASE='../../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(word_*)
+var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
 /* ── 영상: assets/phonics/videos/word_sat.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../../assets/phonics/videos/';
 var SILENT=/[?&]silent=1/.test(location.search);
@@ -80,18 +81,20 @@ function beep(freq,dur){ if(SILENT) return;
     o.start(); o.stop(c.currentTime+(dur||0.22)+0.05);
   }catch(e){} }
 var sndCache={};
-function sound(key,freq){ // key='phoneme_s' → phoneme_s.mp3 시도, 없으면 삑소리
-  if(!sndCache[key]){
+function loadSound(base,key,freq){ // base+key+'.mp3' 있으면 재생, 없으면 삑소리
+  var id=base+key;
+  if(!sndCache[id]){
     var a=null,bad=false;
-    try{ a=new Audio(SND_BASE+key+'.mp3'); a.preload='auto';
+    try{ a=new Audio(base+key+'.mp3'); a.preload='auto';
       a.addEventListener('error',function(){bad=true;},{once:true});
     }catch(e){ bad=true; }
-    sndCache[key]={play:function(){ if(SILENT) return;
+    sndCache[id]={play:function(){ if(SILENT) return;
       if(a&&!bad){ try{ a.currentTime=0; var p=a.play(); if(p&&p.catch) p.catch(function(){beep(freq);}); return; }catch(e){} }
       beep(freq); }};
   }
-  return sndCache[key]; }
-function letterSound(ch){ sound('phoneme_'+ch,FREQ[ch]||440).play(); }
+  return sndCache[id]; }
+function letterName(ch){ loadSound(ABC_BASE,'letter_'+ch,FREQ[ch]||440).play(); }    // 스테이지1: 글자 이름("에스")
+function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(); }  // 스테이지2: 음가("스")
 
 /* ── 판 만들기 ───────────────────────────────────────────── */
 var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tray'),
@@ -142,7 +145,6 @@ function attachDrag(tile){
     if(locked||tile.placed) return;
     e.preventDefault();
     try{ el.setPointerCapture(e.pointerId); }catch(err){}
-    letterSound(tile.letter);                    // 터치 순간 글자 소리
     el.classList.add('drag'); el.classList.remove('back');
     sx=e.clientX; sy=e.clientY;
     ox=parseFloat(el.style.left)||0; oy=parseFloat(el.style.top)||0;
@@ -175,7 +177,7 @@ function drop(tile){
     tile.el.style.left=(sr.left-pr.left+(sr.width-tile.el.offsetWidth)/2)+'px';
     tile.el.style.top =(sr.top -pr.top +(sr.height-tile.el.offsetHeight)/2)+'px';
     hit.filled=true; tile.placed=true;
-    beep(1046,0.12);                            // 착! 효과음(임시)
+    letterName(tile.letter);                    // 스테이지1: 칸에 넣는 순간 글자 이름("에스")
     setTimeout(function(){                      // 조각을 빈칸 안으로 흡수(레이아웃 밀려도 같이 움직이게)
       hit.el.classList.add('filled','pulse');
       tile.el.style.display='none';
@@ -189,15 +191,15 @@ function drop(tile){
   }
 }
 
-/* ── 완성 연출: ①음가 순서대로(스…애…트) → ②잠깐 쉬고 → ③단어 통발음 + 크게 표시 ── */
+/* ── 완성 연출: ②반짝임+음가(스…애…트) → 잠깐 쉬고 → ③단어 통발음("샛!") + 크게 표시 ── */
 function finish(){
   locked=true;
   var W=WORDS[CUR],i=0;
-  function next(){                              // ① 음가 순차 재생 (빈칸 하나씩 통통)
+  function next(){                              // ② 반짝임 + 음가 동기화 (빈칸 하나씩)
     if(i<W.word.length){
       var ch=W.word[i],s=slots[i];
       s.el.classList.add('pulse'); (function(el){setTimeout(function(){el.classList.remove('pulse');},500);})(s.el);
-      letterSound(ch); i++;
+      phonemeSound(ch); i++;                     // 반짝이는 글자의 음가("스"·"애"·"트")
       setTimeout(next,550);
     }else{
       setTimeout(showWord,750);                 // ② 잠깐 쉬기
