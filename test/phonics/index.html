@@ -206,18 +206,28 @@ function finish(){
       setTimeout(showWord,750);                 // ② 잠깐 쉬기
     }
   }
-  function showWord(){                          // ③ 영상(걷다가 앉기) → 앉는 순간(=영상 끝) 단어 반짝임 + 발음("샛!")
+  function showWord(){                          // ③ 완성 후: sat 반짝+발음 → 영상(걷다가 앉기) → 앉는 순간 sat 반짝+발음
     slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
-    videoBox.style.display='flex';
     var sp=bigWord.querySelector('span'); sp.textContent=W.word;
+    // ③-1 영상 들어가기 전: 큰 sat 반짝임 + 발음 한 번
+    videoBox.style.display='none';
+    showBigWord(sp); sayWord();
+    // ③-2 잠깐 뒤 영상 시작 (단어 들려주고 들어감)
+    setTimeout(function(){
+      bigWord.style.display='none';             // 단어 잠깐 감추고
+      videoBox.style.display='flex';            // 동물 걷는 영상 등장
+      playVideo(W, reveal);                     // 영상 끝(앉는 순간)=reveal
+    },1600);
     var revealed=false;
-    function reveal(){                           // 앉는 순간: 큰 단어 반짝(wordpop) + 단어 발음
+    function reveal(){                           // ③-3 앉는 순간: sat 다시 반짝 + 발음
       if(revealed) return; revealed=true;
-      sayWord();
-      bigWord.style.display='flex'; fitWord(sp); // 반짝임은 CSS(wordpop) — 나타날 때 자동 재생
+      showBigWord(sp); sayWord();
       replayBtn.style.display='block';
     }
-    playVideo(W, reveal);                        // 영상 끝(앉는 순간)=reveal, 영상 없으면 즉시 reveal
+  }
+  function showBigWord(sp){                      // 큰 단어 표시 + 반짝임(wordpop) 재시작(reflow로 애니메이션 리셋)
+    bigWord.style.display='none'; void bigWord.offsetWidth;
+    bigWord.style.display='flex'; fitWord(sp);
   }
   function sayWord(){                            // 단어 통발음(word_sat.mp3, 없으면 임시 연결음)
     if(SILENT) return;
