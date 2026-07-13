@@ -22,8 +22,9 @@
   .slot.pulse{animation:pulse .45s ease}
   @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
   #bigWord{display:none;align-items:center;justify-content:center;pointer-events:none}
-  #bigWord span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;transform:scale(0);animation:pop .5s cubic-bezier(.34,1.56,.64,1) forwards}
-  @keyframes pop{to{transform:scale(1)}}
+  #bigWord span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;transform:scale(0);animation:wordpop 1.5s ease forwards}
+  /* 등장(팝) 후 두 번 반짝임 — 앉는 순간 단어 발음과 함께 */
+  @keyframes wordpop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.12);opacity:1}32%{transform:scale(1)}48%{opacity:.25}60%{opacity:1}74%{opacity:.25}86%{opacity:1}100%{transform:scale(1);opacity:1}}
 
   /* 아래쪽: 글자 조각 트레이 */
   #tray{position:relative;flex:1;background:linear-gradient(180deg,#cde6c3,#a8d19a)}
@@ -53,8 +54,8 @@ window.onerror=function(){return true};
 
 /* ── 데이터: 단어 추가는 여기에만 ─────────────────────────── */
 var WORDS=[
-  // videos: 완성 영상 후보(동물별) — 파일명 = word_단어_동물.mp4, 있는 것 중 랜덤 재생
-  {word:'sat', traps:['p','i','n'], videos:['dog','cat','rabbit']}
+  // videos: 완성 영상 후보(동물별) — 파일명 = 단어_동물.mp4 (예: sat_dog.mp4), 있는 것 중 랜덤 재생
+  {word:'sat', traps:['p','i','n'], videos:['dog','cat','raccoon']}
 ];
 var CUR=0;
 
@@ -205,41 +206,51 @@ function finish(){
       setTimeout(showWord,750);                 // ② 잠깐 쉬기
     }
   }
-  function showWord(){                          // ③ 단어 통발음(word_sat.mp3, 없으면 임시 연결음) + 크게 표시
+  function showWord(){                          // ③ 영상(걷다가 앉기) → 앉는 순간(=영상 끝) 단어 반짝임 + 발음("샛!")
+    slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
+    videoBox.style.display='flex';
+    var sp=bigWord.querySelector('span'); sp.textContent=W.word;
+    var revealed=false;
+    function reveal(){                           // 앉는 순간: 큰 단어 반짝(wordpop) + 단어 발음
+      if(revealed) return; revealed=true;
+      sayWord();
+      bigWord.style.display='flex'; fitWord(sp); // 반짝임은 CSS(wordpop) — 나타날 때 자동 재생
+      replayBtn.style.display='block';
+    }
+    playVideo(W, reveal);                        // 영상 끝(앉는 순간)=reveal, 영상 없으면 즉시 reveal
+  }
+  function sayWord(){                            // 단어 통발음(word_sat.mp3, 없으면 임시 연결음)
+    if(SILENT) return;
     var arped=false;
     function arp(){ if(arped) return; arped=true; W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
-    if(!SILENT){
-      try{ var a=new Audio(SND_BASE+'word_'+W.word+'.mp3');
-        a.addEventListener('error',function(){ arp(); },{once:true});
-        var p=a.play(); if(p&&p.catch) p.catch(function(){ arp(); });
-      }catch(e){ arp(); }
-    }
-    slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
-    videoBox.style.display='flex';              // 영상 파일 있으면 재생, 없으면 회색 박스 유지
-    playVideo(W);
-    var sp=bigWord.querySelector('span');
-    sp.textContent=W.word;
-    bigWord.style.display='flex';
-    fitWord(sp);
-    replayBtn.style.display='block';
+    try{ var a=new Audio(SND_BASE+'word_'+W.word+'.mp3');
+      a.addEventListener('error',function(){ arp(); },{once:true});
+      var p=a.play(); if(p&&p.catch) p.catch(function(){ arp(); });
+    }catch(e){ arp(); }
   }
   next();
 }
 /* 완성 영상: 후보(동물별)를 랜덤 순서로 시도 → 처음 성공하는 것 재생. 전부 없으면 회색 박스 유지 */
-function playVideo(W){
-  if(!W.videos||!W.videos.length) return;
+function playVideo(W, onEnd){                    // 영상 재생 → 끝(앉는 순간)에 onEnd. 영상 없으면 즉시 onEnd
+  if(!W.videos||!W.videos.length){ if(onEnd)onEnd(); return; }
   var order=shuffle(W.videos.slice());
   (function tryNext(k){
-    if(k>=order.length) return;                 // 전부 없음 → 회색 박스
+    if(k>=order.length){ if(onEnd)onEnd(); return; } // 후보 전부 없음 → 회색 박스 유지, 바로 공개
     try{
       var v=document.createElement('video');
-      v.src=VID_BASE+'word_'+W.word+'_'+order[k]+'.mp4';
-      v.autoplay=true; v.playsInline=true; v.setAttribute('playsinline','');
+      v.src=VID_BASE+W.word+'_'+order[k]+'.mp4';   // 예: sat_dog.mp4
+      v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
+      v.setAttribute('playsinline',''); v.setAttribute('muted','');
+      v.addEventListener('error',function(){ tryNext(k+1); },{once:true});
       v.addEventListener('loadeddata',function(){
         videoBox.textContent=''; videoBox.appendChild(v);
-        var p=v.play(); if(p&&p.catch) p.catch(function(){ v.muted=true; var q=v.play(); if(q&&q.catch)q.catch(function(){}); });
+        var p=v.play(); if(p&&p.catch) p.catch(function(){});
       },{once:true});
-      v.addEventListener('error',function(){ tryNext(k+1); },{once:true});
+      v.addEventListener('ended',function(){ if(onEnd)onEnd(); },{once:true}); // 앉는 순간
+      v.addEventListener('loadedmetadata',function(){ // 안전장치: ended 미발생 시 길이+여유 뒤 공개
+        var ms=((isFinite(v.duration)&&v.duration>0)? v.duration*1000 : 6000)+1500;
+        setTimeout(function(){ if(onEnd)onEnd(); }, ms);
+      },{once:true});
     }catch(e){ tryNext(k+1); }
   })(0);
 }
