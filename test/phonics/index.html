@@ -13,8 +13,8 @@
   /* 위쪽: 단어 보드 */
   #board{position:relative;flex:0 0 58%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vh}
   /* 영상: 위쪽 board 영역을 꽉 채움 (세로 9:16 영상) */
-  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:#9e9e9e;align-items:center;justify-content:center;color:#e0e0e0;font-size:6vw}
-  #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover}
+  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:transparent;align-items:center;justify-content:center;color:#e0e0e0;font-size:6vw}
+  #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}   /* animal.html 방식: 첫 프레임 준비되면 페이드인 → 회색 블랭크 안 스침 */
   #slots{display:flex;gap:3vw}
   .slot{position:relative;width:19vw;height:19vw;max-width:104px;max-height:104px;border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
   .slot .ghost{font-size:12vw;font-weight:700;color:#c5d4bb;line-height:1}
@@ -130,7 +130,7 @@ function build(){
   var W=WORDS[CUR]; locked=false;
   slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
   bigWord.style.display='none'; replayBtn.style.display='none';
-  videoBox.style.display='none'; videoBox.innerHTML='&#127916; 영상 자리'; // 다시 하기 시 영상 제거·복원
+  videoBox.style.display='none'; videoBox.innerHTML=''; // 다시 하기 시 영상 제거(회색 플레이스홀더 없이 → 블랭크 방지)
   slots=[]; tiles=[];
   W.word.split('').forEach(function(ch){
     var s=document.createElement('div'); s.className='slot';
@@ -318,6 +318,11 @@ function playVideo(W, onSit, onAllDone){
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
       var fx=VIDFX[list[k]];                       // 동물별 화면 위치·크기 적용(파일명 기준)
       if(fx){ if(fx.pos) v.style.objectPosition=fx.pos; if(fx.scale) v.style.transform='scale('+fx.scale+')'; }
+      var shown=false;                             // animal.html 방식: 첫 프레임 실제로 나오면 페이드인(회색 블랭크 안 스침)
+      function reveal(){ if(shown)return; shown=true; v.style.opacity='1'; }
+      function chkShow(){ if(v.currentTime>0 && !v.paused) reveal(); }
+      v.addEventListener('timeupdate',chkShow); v.addEventListener('playing',chkShow);
+      setTimeout(reveal,1500);                     // 안전장치: 못 잡아도 1.5초 뒤 표시
       function afterSit(){                         // 이 동물이 앉음: sat 반짝+발음 → 잠깐 뒤 다음 동물
         if(done) return; done=true;
         if(onSit)onSit();
