@@ -218,12 +218,12 @@ function finish(){
     var sp=bigWord.querySelector('span'); sp.textContent=W.word;
     // ③-1 영상 들어가기 전: 아래쪽 sat 반짝 + 발음 한 번
     showBigWord(sp); sayWord();
-    // ③-2 잠깐 뒤 위쪽에서 영상 재생 (sat은 아래 그대로 유지)
-    setTimeout(function(){ playVideo(W, reveal); },1600);
-    var revealed=false;
-    function reveal(){                           // ③-3 앉는 순간: sat 다시 반짝 + 발음
-      if(revealed) return; revealed=true;
+    // ③-2 잠깐 뒤 위쪽에서 영상 재생 (강아지→고양이→너구리 차례로, sat은 아래 그대로 유지)
+    setTimeout(function(){ playVideo(W, onSit, onAllDone); },1600);
+    function onSit(){                            // ③-3 각 동물 앉는 순간: sat 다시 반짝 + 발음 (세 번 반복)
       showBigWord(sp); sayWord();
+    }
+    function onAllDone(){                        // 세 동물 다 앉으면 다시 하기 버튼
       replayBtn.style.display='block';
     }
   }
@@ -243,28 +243,38 @@ function finish(){
   }
   next();
 }
-/* 완성 영상: 후보(동물별)를 랜덤 순서로 시도 → 처음 성공하는 것 재생. 전부 없으면 회색 박스 유지 */
-function playVideo(W, onEnd){                    // 영상 재생 → 끝(앉는 순간)에 onEnd. 영상 없으면 즉시 onEnd
-  if(!W.videos||!W.videos.length){ if(onEnd)onEnd(); return; }
-  var order=shuffle(W.videos.slice());
-  (function tryNext(k){
-    if(k>=order.length){ if(onEnd)onEnd(); return; } // 후보 전부 없음 → 회색 박스 유지, 바로 공개
+/* 완성 영상: 동물 영상을 정해진 순서(강아지→고양이→너구리)로 차례차례 재생.
+   각 영상이 끝날 때(동물이 앉는 순간)마다 onSit, 마지막 영상까지 끝나면 onAllDone.
+   없는 영상은 앉음 취급 없이 건너뜀. 전부 없으면 바로 onAllDone */
+function playVideo(W, onSit, onAllDone){
+  var list=W.videos||[];
+  if(!list.length){ if(onAllDone)onAllDone(); return; }
+  var GAP=1600;                                  // 앉은 뒤 sat 발음 들려주고 다음 동물 입장까지 쉼
+  (function playAt(k){
+    if(k>=list.length){ if(onAllDone)onAllDone(); return; } // 마지막까지 끝 → 종료
+    var isLast=(k===list.length-1),done=false;
     try{
       var v=document.createElement('video');
-      v.src=VID_BASE+W.word+'_'+order[k]+'.mp4';   // 예: sat_dog.mp4
+      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4';   // 예: sat_dog.mp4
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
-      v.addEventListener('error',function(){ tryNext(k+1); },{once:true});
+      function afterSit(){                         // 이 동물이 앉음: sat 반짝+발음 → 잠깐 뒤 다음 동물
+        if(done) return; done=true;
+        if(onSit)onSit();
+        if(isLast){ if(onAllDone)onAllDone(); }
+        else setTimeout(function(){ playAt(k+1); }, GAP);
+      }
+      v.addEventListener('error',function(){ if(done)return; done=true; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
       v.addEventListener('loadeddata',function(){
-        videoBox.textContent=''; videoBox.appendChild(v);
+        videoBox.textContent=''; videoBox.appendChild(v);  // 앞 영상 치우고 새 영상 넣기
         var p=v.play(); if(p&&p.catch) p.catch(function(){});
       },{once:true});
-      v.addEventListener('ended',function(){ if(onEnd)onEnd(); },{once:true}); // 앉는 순간
-      v.addEventListener('loadedmetadata',function(){ // 안전장치: ended 미발생 시 길이+여유 뒤 공개
+      v.addEventListener('ended',afterSit,{once:true}); // 앉는 순간
+      v.addEventListener('loadedmetadata',function(){ // 안전장치: ended 미발생 시 길이+여유 뒤 앉음 처리
         var ms=((isFinite(v.duration)&&v.duration>0)? v.duration*1000 : 6000)+1500;
-        setTimeout(function(){ if(onEnd)onEnd(); }, ms);
+        setTimeout(afterSit, ms);
       },{once:true});
-    }catch(e){ tryNext(k+1); }
+    }catch(e){ if(!done){ done=true; playAt(k+1); } }
   })(0);
 }
 /* 실측 글자 맞춤(fitWord 패턴): 공식 대신 실제 폭을 재서 줄임 */
