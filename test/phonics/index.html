@@ -117,6 +117,24 @@ function loadSound(base,key,freq){ // base+key+'.mp3' 있으면 재생, 없으�
 function letterName(ch){ loadSound(ABC_BASE,'letter_'+ch,FREQ[ch]||440).play(); }    // 스테이지1: 글자 이름("에스")
 function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(); }  // 스테이지2: 음가("스")
 
+/* ── 배경음악(메인 게임과 동일 bgm.mp3, 방식 그대로) ── loop 반복 + 화면끔/앱닫기 때 정지·복귀.
+   파닉스는 음가(스·애·트)·발음(샛!)이 또렷해야 하는 학습 게임이라 볼륨을 아주 은은하게(0.13).
+   자동재생 정책 때문에 시작하자마자가 아니라 첫 글자 터치/드래그 순간(startBGM)에 재생 */
+var bgm=null,bgmStarted=false,_bgmWasPlaying=false;
+try{ bgm=new Audio('../../assets/game/sounds/bgm.mp3'); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
+function startBGM(){ if(SILENT||bgmStarted||!bgm) return; bgmStarted=true;
+  try{ var p=bgm.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
+function _pauseAllSound(){                        // 홈버튼/멀티태스킹/화면끔 → 소리 정지(WebView서 앱 닫아도 BGM 계속 나오는 문제 방지)
+  try{ _bgmWasPlaying = bgm && !bgm.paused; }catch(e){ _bgmWasPlaying=false; }
+  try{ if(bgm) bgm.pause(); }catch(e){}
+  try{ document.querySelectorAll('video,audio').forEach(function(m){ try{m.pause();}catch(e){} }); }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ _pauseAllSound(); }
+  else if(_bgmWasPlaying){ try{ if(bgm) bgm.play().catch(function(){}); }catch(e){} } // 다시 보이면 재생중이던 BGM만 복귀
+});
+window.addEventListener('pagehide',_pauseAllSound);
+
 /* ── 판 만들기 ───────────────────────────────────────────── */
 var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tray'),
     stage=document.getElementById('stage'),bigWord=document.getElementById('bigWord'),
@@ -186,6 +204,7 @@ function attachDrag(tile){
   el.addEventListener('pointerdown',function(e){
     if(locked||tile.placed) return;
     hideHand();                                 // 아이가 실제로 끌기 시작하면 안내 손가락 사라짐
+    startBGM();                                 // 첫 글자 터치/드래그 순간 BGM 시작(자동재생 정책 대응)
     e.preventDefault();
     try{ el.setPointerCapture(e.pointerId); }catch(err){}
     el.classList.add('drag'); el.classList.remove('back');
