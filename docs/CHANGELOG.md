@@ -297,3 +297,6 @@
     - `startVideo`: `playing`/`timeupdate`(currentTime>0)로 reveal→opacity 1, 1.5초 안전장치
     - build의 '영상 자리' 플레이스홀더 제거(`innerHTML=''`)
   - 로딩 중엔 회색 대신 뒤 화면(초록 board)이 보이고 영상이 부드럽게 등장. 영상 순서·소리·위치(VIDFX)·타이밍 미변경 — 블랭크 처리만 추가.
+- **🔤 파닉스 '다시 하기' 버튼 → 🔄 아이콘** (`test/phonics/index.html`, 커밋 `c7fffdf`).
+  - 23개국·글자 못 읽는 3~7세 사용자라 한글 텍스트 대신 만국 공통 아이콘. 동물 퍼즐(animal.html)의 리프레시 버튼과 통일(🔄, `&#128260;`).
+  - 버튼 크기·위치·클릭 시 재시작 기능은 그대로, 안의 글자만 아이콘으로 교체. 접근성용 `aria-label` 추가.
