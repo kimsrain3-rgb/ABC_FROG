@@ -304,3 +304,6 @@
   - 메인 게임 `script.js`의 BGM 방식 그대로 이식 — `assets/game/sounds/bgm.mp3` **loop 반복** + `visibilitychange`/`pagehide`로 화면 끔·앱 닫기 때 정지, 다시 보이면 재생 중이던 BGM만 복귀.
   - 파닉스 맞춤 2가지: ① **볼륨 0.13**(메인 0.25보다 작게) → 음가(스·애·트)·발음(샛!)을 안 덮게 은은하게. ② 자동재생 정책 대응 — 시작하자마자가 아니라 **첫 글자 터치/드래그(pointerdown) 순간** `startBGM` 시작. `?silent=1` 모드에선 재생 안 함.
   - 음가·발음·게임 로직 미변경 — BGM만 추가.
+- **🔤 파닉스 다시하기 버튼 화면 정중앙으로** (`test/phonics/index.html`, 커밋 `2254fd5`).
+  - `#replay` 위치 `bottom:3vh`(아래쪽) → `top:50%;left:50%;transform:translate(-50%,-50%)`(세로·가로 정중앙). 동물 영상 살짝 가려도 OK.
+  - 버튼 크기·아이콘(🔄)·재시작 기능 그대로, 위치만 변경.
