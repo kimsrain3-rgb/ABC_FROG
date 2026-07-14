@@ -77,6 +77,14 @@ var SND_BASE='../../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(
 var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
 /* ── 영상: assets/phonics/videos/word_sat.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../../assets/phonics/videos/';
+/* 동물별 영상 화면 위치·크기 — 동물마다 프레임이 달라 따로 맞춤(파일명 기준).
+   pos=object-position(세로 크롭 위치; 기본 '50% 50%', 값 클수록 동물이 화면 위로),
+   scale=확대배율(기본 1). 여기 값만 바꾸면 동물별 위치·크기 조정됨 */
+var VIDFX={
+  dog:    {pos:'50% 80%'},             // 강아지: 위로 30%p (50→80)
+  cat:    {pos:'50% 45%'},             // 고양이: 아래로 5%p (50→45)
+  raccoon:{pos:'50% 50%', scale:1.10}  // 너구리: 위치 그대로 + 10% 확대
+};
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
 var ax=null;
@@ -308,6 +316,8 @@ function playVideo(W, onSit, onAllDone){
       v.src=VID_BASE+W.word+'_'+list[k]+'.mp4';   // 예: sat_dog.mp4
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
+      var fx=VIDFX[list[k]];                       // 동물별 화면 위치·크기 적용(파일명 기준)
+      if(fx){ if(fx.pos) v.style.objectPosition=fx.pos; if(fx.scale) v.style.transform='scale('+fx.scale+')'; }
       function afterSit(){                         // 이 동물이 앉음: sat 반짝+발음 → 잠깐 뒤 다음 동물
         if(done) return; done=true;
         if(onSit)onSit();
