@@ -1,0 +1,97 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dino word fit check</title>
+<style>
+  html, body {
+    margin: 0;
+    background: #f5f7f1;
+    font-family: Arial, sans-serif;
+  }
+  .row {
+    position: relative;
+    height: 78px;
+    border-bottom: 1px solid #ccd5c7;
+    overflow: hidden;
+  }
+  .bounds {
+    position: absolute;
+    left: 0;
+    top: 6px;
+    width: 100vw;
+    height: 48px;
+    box-sizing: border-box;
+    border-left: 4px solid #e53935;
+    border-right: 4px solid #e53935;
+    background: rgba(255,255,255,.35);
+  }
+  .label {
+    position: absolute;
+    left: 6px;
+    bottom: 3px;
+    font-size: 10px;
+    color: #334;
+    z-index: 3;
+  }
+  .word {
+    position: absolute;
+    left: 50%;
+    top: 30px;
+    transform: translate(-50%, -50%) scale(1.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    z-index: 2;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .word .wl {
+    display: inline-block;
+    font-family: 'Fredoka','Comic Sans MS','Chalkboard SE',cursive;
+    font-weight: 900;
+    line-height: 1;
+    color: #FFEB3B;
+    text-shadow: 3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;
+  }
+</style>
+<div id="app"></div>
+<script>
+  var words = [
+    'TYRANNOSAURUS',
+    'TRICERATOPS',
+    'STEGOSAURUS',
+    'BRACHIOSAURUS',
+    'ANKYLOSAURUS',
+    'PARASAUROLOPHUS',
+    'VELOCIRAPTOR',
+    'SPINOSAURUS',
+    'PACHYCEPHALOSAURUS',
+    'IGUANODON'
+  ];
+  var bw = window.innerWidth;
+  var app = document.getElementById('app');
+  words.forEach(function(WORD) {
+    var row = document.createElement('div');
+    row.className = 'row';
+    var bounds = document.createElement('div');
+    bounds.className = 'bounds';
+    var word = document.createElement('div');
+    word.className = 'word';
+    var fs = Math.min(bw * 0.10, (bw * 0.86) / (WORD.length * 0.70));
+    word.style.fontSize = fs + 'px';
+    WORD.split('').forEach(function(ch) {
+      var s = document.createElement('span');
+      s.className = 'wl';
+      s.textContent = ch;
+      word.appendChild(s);
+    });
+    var label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = WORD + ' / ' + WORD.length + ' letters';
+    row.appendChild(bounds);
+    row.appendChild(word);
+    row.appendChild(label);
+    app.appendChild(row);
+  });
+</script>
