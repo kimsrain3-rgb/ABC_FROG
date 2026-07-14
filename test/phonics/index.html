@@ -136,10 +136,14 @@ function build(){
     trayEl.appendChild(t);
     var tile={el:t,letter:ch,idx:i,placed:false};
     tiles.push(tile);
-    place(tile);
     attachDrag(tile);
   });
-  showHand();                                   // 첫 글자 위에 드래그 안내 손가락 표시
+  tiles.forEach(place);                         // 조각 다 추가된 뒤 배치(n 확정 → 항상 25·50·75%, 깜빡임 방지)
+  /* 레이아웃(트레이 크기)이 완전히 잡힌 다음 정확한 폭으로 다시 배치 → 매번 열어도 똑같이 고르게 */
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    tiles.forEach(function(t){ if(!t.placed) place(t); });
+    showHand();                                 // 위치 확정 후 드래그 안내 손가락 표시
+  }); });
 }
 /* 드래그 안내 손가락: 첫 글자(=슬롯0 글자) 조각 위 → 첫 빈칸 쪽으로 왔다갔다. 실제 드래그 시작 시 hideHand */
 function showHand(){
