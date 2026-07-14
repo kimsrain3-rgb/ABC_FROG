@@ -274,8 +274,21 @@ function playVideo(W, onSit, onAllDone){
   var list=W.videos||[];
   if(!list.length){ if(onAllDone)onAllDone(); return; }
   var GAP=1600;                                  // 앉은 뒤 sat 발음 들려주고 다음 동물 입장까지 쉼
-  (function playAt(k){
-    if(k>=list.length){ if(onAllDone)onAllDone(); return; } // 마지막까지 끝 → 종료
+  var sp=bigWord.querySelector('span');
+  /* 둘째·셋째 동물 앞: 완성연출 next()와 같은 스·애·트 강조 — phonemeSound(같은 소리·볼륨) + 850ms(같은 간격)
+     + 완성연출 slot과 같은 'pulse' 키프레임을 아래 sat 통글자에 재사용해 반짝. 끝나면 cb */
+  function phonemeIntro(cb){
+    sp.style.transform='scale(1)';               // pulse(비-forwards) 뒤 base scale(0)로 사라지지 않게 고정
+    var j=0;
+    (function step(){
+      if(j<W.word.length){
+        sp.style.animation='none'; void sp.offsetWidth; sp.style.animation='pulse .45s ease'; // 아래 sat 반짝
+        phonemeSound(W.word[j]); j++;             // 음가("스"·"애"·"트")
+        setTimeout(step,850);
+      }else{ sp.style.animation='none'; if(cb)cb(); } // 끝: 다음 wordpop이 이어받게 애니 비움(pop 재발동 방지)
+    })();
+  }
+  function startVideo(k){                         // (기존 영상 재생 로직 그대로 이동 — 흐름·앉을때 발음·GAP 미변경)
     var isLast=(k===list.length-1),done=false;
     try{
       var v=document.createElement('video');
@@ -299,7 +312,13 @@ function playVideo(W, onSit, onAllDone){
         setTimeout(afterSit, ms);
       },{once:true});
     }catch(e){ if(!done){ done=true; playAt(k+1); } }
-  })(0);
+  }
+  function playAt(k){
+    if(k>=list.length){ if(onAllDone)onAllDone(); return; } // 마지막까지 끝 → 종료
+    if(k>=1) phonemeIntro(function(){ startVideo(k); });    // 둘째·셋째 동물 앞에만 스·애·트 강조 추가
+    else startVideo(k);                                     // 첫째(강아지)는 직전 완성화면서 이미 스·애·트 → 생략
+  }
+  playAt(0);
 }
 /* 실측 글자 맞춤(fitWord 패턴): 공식 대신 실제 폭을 재서 줄임 */
 function fitWord(sp){
