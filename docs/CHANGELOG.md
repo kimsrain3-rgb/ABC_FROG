@@ -290,3 +290,10 @@
     - 너구리(raccoon): 위치 그대로(50% 50%) + **scale 1.10**(10% 확대)
   - 재생 순서·소리·타이밍 미변경(화면 위치·크기만). 값은 `VIDFX`에서 바로 조정 가능.
   - **(추가 조정)** 강아지(dog)만 위로 10%p 더 — object-position 80%→**90%** (커밋 `27c58ba`). 고양이·너구리 그대로.
+- **🔤 파닉스 완성영상 — 회색 블랭크 제거** (`test/phonics/index.html`, 커밋 `a0d704e`).
+  - 완성 후 동물 영상 로딩 사이 ~0.5초 **회색 빈 화면**이 스치던 것 제거. **동물 퍼즐(animal.html)의 검증된 페이드인 방식**을 그대로 이식(참고: animal.html 46줄).
+    - `#videoBox` 배경 `#9e9e9e` → **transparent**(회색 박스 제거)
+    - `#videoBox video` **opacity:0 + transition:opacity .3s** → 첫 프레임 준비되면 페이드인
+    - `startVideo`: `playing`/`timeupdate`(currentTime>0)로 reveal→opacity 1, 1.5초 안전장치
+    - build의 '영상 자리' 플레이스홀더 제거(`innerHTML=''`)
+  - 로딩 중엔 회색 대신 뒤 화면(초록 board)이 보이고 영상이 부드럽게 등장. 영상 순서·소리·위치(VIDFX)·타이밍 미변경 — 블랭크 처리만 추가.
