@@ -314,7 +314,7 @@ function playVideo(W, onSit, onAllDone){
       v.addEventListener('loadeddata',function(){
         videoBox.textContent=''; videoBox.appendChild(v);  // 앞 영상 치우고 새 영상 넣기
         var p=v.play(); if(p&&p.catch) p.catch(function(){});
-        if(k>=1) phonemeIntro();                   // 영상이 뜬 뒤 그 위에서 스·애·트(둘째·셋째만)
+        if(k>=1) setTimeout(phonemeIntro,800);     // 영상 뜬 뒤 한 박자(800ms) 쉬고 스·애·트(둘째·셋째만) — 동물 잠깐 보고 여유
       },{once:true});
       v.addEventListener('ended',afterSit,{once:true}); // 앉는 순간
       v.addEventListener('loadedmetadata',function(){ // 안전장치: ended 미발생 시 길이+여유 뒤 앉음 처리
