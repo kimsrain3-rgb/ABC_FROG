@@ -267,3 +267,7 @@
   - **첫 동물(강아지, k=0)은 생략** — 직전 완성화면에서 이미 스·애·트가 나와 겹치면 어색하므로.
   - 소리(phonemeSound)·간격(850ms)·볼륨은 완성연출 `next()`와 100% 동일. 반짝임은 완성연출 slot과 같은 `pulse` 키프레임을 아래 sat 통글자에 재사용(pulse가 비-forwards라 끝난 뒤 base scale(0)로 사라지지 않게 transform scale(1) 고정).
   - `playVideo`를 phonemeIntro/startVideo/playAt으로 정리했을 뿐, 동물 셋 흐름·GAP·각 동물 앉을 때 sat 발음(onSit)은 그대로. Node 시뮬레이션으로 순서 검증(SIT→스애트→SIT→스애트→SIT→종료).
+- **🔤 파닉스 스·애·트 강조 2가지 수정** (`test/phonics/index.html`, 커밋 `ab6a189`).
+  - **① 순서 반대**: 둘째·셋째 동물에서 스·애·트가 영상보다 먼저 나오던 것 → **영상이 로딩·재생 시작된 뒤(loadeddata) 그 위에서** 스·애·트. `playAt`은 영상만 부르고, `phonemeIntro`는 `startVideo`의 loadeddata에서 k>=1일 때 호출.
+  - **② 글자별 확대**: 아래 sat 통글자 전체가 한꺼번에 확대되던 것 → 소리에 맞춰 **한 글자씩(s→a→t) 확대**(노래방 자막식). 완성연출용 통글자 span(`#bigWord`)은 안 건드리고, **글자별 오버레이(`#satEmph`, bigWord와 같은 자리·크기)** 를 만들어 pulse를 글자별로 적용. 강조 동안 통글자는 잠깐 숨겼다 복원 → onSit(앉을 때 발음)은 그대로.
+  - 소리(phonemeSound)·간격(850)·볼륨 유지. 강아지·GAP·각 동물 앉을 때 발음 미변경. Node로 순서·글자별 검증.
