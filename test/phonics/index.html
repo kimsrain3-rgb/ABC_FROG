@@ -25,6 +25,9 @@
   /* 완성 단어: 아래쪽(조각 있던 빈 자리, board 아래 42%) 가운데. tray 밖(stage 직속)이라 리셋에도 안 지워짐 */
   #bigWord{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:5;align-items:center;justify-content:center;pointer-events:none}
   #bigWord span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;transform:scale(0);animation:wordpop 1.5s ease forwards}
+  /* 글자별 확대 강조용 오버레이: bigWord와 같은 자리, 글자 하나씩 pulse (완성연출 통글자는 그대로 둠) */
+  #satEmph{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:6;align-items:center;justify-content:center;pointer-events:none}
+  #satEmph span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1}
   /* 등장(팝) 후 두 번 반짝임 — 앉는 순간 단어 발음과 함께 */
   @keyframes wordpop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.12);opacity:1}32%{transform:scale(1)}48%{opacity:.25}60%{opacity:1}74%{opacity:.25}86%{opacity:1}100%{transform:scale(1);opacity:1}}
 
@@ -53,6 +56,7 @@
   </div>
   <div id="tray"></div>
   <div id="bigWord"><span></span></div>
+  <div id="satEmph"></div>
   <div id="hand">&#128070;</div>
   <button id="replay">다시 하기</button>
 </div>
@@ -109,7 +113,7 @@ function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(
 var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tray'),
     stage=document.getElementById('stage'),bigWord=document.getElementById('bigWord'),
     videoBox=document.getElementById('videoBox'),replayBtn=document.getElementById('replay'),
-    hand=document.getElementById('hand');
+    hand=document.getElementById('hand'),satEmph=document.getElementById('satEmph');
 var slots=[],tiles=[],locked=false;
 
 function shuffle(arr){ for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t; } return arr; }
@@ -274,21 +278,26 @@ function playVideo(W, onSit, onAllDone){
   var list=W.videos||[];
   if(!list.length){ if(onAllDone)onAllDone(); return; }
   var GAP=1600;                                  // 앉은 뒤 sat 발음 들려주고 다음 동물 입장까지 쉼
-  var sp=bigWord.querySelector('span');
-  /* 둘째·셋째 동물 앞: 완성연출 next()와 같은 스·애·트 강조 — phonemeSound(같은 소리·볼륨) + 850ms(같은 간격)
-     + 완성연출 slot과 같은 'pulse' 키프레임을 아래 sat 통글자에 재사용해 반짝. 끝나면 cb */
-  function phonemeIntro(cb){
-    sp.style.transform='scale(1)';               // pulse(비-forwards) 뒤 base scale(0)로 사라지지 않게 고정
+  /* 둘째·셋째 동물: 영상이 재생 시작된 뒤 그 위에서 스·애·트 강조. 아래 sat를 글자별로 나눠(오버레이)
+     소리에 맞춰 한 글자씩 확대(노래방 자막식). 소리(phonemeSound)·간격(850)·볼륨은 완성연출과 동일.
+     완성연출용 통글자 sat(#bigWord span)은 그대로 두고 잠깐만 숨겨 겹침 방지 */
+  function phonemeIntro(){
+    var real=bigWord.querySelector('span');
+    satEmph.style.fontSize=getComputedStyle(real).fontSize; // 진짜 sat와 같은 크기·자리
+    satEmph.innerHTML=''; var spans=[];
+    W.word.split('').forEach(function(ch){ var s=document.createElement('span'); s.textContent=ch; satEmph.appendChild(s); spans.push(s); });
+    satEmph.style.display='flex'; bigWord.style.visibility='hidden';
     var j=0;
     (function step(){
       if(j<W.word.length){
-        sp.style.animation='none'; void sp.offsetWidth; sp.style.animation='pulse .45s ease'; // 아래 sat 반짝
+        var el=spans[j];
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='pulse .45s ease'; // 그 글자만 확대
         phonemeSound(W.word[j]); j++;             // 음가("스"·"애"·"트")
         setTimeout(step,850);
-      }else{ sp.style.animation='none'; if(cb)cb(); } // 끝: 다음 wordpop이 이어받게 애니 비움(pop 재발동 방지)
+      }else{ satEmph.style.display='none'; bigWord.style.visibility=''; } // 끝: 오버레이 치우고 통글자 복원
     })();
   }
-  function startVideo(k){                         // (기존 영상 재생 로직 그대로 이동 — 흐름·앉을때 발음·GAP 미변경)
+  function startVideo(k){                         // (영상 재생 로직 — 흐름·앉을때 발음·GAP 미변경)
     var isLast=(k===list.length-1),done=false;
     try{
       var v=document.createElement('video');
@@ -305,6 +314,7 @@ function playVideo(W, onSit, onAllDone){
       v.addEventListener('loadeddata',function(){
         videoBox.textContent=''; videoBox.appendChild(v);  // 앞 영상 치우고 새 영상 넣기
         var p=v.play(); if(p&&p.catch) p.catch(function(){});
+        if(k>=1) phonemeIntro();                   // 영상이 뜬 뒤 그 위에서 스·애·트(둘째·셋째만)
       },{once:true});
       v.addEventListener('ended',afterSit,{once:true}); // 앉는 순간
       v.addEventListener('loadedmetadata',function(){ // 안전장치: ended 미발생 시 길이+여유 뒤 앉음 처리
@@ -315,8 +325,7 @@ function playVideo(W, onSit, onAllDone){
   }
   function playAt(k){
     if(k>=list.length){ if(onAllDone)onAllDone(); return; } // 마지막까지 끝 → 종료
-    if(k>=1) phonemeIntro(function(){ startVideo(k); });    // 둘째·셋째 동물 앞에만 스·애·트 강조 추가
-    else startVideo(k);                                     // 첫째(강아지)는 직전 완성화면서 이미 스·애·트 → 생략
+    startVideo(k);                                          // 영상 먼저 (강아지=강조X, 고양이·너구리는 영상 뜬 뒤 강조)
   }
   playAt(0);
 }
