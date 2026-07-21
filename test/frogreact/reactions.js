@@ -252,7 +252,8 @@
      - ① 크기 3배(원래 peak 96px → 288px)  ② 금빛 shimmer  ③ 금가루 낙하  ④ 반짝 효과음
      - N번 지나면 원래 효과로 복귀. 확정되면 N을 크게(전체 적용).
      ===================================================================== */
-  var FANCY_LETTERS = 5;                 // 첫 게임에서 이 개수만 화려하게
+  var FANCY_ALL = true;                  // ★ true = 모든 글자에 화려한 효과 (false면 앞 N글자만)
+  var FANCY_LETTERS = 5;                 // FANCY_ALL=false일 때 앞 몇 글자만 화려하게
   var fancyLeft = FANCY_LETTERS;
   var sparkleSnd, SOUND_DUR = 2.55;      // 글자 애니 길이를 이 소리 길이에 정확히 맞춤(로드되면 실측값)
   function ensureSnd(){
@@ -321,12 +322,12 @@
     }catch(e){ console.warn('[frogreact] fancyLetterPop',e); }
   }
 
-  // slp 후킹: 앞 N글자만 화려하게, 그 뒤엔 원래 효과.
+  // slp 후킹: FANCY_ALL이면 모든 글자를 화려하게, 아니면 앞 N글자만. 화려효과 실패 시 원래 효과로 폴백.
   if(typeof slp==='function'){
     var _slp=slp;
     window.slp=function(l,x,y){
       try{
-        if(fancyLeft>0){ fancyLeft--; fancyLetterPop(l,x,y); return; }
+        if(FANCY_ALL || fancyLeft>0){ if(!FANCY_ALL) fancyLeft--; fancyLetterPop(l,x,y); return; }
       }catch(e){ console.warn('[frogreact] slp hook',e); }
       _slp(l,x,y);
     };
