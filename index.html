@@ -143,6 +143,8 @@ gtag('config','G-VEN3PCFXXL',{
 
 <!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
 <script>document.write('<scr' + 'ipt src="script.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). test/에서 검증 후 이식, script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드. -->
+<script>document.write('<scr' + 'ipt src="frog-reactions.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <script>
 // 캐시 도우미(서비스워커) 사용 안 함 — 앱은 항상 서버 최신을 직접 로드(푸시 즉시 반영).
 // 과거에 등록된 서비스워커/캐시가 있으면 깨끗이 정리(자가 복구). 새로 등록은 하지 않음.
