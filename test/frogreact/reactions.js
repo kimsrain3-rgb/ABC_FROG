@@ -302,19 +302,21 @@
       host.appendChild(el);
       setTimeout(function(){ el.remove(); }, dur*1000+150);
       // 금가루 낙하 파티클
-      var n=16;
+      // 금가루(별가루) — 우수수 쏟아지게 풍성히
+      var n=44;                                    // 개수↑ (게임 부담 없는 선)
       for(var i=0;i<n;i++){
         var d=document.createElement('div'); d.className='fx-dust';
-        var dx=(Math.random()*2-1)*80;          // 좌우 ±80
-        var dy=55+Math.random()*130;            // 아래로 55~185 (떨어짐)
-        var ddur=0.7+Math.random()*0.6;
-        var sz=5+Math.random()*8;
+        var dx=(Math.random()*2-1)*140;            // 좌우 ±140 (더 넓게)
+        var dy=45+Math.random()*300;               // 아래로 45~345 (거리 다양)
+        var ddur=0.6+Math.random()*1.0;            // 0.6~1.6s (속도 다양)
+        var delay=Math.random()*0.55;              // 0~0.55s 시차 → 우수수 쏟아짐
+        var sz=3+Math.random()*Math.random()*15;   // 3~18px, 작은 게 많고 큰 게 섞임
         d.style.left=x+'px'; d.style.top=y+'px';
         d.style.width=sz+'px'; d.style.height=sz+'px';
         d.style.setProperty('--dx', dx+'px'); d.style.setProperty('--dy', dy+'px');
-        d.style.animationDuration=ddur+'s'; d.style.animationDelay=(Math.random()*0.18)+'s';
+        d.style.animationDuration=ddur+'s'; d.style.animationDelay=delay+'s';
         host.appendChild(d);
-        (function(dd,ms){ setTimeout(function(){ dd.remove(); }, ms); })(d, ddur*1000+400);
+        (function(dd,ms){ setTimeout(function(){ dd.remove(); }, ms); })(d, (delay+ddur)*1000+300);
       }
     }catch(e){ console.warn('[frogreact] fancyLetterPop',e); }
   }
