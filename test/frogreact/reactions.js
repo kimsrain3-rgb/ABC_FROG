@@ -201,16 +201,26 @@
   }
 
   // ---- 정답 후킹 (occ 래핑): 맞출 때마다 5개 중 랜덤 ----
+  // occ은 '혀가 파리에 닿는 순간'에 불림. 여기서 바로 춤추면 혀로 입에 가져와 먹는 과정이 생략돼 어색.
+  // → 혀 수축(occ+~300ms)·파리 먹음완료(occ+~350ms) 뒤인 REACTION_DELAY 후에 춤 시작.
+  var REACTION_DELAY = 380;              // ms — 먹은 직후 자연스럽게 이어지게(너무 늦지 않게)
+  var reactionScheduled = false;
   if(typeof occ==='function'){
     var _occ=occ;
     window.occ=function(f){
       _occ(f);
       try{
-        if(playing){ log('occ:SKIP(playing)'); return; }
+        if(playing || reactionScheduled) return;         // 재생 중/이미 예약됨이면 무시
         var clip=CLIPS[Math.floor(Math.random()*CLIPS.length)];
-        log('occ:fire', 'cm='+(typeof cm!=='undefined'?cm:'?'));
-        playClip(clip, gameFrogImg(), document.getElementById('frog'), true);
-      }catch(e){ console.warn('[frogreact] occ hook',e); try{ endReaction(); }catch(_){} }
+        reactionScheduled=true;
+        log('occ:scheduled', 'cm='+(typeof cm!=='undefined'?cm:'?'));
+        setTimeout(function(){
+          reactionScheduled=false;
+          if(playing) return;                            // 그새 다른 반응 재생 중이면 취소
+          if(typeof gp!=='undefined' && gp!=='playing' && gp!=='tutorial') return;  // 게임 벗어났으면 취소
+          playClip(clip, gameFrogImg(), document.getElementById('frog'), true);
+        }, REACTION_DELAY);
+      }catch(e){ console.warn('[frogreact] occ hook',e); reactionScheduled=false; try{ endReaction(); }catch(_){} }
     };
   }
 
