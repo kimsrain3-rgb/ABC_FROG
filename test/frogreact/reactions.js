@@ -246,12 +246,88 @@
     }
   }, 200);
 
+  /* =====================================================================
+     파리(글자) 잡을 때 '화려한 반짝' 효과 (★ 테스트: 첫 게임 앞 N글자만)
+     - 원본 slp()(작은 금색 글자, 1초)를 후킹해 앞 N번만 화려하게 교체.
+     - ① 크기 3배(원래 peak 96px → 288px)  ② 금빛 shimmer  ③ 금가루 낙하  ④ 반짝 효과음
+     - N번 지나면 원래 효과로 복귀. 확정되면 N을 크게(전체 적용).
+     ===================================================================== */
+  var FANCY_LETTERS = 5;                 // 첫 게임에서 이 개수만 화려하게
+  var fancyLeft = FANCY_LETTERS;
+  var sparkleSnd;
+  function playSparkle(){
+    try{
+      if(sparkleSnd===undefined){ sparkleSnd=new Audio('test/frogreact/alphabet_sparkle.mp3'); sparkleSnd.preload='auto'; }
+      if(sparkleSnd){ sparkleSnd.currentTime=0; var p=sparkleSnd.play(); if(p&&p.catch)p.catch(function(){}); }
+    }catch(e){ sparkleSnd=false; }
+  }
+  // 효과용 CSS 주입(테스트 페이지에만)
+  (function injectFxCss(){
+    var css=''
+      +'.fx-lpop{position:absolute;font-weight:900;font-size:240px;line-height:1;z-index:60;pointer-events:none;'
+      +'will-change:transform,opacity;color:#FFE14D;'
+      +'animation:fxLpop 1.15s cubic-bezier(.2,.85,.3,1) forwards, fxShine .32s ease-in-out infinite}'
+      +'@keyframes fxLpop{0%{opacity:0;transform:translate(-50%,0) scale(.5) rotate(-8deg)}'
+      +'16%{opacity:1;transform:translate(-50%,-30px) scale(1.2) rotate(5deg)}'      /* peak 288px */
+      +'55%{opacity:1;transform:translate(-50%,-80px) scale(1.14) rotate(-3deg)}'
+      +'100%{opacity:0;transform:translate(-50%,-175px) scale(1) rotate(0)}}'
+      +'@keyframes fxShine{0%,100%{color:#FFF3B0;text-shadow:0 0 12px #FFD700,0 0 26px #FFB300,4px 5px 0 #E68A00}'
+      +'50%{color:#FFE14D;text-shadow:0 0 26px #FFEA00,0 0 54px #FFC400,0 0 80px #FFB300,4px 5px 0 #C77700}}'
+      +'.fx-dust{position:absolute;border-radius:50%;z-index:59;pointer-events:none;will-change:transform,opacity;'
+      +'background:radial-gradient(circle at 35% 35%,#FFF7CC,#FFD24D 45%,#E6A800 100%);box-shadow:0 0 6px #FFD700;'
+      +'animation:fxDust 1s ease-in forwards}'
+      +'@keyframes fxDust{0%{opacity:1;transform:translate(-50%,-50%) translate(0,0) scale(1)}70%{opacity:.9}'
+      +'100%{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(.3)}}';
+    var s=document.createElement('style'); s.setAttribute('data-frogreact','fx'); s.textContent=css;
+    (document.head||document.documentElement).appendChild(s);
+  })();
+
+  function fancyLetterPop(l,x,y){
+    try{
+      var host=document.getElementById('gc')||document.body;
+      var el=document.createElement('div'); el.className='fx-lpop'; el.textContent=l;
+      el.style.left=x+'px'; el.style.top=y+'px';
+      host.appendChild(el);
+      setTimeout(function(){ el.remove(); }, 1250);
+      // 금가루 낙하 파티클
+      var n=16;
+      for(var i=0;i<n;i++){
+        var d=document.createElement('div'); d.className='fx-dust';
+        var dx=(Math.random()*2-1)*80;          // 좌우 ±80
+        var dy=55+Math.random()*130;            // 아래로 55~185 (떨어짐)
+        var dur=0.7+Math.random()*0.6;
+        var sz=5+Math.random()*8;
+        d.style.left=x+'px'; d.style.top=y+'px';
+        d.style.width=sz+'px'; d.style.height=sz+'px';
+        d.style.setProperty('--dx', dx+'px'); d.style.setProperty('--dy', dy+'px');
+        d.style.animationDuration=dur+'s'; d.style.animationDelay=(Math.random()*0.18)+'s';
+        host.appendChild(d);
+        (function(dd,ms){ setTimeout(function(){ dd.remove(); }, ms); })(d, dur*1000+400);
+      }
+      playSparkle();
+    }catch(e){ console.warn('[frogreact] fancyLetterPop',e); }
+  }
+
+  // slp 후킹: 앞 N글자만 화려하게, 그 뒤엔 원래 효과.
+  if(typeof slp==='function'){
+    var _slp=slp;
+    window.slp=function(l,x,y){
+      try{
+        if(fancyLeft>0){ fancyLeft--; fancyLetterPop(l,x,y); return; }
+      }catch(e){ console.warn('[frogreact] slp hook',e); }
+      _slp(l,x,y);
+    };
+  }
+
   // 디버그
   window.__frogreact={
     playGame:function(name){ playClip(name||CLIPS[0], gameFrogImg(), document.getElementById('frog'), true); },
     playGreet:function(){ var sf=document.querySelector('.ss .sf'); playClip(GREET, sf, sf, false); },
     stop:endReaction,
     set:function(bodyFrac){ if(bodyFrac)BODY_FRAC=bodyFrac; },
+    fancyDemo:function(l,x,y){ fancyLetterPop(l||'A', x||(window.innerWidth/2), y||(window.innerHeight*0.4)); },
+    resetFancy:function(n){ fancyLeft=(n==null?FANCY_LETTERS:n); return fancyLeft; },
+    fancyLeft:function(){ return fancyLeft; },
     clips:CLIPS,
     state:function(){ var f=document.getElementById('frog'); var af=document.querySelector('#frog .frog-img.active');
       return { playing:playing, tok:tok, hiddenEl:hiddenEl?(hiddenEl.id||hiddenEl.className):null,
