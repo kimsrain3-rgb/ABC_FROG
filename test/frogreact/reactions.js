@@ -258,7 +258,7 @@
   function ensureSnd(){
     if(sparkleSnd===undefined){
       try{
-        sparkleSnd=new Audio('test/frogreact/alphabet_sparkle.mp3'); sparkleSnd.preload='auto';
+        sparkleSnd=new Audio('test/frogreact/alphabet_sparkle.mp3?v=2'); sparkleSnd.preload='auto';  // ?v=2 = +30% 볼륨 버전(캐시 무효화)
         sparkleSnd.addEventListener('loadedmetadata', function(){ if(sparkleSnd && sparkleSnd.duration>0.1) SOUND_DUR=sparkleSnd.duration; });
       }catch(e){ sparkleSnd=false; }
     }
