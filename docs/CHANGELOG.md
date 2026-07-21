@@ -343,3 +343,11 @@
   - 정답 파리 먹음 → 만세/다리/한발 랜덤 재생 / 콤보(cm≥3, BINGO) → 뒤돌아 춤 / 시작화면 → 손 흔들기 인사.
   - **라이브 script.js/index.html 미수정** — `<base href="../../">`로 라이브 assets·script 공유, 반응은 `reactions.js`가 전역 `occ()`를 후킹(원본 함수 안 건드림). 검증 후 라이브 반영은 별도 결정.
   - 재생 중 기존 개구리 이미지 숨김→복귀, 게임(파리)은 안 멈춤. 개구리 크기·위치는 기존과 맞춤(비디오를 개구리 몸 크기에 스케일). Playwright로 6개 항목 검증 통과.
+
+### 2026-07-21 — 🐸 개구리 반응 + 글자 반짝 + 온보딩 **라이브 반영**
+- **개구리 반응 클립·글자 반짝·온보딩을 본 게임(실유저)에 반영** (커밋 `a8dfd11`). test/frogreact에서 폰 3모드 검증 후 이식.
+  - **방식**: 검증본을 `frog-reactions.js`(루트)로 이식, `index.html`에서 script.js **뒤에** 로드. **script.js/style.css 미변경**(라이브 전역함수 occ/slp/shoot/playVoice/owc를 감싸는 애드온). test/가 base href로 라이브 script.js를 그대로 불러 테스트한 것이라 조합이 이미 검증됨.
+  - **내용**: ①정답 시 개구리 반응 클립 5종 랜덤(혀 끝난 뒤 380ms 춤) + 시작화면 손흔들기 인사 ②글자 반짝(전체 글자·3모드, 3배 288px·금빛 shimmer·금가루 44개·효과음·소리 길이에 동기화된 페이드) ③튜토리얼 첫 파리에도 반응(샤르링+춤) + 게임 시작 시 첫 정답 파리 👆 안내(잡으면 종료) ④반응 사라짐 버그(경합조건) 수정: 크기 기준을 display:none될 수 있는 이미지 대신 컨테이너(#frog)에서 측정 + 프레임 실제내용/CSS크기 확인 + 감시 타이머로 즉시 복구.
+  - **에셋**: 영상 `assets/frog/videos/*.webm`(투명 VP9, fwd+pingpong), 효과음 `assets/frog/sounds/alphabet_sparkle.mp3`(+30%). 도구·프롬프트=`docs/frog_video_tools/`·`docs/flow_prompt_template.md`.
+  - **검증(라이브 구조)**: 3모드 모두 JS 에러 0·정상 플레이, 데모 샤르링+춤, 손가락 정답파리 정확(dx=0), 사라짐 버그조건서 270ms 복구.
+  - **되돌리기**: 백업 태그 `backup-before-frog-live-20260721`(반영 직전 커밋 9150044). 문제 시 `git revert a8dfd11` 또는 index.html의 frog-reactions.js 로드 줄 제거 → push. 라이브 game 로직은 미변경이라 애드온 로드만 빼면 원상복구.
