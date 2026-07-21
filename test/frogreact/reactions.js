@@ -97,6 +97,9 @@
   var _fc=null;
   function frameHasContent(){
     if(!vid || !vid.videoWidth) return false;
+    // ★ 화면에 실제로 보이는 CSS 크기도 확인 — 0x0(또는 아주 작음)이면 눈엔 안 보이므로 '빈 것'으로 판정.
+    var rr=vid.getBoundingClientRect();
+    if(rr.width<2 || rr.height<2) return false;
     try{
       if(!_fc){ _fc=document.createElement('canvas'); }
       var sw=36, sh=Math.max(1,Math.round(36*(vid.videoHeight||578)/(vid.videoWidth||420)));
@@ -123,17 +126,22 @@
     }catch(e){ return null; }
   }
 
-  // 클립 개구리 발/중심을 게임 개구리 발/중심에 맞춰 배치
-  function place(alignEl, clip){
+  // 클립 개구리를 sizeEl(크기/위치 기준) 기준으로 배치. imgEl로 발/중심 보정.
+  //   ★ sizeEl은 '숨길 대상 컨테이너'(#frog / .sf)를 쓴다 — 이건 display가 아니라 visibility로만
+  //     숨기므로 숨긴 뒤에도 rect가 유효(0x0이 안 됨). 활성 이미지는 setFrame으로 display:none이
+  //     될 수 있어 0x0으로 측정되므로 크기 기준으로 쓰지 않는다.
+  //   ★ 반환 false = 유효 크기를 못 재서 배치 실패 → 호출부는 개구리를 숨기지 말 것.
+  function place(sizeEl, imgEl, clip){
     var gc=document.getElementById('gc'); var gr=gc.getBoundingClientRect();
-    var r=alignEl.getBoundingClientRect();
+    var r=sizeEl.getBoundingClientRect();
+    if(!(r.width>1) || !(r.height>1)) return false;      // 크기 0/비정상 → 실패
     var H=r.height/BODY_FRAC, W=H*ASPECT;
+    if(!(W>1) || !(H>1)) return false;
+    // 발/중심 보정용 개구리 PNG bbox — display:none이어도 drawImage로 측정 가능.
+    var img=(imgEl && imgEl.naturalWidth) ? imgEl : null;
+    if(!img){ var cs=document.querySelectorAll('#frog .frog-img'); for(var i=0;i<cs.length;i++){ if(cs[i].naturalWidth){ img=cs[i]; break; } } }
     var gbb=null;
-    if(alignEl.naturalWidth){
-      var k='img:'+alignEl.src;
-      if(!(k in imgbbCache)) imgbbCache[k]=opaqueBBox(alignEl, alignEl.naturalWidth, alignEl.naturalHeight);
-      gbb=imgbbCache[k];
-    }
+    if(img){ var k='img:'+img.src; if(!(k in imgbbCache)) imgbbCache[k]=opaqueBBox(img, img.naturalWidth, img.naturalHeight); gbb=imgbbCache[k]; }
     var vbb=vbbCache[clip];
     if(!vbb){ vbb=opaqueBBox(vid, vid.videoWidth||420, vid.videoHeight||578); if(vbb) vbbCache[clip]=vbb; }
     var gCx=r.left+(gbb?gbb.cxFrac:0.5)*r.width;
@@ -142,6 +150,7 @@
     vid.style.width=W+'px'; vid.style.height=H+'px';
     vid.style.left=(gCx-gr.left - vCx*W)+'px';
     vid.style.top =(gFeetY-gr.top - vFeet*H)+'px';
+    return true;
   }
 
   // clip 재생. alignEl=정렬 기준 개구리, hideEl=숨길 요소, game=게임 개구리 여부.
@@ -159,10 +168,12 @@
       if(my!==tok) return true;               // 무효화됨 → 중단
       if(vid.error) return true;
       if(!vid.videoWidth || (vid.currentTime||0)<=0) return false;  // 아직 유효 프레임 아님
-      if(!frameHasContent()) return false;    // ★ 빈/투명 프레임이면 개구리 숨기지 않음(다음 프레임 재확인)
-      place(alignEl, clip);
+      // ★ 배치(크기/위치)를 '숨기기 전에' 한다. 크기 기준은 컨테이너(hideEl).
+      //   크기 0이면 place가 false → 영상 안 만들고, 개구리도 안 숨긴 채 재시도(개구리 유지).
+      if(!place(hideEl, alignEl, clip)) return false;
+      if(!frameHasContent()) return false;    // 빈/투명 프레임 or 화면 CSS 0크기면 숨기지 않음
       vid.style.opacity='1';
-      hideEl.style.visibility='hidden';       // ★ 이제서야 기존 개구리 숨김
+      hideEl.style.visibility='hidden';       // ★ 이제서야(제대로 보이는 게 확인된 뒤) 기존 개구리 숨김
       hiddenEl=hideEl; hiddenGame=game;
       if(game && typeof pauseAnim==='function'){ try{ pauseAnim(); }catch(e){} }
       log('trySwap:hid', clip);
