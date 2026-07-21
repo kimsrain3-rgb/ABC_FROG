@@ -31,6 +31,18 @@
   var watchOn=false;
   var vbbCache={}, imgbbCache={};
 
+  // ── 진단용 로그(원인 추적) ──
+  var LOG=[];
+  function log(ev, extra){
+    try{
+      var f=document.getElementById('frog');
+      LOG.push({ ev:ev, tok:tok, playing:playing, hiddenEl:hiddenEl?(hiddenEl.id||hiddenEl.className):null,
+                 frogVis:f?f.style.visibility:'?', vidDisp:vid?vid.style.display:'?', vidPaused:vid?vid.paused:'?',
+                 vidCt:vid?+(vid.currentTime||0).toFixed(2):'?', extra:extra||'' });
+      if(LOG.length>200) LOG.shift();
+    }catch(e){}
+  }
+
   function ensureVid(){
     if(vid) return vid;
     vid=document.createElement('video');
@@ -45,6 +57,7 @@
 
   // 반응 종료 = 무조건 개구리 복구 + 비디오 정리. 어디서 불려도 안전(멱등).
   function endReaction(){
+    log('endReaction:in');
     tok++;                                   // 진행 중 콜백 전부 무효화
     if(vid){
       try{ vid.pause(); }catch(e){}
@@ -66,13 +79,33 @@
       if(!hiddenEl) return;                  // 숨긴 개구리 있을 때만 감시
       var bad = !vid || vid.style.display==='none' || vid.style.opacity==='0'
                 || vid.paused || vid.error || !vid.videoWidth;
-      if(bad){ endReaction(); return; }
+      if(bad){ log('watchdog:bad→restore'); endReaction(); return; }
+      // ★ 재생 중이어도 '개구리를 실제로 안 그리는'(빈/투명) 프레임이면 즉시 앉은 개구리 복구.
+      //   → 개구리가 화면에서 사라지는 상황을 원천 차단.
+      if(!frameHasContent()){ log('watchdog:blank→restore'); endReaction(); return; }
       if(!vid.ended){                         // 정지(프레임 안 넘어감) 감지
         if(Math.abs((vid.currentTime||0)-lastCt)<0.001) stall++; else stall=0;
         lastCt=vid.currentTime||0;
-        if(stall>=3){ endReaction(); }        // ~360ms 정지 → 복구
+        if(stall>=3){ log('watchdog:stall→restore'); endReaction(); }        // ~360ms 정지 → 복구
       }
     }, 120);
+  }
+
+  // ★ 비디오가 지금 '개구리(불투명 픽셀)'를 실제로 그리고 있는지 확인.
+  //   재생(playing)만으로는 부족 — 재생 중이어도 빈/투명 프레임이면 화면엔 아무것도 안 보임.
+  //   그 경우 앉은 개구리를 숨기면 '둘 다 안 보임'이 됨 → 이 함수로 실제 내용을 확인해 방지.
+  var _fc=null;
+  function frameHasContent(){
+    if(!vid || !vid.videoWidth) return false;
+    try{
+      if(!_fc){ _fc=document.createElement('canvas'); }
+      var sw=36, sh=Math.max(1,Math.round(36*(vid.videoHeight||578)/(vid.videoWidth||420)));
+      _fc.width=sw; _fc.height=sh;
+      var g=_fc.getContext('2d'); g.clearRect(0,0,sw,sh); g.drawImage(vid,0,0,sw,sh);
+      var d=g.getImageData(0,0,sw,sh).data, op=0;
+      for(var i=3;i<d.length;i+=4){ if(d[i]>40){ if(++op>=8) return true; } }
+      return false;
+    }catch(e){ return true; }   // 캔버스를 못 읽으면(보안 등) 있다고 가정(예전 동작 유지)
   }
 
   function opaqueBBox(el, w, h){
@@ -115,6 +148,7 @@
   function playClip(clip, alignEl, hideEl, game){
     if(!alignEl||!hideEl) return;
     ensureVid(); startWatch();
+    log('playClip:in', clip+' game='+game);
     endReaction();                            // 이전 것 확실히 정리(개구리 복구 포함)
     var my=++tok;
     playing=true; lastCt=-1; stall=0;
@@ -125,11 +159,13 @@
       if(my!==tok) return true;               // 무효화됨 → 중단
       if(vid.error) return true;
       if(!vid.videoWidth || (vid.currentTime||0)<=0) return false;  // 아직 유효 프레임 아님
+      if(!frameHasContent()) return false;    // ★ 빈/투명 프레임이면 개구리 숨기지 않음(다음 프레임 재확인)
       place(alignEl, clip);
       vid.style.opacity='1';
       hideEl.style.visibility='hidden';       // ★ 이제서야 기존 개구리 숨김
       hiddenEl=hideEl; hiddenGame=game;
       if(game && typeof pauseAnim==='function'){ try{ pauseAnim(); }catch(e){} }
+      log('trySwap:hid', clip);
       return true;
     }
     if(vid.requestVideoFrameCallback){
@@ -159,8 +195,9 @@
     window.occ=function(f){
       _occ(f);
       try{
-        if(playing) return;
+        if(playing){ log('occ:SKIP(playing)'); return; }
         var clip=CLIPS[Math.floor(Math.random()*CLIPS.length)];
+        log('occ:fire', 'cm='+(typeof cm!=='undefined'?cm:'?'));
         playClip(clip, gameFrogImg(), document.getElementById('frog'), true);
       }catch(e){ console.warn('[frogreact] occ hook',e); try{ endReaction(); }catch(_){} }
     };
@@ -204,6 +241,13 @@
     playGreet:function(){ var sf=document.querySelector('.ss .sf'); playClip(GREET, sf, sf, false); },
     stop:endReaction,
     set:function(bodyFrac){ if(bodyFrac)BODY_FRAC=bodyFrac; },
-    clips:CLIPS
+    clips:CLIPS,
+    state:function(){ var f=document.getElementById('frog'); var af=document.querySelector('#frog .frog-img.active');
+      return { playing:playing, tok:tok, hiddenEl:hiddenEl?(hiddenEl.id||hiddenEl.className):null,
+        frogVis:f?getComputedStyle(f).visibility:'?', frogInline:f?f.style.visibility:'?',
+        activeImg:af?af.id:null, activeImgDisp:af?getComputedStyle(af).display:'?',
+        vidDisp:vid?vid.style.display:'?', vidOpacity:vid?vid.style.opacity:'?', vidPaused:vid?vid.paused:'?' }; },
+    log:function(){ return LOG.slice(); },
+    clearLog:function(){ LOG.length=0; }
   };
 })();
