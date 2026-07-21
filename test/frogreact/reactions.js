@@ -254,23 +254,31 @@
      ===================================================================== */
   var FANCY_LETTERS = 5;                 // 첫 게임에서 이 개수만 화려하게
   var fancyLeft = FANCY_LETTERS;
-  var sparkleSnd;
-  function playSparkle(){
-    try{
-      if(sparkleSnd===undefined){ sparkleSnd=new Audio('test/frogreact/alphabet_sparkle.mp3'); sparkleSnd.preload='auto'; }
-      if(sparkleSnd){ sparkleSnd.currentTime=0; var p=sparkleSnd.play(); if(p&&p.catch)p.catch(function(){}); }
-    }catch(e){ sparkleSnd=false; }
+  var sparkleSnd, SOUND_DUR = 2.55;      // 글자 애니 길이를 이 소리 길이에 정확히 맞춤(로드되면 실측값)
+  function ensureSnd(){
+    if(sparkleSnd===undefined){
+      try{
+        sparkleSnd=new Audio('test/frogreact/alphabet_sparkle.mp3'); sparkleSnd.preload='auto';
+        sparkleSnd.addEventListener('loadedmetadata', function(){ if(sparkleSnd && sparkleSnd.duration>0.1) SOUND_DUR=sparkleSnd.duration; });
+      }catch(e){ sparkleSnd=false; }
+    }
+    return sparkleSnd;
   }
+  function playSparkle(){
+    try{ var a=ensureSnd(); if(a){ a.currentTime=0; var p=a.play(); if(p&&p.catch)p.catch(function(){}); } }catch(e){}
+  }
+  ensureSnd();                           // 미리 로드해서 소리 길이(SOUND_DUR) 확보
   // 효과용 CSS 주입(테스트 페이지에만)
   (function injectFxCss(){
     var css=''
       +'.fx-lpop{position:absolute;font-weight:900;font-size:240px;line-height:1;z-index:60;pointer-events:none;'
-      +'will-change:transform,opacity;color:#FFE14D;'
-      +'animation:fxLpop 1.15s cubic-bezier(.2,.85,.3,1) forwards, fxShine .32s ease-in-out infinite}'
-      +'@keyframes fxLpop{0%{opacity:0;transform:translate(-50%,0) scale(.5) rotate(-8deg)}'
-      +'16%{opacity:1;transform:translate(-50%,-30px) scale(1.2) rotate(5deg)}'      /* peak 288px */
-      +'55%{opacity:1;transform:translate(-50%,-80px) scale(1.14) rotate(-3deg)}'
-      +'100%{opacity:0;transform:translate(-50%,-175px) scale(1) rotate(0)}}'
+      +'will-change:transform,opacity;color:#FFE14D}'   /* 애니는 JS가 인라인으로(길이=소리 길이) */
+      /* 소리 내내 연속으로: 작게 시작→커지며 위로 떠오르고→서서히 투명해져 끝에 완전히 사라짐. 최대 scale 1.2(=288px) */
+      +'@keyframes fxLpop{'
+      +'0%{opacity:0;transform:translate(-50%,0) scale(.35) rotate(-6deg)}'
+      +'6%{opacity:1;transform:translate(-50%,-14px) scale(.5) rotate(3deg)}'        /* 소리 시작과 함께 등장 */
+      +'55%{opacity:.72;transform:translate(-50%,-125px) scale(.9) rotate(-2deg)}'   /* 계속 커지며 상승, 서서히 옅어짐 */
+      +'100%{opacity:0;transform:translate(-50%,-235px) scale(1.2) rotate(0)}}'     /* 끝: 최대 288px + 완전 투명 */
       +'@keyframes fxShine{0%,100%{color:#FFF3B0;text-shadow:0 0 12px #FFD700,0 0 26px #FFB300,4px 5px 0 #E68A00}'
       +'50%{color:#FFE14D;text-shadow:0 0 26px #FFEA00,0 0 54px #FFC400,0 0 80px #FFB300,4px 5px 0 #C77700}}'
       +'.fx-dust{position:absolute;border-radius:50%;z-index:59;pointer-events:none;will-change:transform,opacity;'
@@ -285,26 +293,29 @@
   function fancyLetterPop(l,x,y){
     try{
       var host=document.getElementById('gc')||document.body;
+      playSparkle();                                  // ★ 소리 먼저 시작
+      var dur=(SOUND_DUR>0.3?SOUND_DUR:2.55);         // 글자 생존시간 = 소리 길이
       var el=document.createElement('div'); el.className='fx-lpop'; el.textContent=l;
       el.style.left=x+'px'; el.style.top=y+'px';
+      // ★ 애니 길이를 소리 길이에 맞춤(소리와 함께 시작해 함께 끝남). 셰인은 그대로.
+      el.style.animation='fxLpop '+dur+'s linear forwards, fxShine .32s ease-in-out infinite';
       host.appendChild(el);
-      setTimeout(function(){ el.remove(); }, 1250);
+      setTimeout(function(){ el.remove(); }, dur*1000+150);
       // 금가루 낙하 파티클
       var n=16;
       for(var i=0;i<n;i++){
         var d=document.createElement('div'); d.className='fx-dust';
         var dx=(Math.random()*2-1)*80;          // 좌우 ±80
         var dy=55+Math.random()*130;            // 아래로 55~185 (떨어짐)
-        var dur=0.7+Math.random()*0.6;
+        var ddur=0.7+Math.random()*0.6;
         var sz=5+Math.random()*8;
         d.style.left=x+'px'; d.style.top=y+'px';
         d.style.width=sz+'px'; d.style.height=sz+'px';
         d.style.setProperty('--dx', dx+'px'); d.style.setProperty('--dy', dy+'px');
-        d.style.animationDuration=dur+'s'; d.style.animationDelay=(Math.random()*0.18)+'s';
+        d.style.animationDuration=ddur+'s'; d.style.animationDelay=(Math.random()*0.18)+'s';
         host.appendChild(d);
-        (function(dd,ms){ setTimeout(function(){ dd.remove(); }, ms); })(d, dur*1000+400);
+        (function(dd,ms){ setTimeout(function(){ dd.remove(); }, ms); })(d, ddur*1000+400);
       }
-      playSparkle();
     }catch(e){ console.warn('[frogreact] fancyLetterPop',e); }
   }
 
