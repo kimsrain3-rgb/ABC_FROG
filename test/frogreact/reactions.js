@@ -205,23 +205,107 @@
   // → 혀 수축(occ+~300ms)·파리 먹음완료(occ+~350ms) 뒤인 REACTION_DELAY 후에 춤 시작.
   var REACTION_DELAY = 380;              // ms — 먹은 직후 자연스럽게 이어지게(너무 늦지 않게)
   var reactionScheduled = false;
+  function scheduleReaction(clip){       // 먹은 뒤(REACTION_DELAY) 춤 시작 (occ/데모 공용)
+    if(playing || reactionScheduled) return;
+    reactionScheduled=true;
+    setTimeout(function(){
+      reactionScheduled=false;
+      if(playing) return;
+      if(typeof gp!=='undefined' && gp!=='playing' && gp!=='tutorial') return;
+      playClip(clip, gameFrogImg(), document.getElementById('frog'), true);
+    }, REACTION_DELAY);
+  }
   if(typeof occ==='function'){
     var _occ=occ;
     window.occ=function(f){
       _occ(f);
       try{
-        if(playing || reactionScheduled) return;         // 재생 중/이미 예약됨이면 무시
-        var clip=CLIPS[Math.floor(Math.random()*CLIPS.length)];
-        reactionScheduled=true;
-        log('occ:scheduled', 'cm='+(typeof cm!=='undefined'?cm:'?'));
-        setTimeout(function(){
-          reactionScheduled=false;
-          if(playing) return;                            // 그새 다른 반응 재생 중이면 취소
-          if(typeof gp!=='undefined' && gp!=='playing' && gp!=='tutorial') return;  // 게임 벗어났으면 취소
-          playClip(clip, gameFrogImg(), document.getElementById('frog'), true);
-        }, REACTION_DELAY);
+        if(typeof removeFinger==='function') removeFinger(true);   // 첫 정답 잡으면 손가락 안내 종료
+        scheduleReaction(CLIPS[Math.floor(Math.random()*CLIPS.length)]);
       }catch(e){ console.warn('[frogreact] occ hook',e); reactionScheduled=false; try{ endReaction(); }catch(_){} }
     };
+  }
+
+  // ===== 온보딩① 튜토리얼 데모(개구리가 A 자동으로 먹는 장면)에도 춤 + 글자 샤르링 =====
+  // 데모는 occ 대신 shoot 콜백에서 직접 먹기효과만 함 → shoot을 감싸 데모(gp==='tutorial')일 때 효과 추가.
+  var DEMO_CLIPS=['frog_jump_1_fwd','frog_legdance_1_fwd','frog_singleleg_1_fwd'];  // 데모용 짧은 춤
+  if(typeof shoot==='function'){
+    var _shoot=shoot;
+    window.shoot=function(tx,ty,cb){
+      var isDemo=(typeof gp!=='undefined' && gp==='tutorial');
+      _shoot(tx,ty,function(){
+        if(cb){ try{ cb(); }catch(e){} }
+        if(isDemo){
+          try{
+            var L=(typeof displayLetter==='function')?displayLetter('A'):'A';
+            if(typeof window.slp==='function') window.slp(L, tx, ty);                 // 글자 샤르링(금빛+금가루+소리)
+            scheduleReaction(DEMO_CLIPS[Math.floor(Math.random()*DEMO_CLIPS.length)]); // 춤
+          }catch(e){ console.warn('[frogreact] demo hook',e); }
+        }
+      });
+    };
+  }
+
+  // ===== 온보딩② 게임 시작 시 첫 정답 파리를 손가락(👆)으로 가리키기 =====
+  var fingerEl=null, fingerRAF=null, fingerActive=false, fingerDone=false;
+  function findCorrectFly(){
+    try{
+      if(typeof fl==='undefined' || typeof ct==='undefined' || !ct) return null;
+      var C=String(ct).toUpperCase();
+      for(var i=0;i<fl.length;i++){ var f=fl[i];
+        if(f && f.letter && String(f.letter).toUpperCase()===C && f.el && f.el.parentNode) return f; }
+    }catch(e){}
+    return null;
+  }
+  function removeFinger(markDone){
+    fingerActive=false;
+    if(fingerRAF){ cancelAnimationFrame(fingerRAF); fingerRAF=null; }
+    if(fingerEl){ try{ fingerEl.remove(); }catch(e){} fingerEl=null; }
+    if(markDone) fingerDone=true;
+  }
+  function startFingerGuide(){
+    if(fingerDone || fingerActive) return;
+    var tries=0;
+    (function waitFly(){
+      if(fingerDone || fingerActive) return;
+      if(typeof gp!=='undefined' && gp!=='playing'){ if(++tries<80) setTimeout(waitFly,150); return; }  // 아직 게임 전이면 대기
+      var f=findCorrectFly();
+      if(!f){ if(++tries<80) setTimeout(waitFly,150); return; }                                          // 파리 아직 없으면 대기
+      fingerActive=true;
+      fingerEl=document.createElement('div'); fingerEl.className='fx-finger'; fingerEl.textContent='👆';
+      (document.getElementById('gc')||document.body).appendChild(fingerEl);
+      var gc=document.getElementById('gc'), miss=0;
+      (function loop(){
+        if(!fingerActive) return;
+        if(typeof gp!=='undefined' && gp!=='playing'){ removeFinger(true); return; }
+        var cfly=findCorrectFly();
+        if(cfly){
+          miss=0; fingerEl.style.display='';
+          var r=cfly.el.getBoundingClientRect(), gr=gc.getBoundingClientRect();
+          fingerEl.style.left=(r.left-gr.left+r.width/2)+'px';
+          fingerEl.style.top =(r.top-gr.top+r.height*0.92)+'px';   // 파리 바로 아래에서 위(파리)를 가리킴
+        } else {
+          // 정답 파리가 잠깐 안 보임(경계 밖 등) → 손가락만 잠깐 숨기고 계속 대기(영구 제거 X)
+          fingerEl.style.display='none';
+          if(++miss>240){ removeFinger(true); return; }            // 4초 넘게 없으면 종료
+        }
+        fingerRAF=requestAnimationFrame(loop);
+      })();
+      setTimeout(function(){ if(fingerActive) removeFinger(true); }, 12000);   // 안전 타임아웃(안 잡으면)
+    })();
+  }
+  // "Tap the letter" 음성이 나올 때(게임 시작) 손가락 안내 시작. 첫 판만(잡으면 종료·재등장 안 함).
+  if(typeof playVoice==='function'){
+    var _pv=playVoice;
+    window.playVoice=function(k){
+      var r; try{ r=_pv(k); }catch(e){}
+      try{ if(k==='tap_the_letter') startFingerGuide(); }catch(e){}
+      return r;
+    };
+  }
+  if(typeof owc==='function'){          // 오답 눌러도 손가락 안내 종료
+    var _owc=owc;
+    window.owc=function(f){ try{ removeFinger(true); }catch(e){} return _owc(f); };
   }
 
   // ---- 시작화면 인사 (손 흔들기, 딱 1번) ----
@@ -296,7 +380,11 @@
       +'background:radial-gradient(circle at 35% 35%,#FFF7CC,#FFD24D 45%,#E6A800 100%);box-shadow:0 0 6px #FFD700;'
       +'animation:fxDust 1s ease-in forwards}'
       +'@keyframes fxDust{0%{opacity:1;transform:translate(-50%,-50%) translate(0,0) scale(1)}70%{opacity:.9}'
-      +'100%{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(.3)}}';
+      +'100%{opacity:0;transform:translate(-50%,-50%) translate(var(--dx),var(--dy)) scale(.3)}}'
+      // 온보딩 손가락(👆): 정답 파리 아래에서 위아래 까딱이며 가리킴
+      +'.fx-finger{position:absolute;font-size:58px;line-height:1;z-index:75;pointer-events:none;'
+      +'filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));animation:fxFinger .8s ease-in-out infinite}'
+      +'@keyframes fxFinger{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,11px)}}';
     var s=document.createElement('style'); s.setAttribute('data-frogreact','fx'); s.textContent=css;
     (document.head||document.documentElement).appendChild(s);
   })();
