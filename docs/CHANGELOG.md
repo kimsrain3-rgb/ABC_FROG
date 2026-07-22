@@ -351,3 +351,12 @@
   - **에셋**: 영상 `assets/frog/videos/*.webm`(투명 VP9, fwd+pingpong), 효과음 `assets/frog/sounds/alphabet_sparkle.mp3`(+30%). 도구·프롬프트=`docs/frog_video_tools/`·`docs/flow_prompt_template.md`.
   - **검증(라이브 구조)**: 3모드 모두 JS 에러 0·정상 플레이, 데모 샤르링+춤, 손가락 정답파리 정확(dx=0), 사라짐 버그조건서 270ms 복구.
   - **되돌리기**: 백업 태그 `backup-before-frog-live-20260721`(반영 직전 커밋 9150044). 문제 시 `git revert a8dfd11` 또는 index.html의 frog-reactions.js 로드 줄 제거 → push. 라이브 game 로직은 미변경이라 애드온 로드만 빼면 원상복구.
+
+### 2026-07-22 — 🎯 targetSdk 36 (Android 16) 대응 → 내부 테스트 통과 → 프로덕션 제출
+- **Google Play 2026-08-31 요구(targetSdk 36) 대응** (커밋 `503c366`). 게임(코드/그림/소리/레이아웃)·서명키·캐시·오프라인화면 **일절 미변경** — 오직 API 수준 + 그에 필수로 딸려오는 빌드 툴체인만.
+  - **변경 4줄(숫자만)**: `app/build.gradle` compileSdk 35→36 · targetSdk 35→36 · versionCode 8→9 · versionName 1.0.8→1.0.9.
+  - **툴체인 필수 동반 상향**(API 36 컴파일 조건): 최상위 `build.gradle` **AGP 8.2.2→8.9.1**(구글 공식: API 36 컴파일 최소 AGP 8.9.0), 워크플로우 `build-aab.yml` **Gradle 8.5→8.11.1**(AGP 8.9 최소 요구). JDK는 17 유지(변경 불필요).
+  - **엣지투엣지**: 걱정했으나 targetSdk **35에서 이미 도입**됐고 라이브 앱(vc8)이 이미 35라 35→36이 **새로 유발 안 함**. 폰 확인에서 상/하단 잘림 없음 확인.
+  - **빌드**: GitHub Actions "Build AAB" 성공(걸림돌 없이 컴파일 통과, 러너에 android-36 존재). AAB 다운 → Play Console **내부 테스트** 업로드 → 폰 확인·프리런치 통과 → **프로덕션 제출**(심사 대기).
+  - **되돌리기**: 백업 태그 `backup-before-api36-20260722`(변경 직전 커밋 bb36786). 문제 시 `git revert 503c366`. 단 targetSdk는 Play 정책상 되돌리기 어려우므로 크래시 시 툴체인/코드 쪽 수정이 정석.
+  - ⚠️ **원인 추적 원칙**: 이번엔 "API 수준만" 딱 하나씩. 서명키 비밀번호 평문 교체·MainActivity setTextZoom(100)·오프라인 에러화면은 **이번에 안 건드림**(다음 Play 업데이트 때 묶어 처리 — TODO 유지).
