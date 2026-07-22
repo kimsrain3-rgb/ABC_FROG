@@ -24,9 +24,9 @@ jobs:
 
       - name: Create Gradle wrapper
         run: |
-          gradle wrapper --gradle-version 8.5
+          gradle wrapper --gradle-version 8.11.1
         env:
-          GRADLE_VERSION: 8.5
+          GRADLE_VERSION: 8.11.1
 
       - name: Build AAB
         run: ./gradlew bundleRelease --no-daemon
