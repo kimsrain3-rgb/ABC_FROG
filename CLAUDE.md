@@ -19,7 +19,7 @@
 - ✅ **공룡 퍼즐 시즌1(육지 10종) 라이브 통합 완료** (2026-07-07, 커밋 `7283e7b`). Dino 카드 잠금해제 → `dino.html`(iframe 오버레이, Animal과 동일 방식). 백업태그 `backup-before-dino-live-20260707`. 폰 실기기 확인 완료(2026-07-08).
 - ✅ **시작화면 퍼즐 선택 메뉴 디자인 개선 라이브** (2026-07-09). 카드 순서(열린 카드 위/잠긴 카드 아래), 아이콘 계열색(Dino 짙은파랑·Animal 짙은초록), 잠금 아이콘 짙은회색 통일, 자물쇠 확대. 백업태그 `backup-before-menu-improve-20260708`. 상세=CHANGELOG.
 - ✅ **개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 반응·손가락 안내) 라이브** (2026-07-21, 커밋 `a8dfd11`). `frog-reactions.js` 애드온(script.js/style.css 미변경, 전역함수 래핑). 반응 사라짐 버그 수정 포함. 백업태그 `backup-before-frog-live-20260721`. 상세=CHANGELOG.
-- ✅ **targetSdk 36(Android 16) 대응 → 심사 통과 → 프로덕션 라이브**(제출 2026-07-22 커밋 `503c366`, **승인 2026-07-27, versionCode 9 / 1.0.9**). Google Play 2026-08-31 요구 충족. `build.gradle` 4줄(compile/targetSdk 36·vc9·1.0.9) + 필수 툴체인(**AGP 8.2.2→8.9.1, Gradle 8.5→8.11.1**)만, 게임/서명키/캐시/오프라인화면 미변경. 백업태그 `backup-before-api36-20260722`. 상세=CHANGELOG.
+- ✅ **targetSdk 36(Android 16) 대응 → 심사 통과 → 프로덕션 라이브**(제출 2026-07-22 커밋 `503c366`, **승인 2026-07-27, versionCode 9 / 1.0.9**). Google Play 2026-08-31 요구 충족. `build.gradle` 4줄(compile/targetSdk 36·vc9·1.0.9) + 필수 툴체인(**AGP 8.2.2→8.9.1, Gradle 8.5→8.11.1**)만, 게임/서명키/캐시/오프라인화면 미변경. 백업태그 `backup-before-api36-20260722`. **폰 실기기 정상 작동 확인 완료(2026-07-27)**. 상세=CHANGELOG.
 - 🔜 향후: 공룡 2단계 "먹이주기" / 곤충(Insect) 퍼즐 / 영상 용량 압축
 - 📜 완료 이력 전체 → **`docs/CHANGELOG.md`**
 - ⚠️ **앱은 WebView로 GitHub Pages 실시간 로딩 → `main` push = 즉시 전 유저 반영. 푸시 전 반드시 검증.**
