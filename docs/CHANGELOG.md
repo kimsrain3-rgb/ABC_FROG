@@ -376,3 +376,9 @@
 - **파일 구조 섹션 정확도 보강**(같이 처리): 실제로 있는 `frog-reactions.js`·`animal.html`·`dino.html`·`test/`가 빠져있었고, main에 **없는** `data-word-fruits.js`가 있는 것처럼 적혀 있었음 → 실제와 일치시키고, data-word-fruits는 `refactor/split-fruit-data` 브랜치에만 있다고 명시.
 - 전체 파일 14,504 → 13,963바이트. (현재 상태가 크게 줄고, 파일 구조 정확도 보강분이 일부 상쇄)
 - **백업태그** `backup-before-claudemd-slim-20260727`. 문서만 변경 — `script.js`/`style.css`/`index.html`·에셋·앱 **일절 미변경**이라 라이브 영향 0.
+
+### 2026-07-27 — 🔤 폰 테스트 주소(/test/)를 파닉스 sat으로 되돌림
+- `test/current.html`의 리다이렉트 **한 줄**만 `frogreact/index.html` → `phonics/index.html`로 교체(주석도 현행화). 개구리 반응은 2026-07-21 라이브 반영 완료라 테스트본 역할이 끝났고, 파닉스 작업을 이어가기 위함.
+- 파닉스 프로토는 `test/phonics/index.html`(366줄, 독립 파일)에 그대로 보존돼 있었음. 에셋 경로 `../../assets/…`라 /test/phonics/ 위치에서 정상 해석(음가·글자이름·영상·BGM 전부 라이브 assets 공유).
+- 보관 상태 유지 — 개구리 반응 `test/frogreact/`, 공룡 퍼즐 `test/current-dino-backup.html`. 언제든 `current.html` 한 줄로 되돌릴 수 있음.
+- 라이브 루트(`index.html`/`script.js`/`style.css`)·에셋·앱 **미변경**.
