@@ -382,3 +382,22 @@
 - 파닉스 프로토는 `test/phonics/index.html`(366줄, 독립 파일)에 그대로 보존돼 있었음. 에셋 경로 `../../assets/…`라 /test/phonics/ 위치에서 정상 해석(음가·글자이름·영상·BGM 전부 라이브 assets 공유).
 - 보관 상태 유지 — 개구리 반응 `test/frogreact/`, 공룡 퍼즐 `test/current-dino-backup.html`. 언제든 `current.html` 한 줄로 되돌릴 수 있음.
 - 라이브 루트(`index.html`/`script.js`/`style.css`)·에셋·앱 **미변경**.
+
+### 2026-07-28 — 🩺 전역 에러 추적 심기 (GA4 `game_error`) + vc10 (1.1.0)
+- **목적**: 일부 안드로이드 기기(구형 웹뷰·Realme 계열 등)에서 **게임이 시작조차 안 되거나 시작 직후 멈추는** 문제의 원인을 추측이 아니라 **데이터로** 파악. 새 파일 `error-tracker.js`(약 230줄) 추가.
+- **게임 로직·그림·소리·레이아웃 일절 미변경** — `script.js`/`style.css`/`frog-reactions.js` 손대지 않음. 감지 → GA4 전송만 하는 독립 파일이고, 전체가 try-catch로 감싸져 추적기가 고장나도 게임엔 영향 없음.
+- **⭐ 핵심 기술 포인트 — `window.onerror`에 대입하면 안 됨**: `script.js` 3~4줄이 이미 `window.onerror`에 자기 핸들러를 **대입**하고 `return true`로 에러를 삼킨다. 추적기가 head에서 `window.onerror`에 대입해봤자 **나중에 로드되는 script.js가 그대로 덮어써서 무용지물**. → `addEventListener('error', …, true)`(캡처)로 붙임. 대입 방식과 별개로 동작하고 head에서 먼저 등록되므로 script.js보다 먼저 호출됨. **덕분에 script.js 무수정으로 해결.** (CLAUDE.md 안정성 규칙 "전역 에러 핸들러 제거 금지"도 그대로 지킴)
+- **심은 위치(가장 바깥)**: `index.html`의 `<head>`, GA4 태그 바로 뒤 · `script.js`보다 **먼저** 로드 → 알파벳 게임 진입 전에 죽는 경우도 잡힘. 퍼즐 `animal.html`·`dino.html`, 파닉스 `test/phonics/index.html`에도 동일 추적기를 `__ETRK_WHERE`로 위치만 지정해 로드.
+- **잡는 것 3종**:
+  - `script` — 전역 JS 에러 + 미처리 Promise 거부 + **`<script>` 로드 실패**(script.js 자체가 안 받아지는 경우 = "시작조차 안 됨"의 유력 후보).
+  - `video` — `<video>`/`<audio>` 로드·재생 실패(webm 코덱 미지원 시 `code=4`). 추가로 시작 3초 뒤 **webm 지원 사전 점검**(`canPlayType` vp9/vp8 둘 다 빈 문자열이면 `webm_unsupported` 전송) — 개구리 반응 클립이 조용히 실패하는 경우를 잡기 위함. 지원되면 아무것도 안 보냄.
+  - `timeout` — 10초 안에 초기 로딩이 안 끝나면 전송. 메시지에 **어디서 막혔는지**를 함께 담음(`rs=`문서상태 `script=`script.js실행됨 `ss=`시작화면존재 `css=`style.css로드). 백그라운드(`document.hidden`) 상태면 오탐 방지로 제외.
+- **보내는 값**: `error_type`(script/video/timeout) · `error_message`(100자 컷, GA4 파라미터 상한) · `error_where`(init/alphabet/puzzle/phonics) · `device_model` · `android_version` · `webview_version`(앱 웹뷰면 `+wv`) · `elapsed_ms`. 기기정보는 UserAgent 파싱.
+- **`error_where` 자동 판별**(게임 상태를 **읽기만** 함 — 전역 함수 후킹·변수 변경 없음): 퍼즐 iframe 존재/`#wp.show` → `puzzle`, `gp!=='start'` → `alphabet`, 그 외 `init`. 퍼즐·파닉스 페이지는 고정값.
+- **GA4 도배 방지**: 세션당 총 8건 · 유형당 3건 · **같은 메시지는 1회만**(에러가 게임루프에서 반복돼도 안전).
+- **GA 태그 없는 페이지 대응**: 퍼즐(iframe)은 부모 창 `gtag` 재사용. 파닉스처럼 GA가 아예 없는 페이지는 **에러가 실제로 났을 때만** gtag를 1회 주입(`send_page_view:false` → 기존 방문수 지표 안 건드림).
+- **기존 GA4 이벤트 미변경** — `game_start`·`game_complete`·`word_puzzle_open`·`word_puzzle_complete` 그대로.
+- **검증(로컬 서버 + Playwright, 실제 브라우저)**: ①추적기·게임 동시 정상 로드 ②script.js가 삼키는 진짜 uncaught 에러 + Promise 거부 **둘 다 잡힘** ③없는 webm → `video_fail code=4` 잡힘 ④같은 에러 20회 → **2건만 전송**(중복 차단 확인) ⑤`error_where` init→alphabet 자동 전환, 퍼즐 iframe에서 낸 에러가 `puzzle`로 **부모 GA에 도착** ⑥script.js가 없는 페이지 재현 시 **정확히 10초에** `init_timeout rs=complete script=0 ss=0 css=0` 전송 ⑦정상 로드 시엔 타임아웃 오탐 없음. 검증 후 브라우저·로컬서버 종료, 임시 테스트파일 삭제.
+- **버전**: `twa-project/app/build.gradle` versionCode 9→**10**, versionName 1.0.9→**1.1.0** (숫자 2줄만. AAB 빌드는 사장님이 GitHub Actions에서 실행).
+- **되돌리기**: 백업 태그 `backup-before-error-tracking-20260728`(작업 직전 커밋 `a6c0432`). 문제 시 `index.html`의 `error-tracker.js` 로드 줄 1개만 지우면 즉시 원상복구(게임 코드가 이 파일에 의존하지 않음).
+- ⚠️ **GA4 콘솔 설정 필요(사장님)**: `error_type`·`error_message`·`error_where`·`device_model`·`android_version`·`webview_version`·`elapsed_ms`를 **맞춤 측정기준(커스텀 디멘션)** 으로 등록해야 보고서에서 값이 보임. (등록 전에도 데이터는 쌓이며, 실시간 보고서에선 바로 확인 가능)

@@ -17,6 +17,7 @@
 - ✅ **프로덕션 라이브** — versionCode 9 / 1.0.9 (targetSdk 36) · 실유저 300명+
 - ✅ 게임: 파리잡기(ABC/abc/ABc) + 단어퍼즐 3종(과일·동물·공룡) + 엔딩 영상·음성
 - ✅ 연출: 개구리 반응 클립 + 글자 반짝 + 온보딩 · 시작화면 퍼즐 선택 메뉴 개선
+- 🩺 **전역 에러 추적 가동** — `error-tracker.js`가 GA4 `game_error` 전송(script/video/timeout). 일부 기기 "시작 안 됨" 원인 수집용. **vc10(1.1.0) 빌드·제출 대기**
 - 🔜 향후: 공룡 2단계 "먹이주기" / 곤충(Insect) 퍼즐 / 영상 용량 압축
 - 📜 **완료 이력 전체 → `docs/CHANGELOG.md`** (커밋번호·백업태그·기술 세부·되돌리는 법 전부 거기. 비상 복구 시 CHANGELOG에서 해당 날짜의 백업태그를 찾을 것)
 - ⚠️ **앱은 WebView로 GitHub Pages 실시간 로딩 → `main` push = 즉시 전 유저 반영. 푸시 전 반드시 검증.**
@@ -28,6 +29,7 @@ ABC_FROG/
 ├── style.css           ← CSS
 ├── script.js           ← 게임 로직 (파리잡기 + 과일 단어퍼즐 + 퍼즐 오버레이 호출)
 ├── frog-reactions.js   ← 개구리 반응·글자 반짝·온보딩 애드온 (index.html이 script.js 뒤에 로드)
+├── error-tracker.js    ← 전역 에러 추적 → GA4 game_error (head에서 script.js보다 먼저 로드. 퍼즐·파닉스 페이지도 공용)
 ├── animal.html         ← 동물 퍼즐 (iframe 오버레이, 게임 코드와 분리)
 ├── dino.html           ← 공룡 퍼즐 (iframe 오버레이, Animal과 동일 방식)
 ├── manifest.json / service-worker.js(킬스위치) / privacy-policy.html
@@ -53,6 +55,7 @@ ABC_FROG/
 ## Google Play 배포 정보
 - **패키지명**: com.ggomzipapa.abcfrog
 - **현재 버전**: versionCode 9 / 1.0.9 (프로덕션 라이브, targetSdk 36, 2026-07-27 심사 통과)
+- **다음 버전**: versionCode 10 / 1.1.0 (전역 에러 추적 — build.gradle 반영 완료, **AAB 빌드·제출 대기**)
 - **서명키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
 - **서명키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
 - **서명키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)

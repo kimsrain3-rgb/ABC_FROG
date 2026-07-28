@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="ABC Frog">
 <link rel="apple-touch-icon" href="assets/ui/icons/icon-192x192.png">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+<!-- 전역 에러 추적(GA4 game_error) — 이 페이지는 iframe이라 부모(index.html)의 gtag를 그대로 씀. 감지·전송만, 퍼즐 로직 미변경. -->
+<script>window.__ETRK_WHERE='puzzle';document.write('<scr' + 'ipt src="error-tracker.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <style>
   html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;display:flex;flex-direction:column;background:#fff;overflow:hidden}
