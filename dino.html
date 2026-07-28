@@ -124,7 +124,7 @@
   // 라이브: 미디어(그림/영상/소리)는 캐시 사용(재다운로드 방지). HTML 자체는 부모가 ?b=로 항상 최신. (animal.html과 동일)
   function bust(u){ return u; }
 
-  var COLS=3, ROWS=3;   // 공룡=9조각(과일·동물 6조각과 다르게, 살짝 더 도전적)
+  var COLS=2, ROWS=3;   // 공룡=6조각(가로2×세로3). 2026-07-28 9조각(3×3)→6조각 전환 — 폰 테스트 확인 후 반영(과일·동물과 동일 조각 수).
   var board=document.getElementById('board'), tray=document.getElementById('tray'), layer=document.getElementById('layer');
   function rnd(){return Math.random()<0.5?1:-1;}
 
