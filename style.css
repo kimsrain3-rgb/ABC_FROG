@@ -148,7 +148,10 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .wc.show{display:flex}
 .wc-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
 .wc-back:active{transform:scale(.92)}
-.wc-frog{width:235px;max-width:62vw;margin-bottom:2px;animation:msFrogBreathe 1.6s ease-in-out infinite}
+/* 개구리 세로 위치: 짧은 화면에선 내용물(약 720px)이 화면보다 커서 flex 가운데정렬이 위로 넘쳐 개구리가 천장에 붙거나 잘림.
+   → 넘친 만큼의 절반을 아래로 내려 천장~"Pick a puzzle" 문구 사이 중간에 오게 함(최대 56px). 화면이 충분히 길면 0 = 기존 그대로.
+   position:relative+top이라 이 그림만 움직이고 문구·카드 배치는 영향 없음. transform은 숨쉬기 애니가 쓰므로 top을 씀. */
+.wc-frog{width:235px;max-width:62vw;margin-bottom:2px;position:relative;top:clamp(0px,calc((720px - 100%)/2),56px);animation:msFrogBreathe 1.6s ease-in-out infinite}
 .wc-title{font-size:30px;color:#FFEB3B;text-shadow:2px 2px 0 #F57F17,3px 3px 0 rgba(0,0,0,.2);text-align:center;padding:0 20px;margin:0}
 .wc-cards{display:flex;flex-direction:column;gap:18px;align-items:center}
 /* ABC 알약형 버튼과 통일: 좁은 알약 모양 + 내용 가운데 정렬 (아이콘은 유지) */
