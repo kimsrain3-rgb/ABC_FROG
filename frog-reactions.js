@@ -310,9 +310,38 @@
 
   // ---- 시작화면 인사 (손 흔들기, 딱 1번) ----
   var greeted=false;
-  function greet(){
+  var greetTimer=null;      // 예약된 인사 타이머 ID (취소용)
+  var leftStart=false;      // 시작화면을 벗어났는가 — 한 번 true면 인사는 영구 취소
+
+  // ★ 시작화면 위에 다른 화면이 떠 있는가?
+  //   .wc(퍼즐메뉴)/.ms(모드선택)/.wp(과일퍼즐)는 .ss 를 '덮기만' 하고 display:none 으로 만들지 않는다.
+  //   → .ss 의 display 만 보면 "시작화면을 벗어났다"를 알 수 없다. (겹침 버그의 원인이었음)
+  //   동물·공룡 퍼즐은 iframe 오버레이라 iframe 존재로 판정.
+  function otherScreenOpen(){
     try{
-      if(greeted) return;
+      var ids=['ms','wc','wp'];
+      for(var i=0;i<ids.length;i++){
+        var el=document.getElementById(ids[i]);
+        if(el && getComputedStyle(el).display!=='none') return true;
+      }
+      if(document.querySelector('iframe[src*="animal.html"],iframe[src*="dino.html"]')) return true;
+      return false;
+    }catch(e){ return false; }
+  }
+
+  // 화면 전환 시 호출: ①아직 시작 안 한 인사 예약을 취소 ②재생 중인 반응을 정리.
+  // 몇 번을 불러도 안전(멱등) — 중복 클릭·빠른 연속 전환 대비.
+  function cancelGreeting(){
+    leftStart=true;
+    if(greetTimer){ try{ clearTimeout(greetTimer); }catch(e){} greetTimer=null; }
+    try{ endReaction(); }catch(e){}
+  }
+
+  function greet(){
+    greetTimer=null;                                     // 이 타이머는 소진됨
+    try{
+      if(greeted || leftStart) return;                   // 이미 했거나 시작화면을 벗어났으면 중단
+      if(otherScreenOpen()) return;                      // 다른 화면이 떠 있으면 중단 → webm 요청·재생 자체를 안 함
       var ss=document.getElementById('ss');
       var sf=document.querySelector('.ss .sf');
       if(!ss||!sf) return;
@@ -321,22 +350,24 @@
       playClip(GREET, sf, sf, false);
     }catch(e){ console.warn('[frogreact] greet',e); try{ endReaction(); }catch(_){} }
   }
-  if(document.readyState==='complete') setTimeout(greet,600);
-  else window.addEventListener('load',function(){ setTimeout(greet,600); });
+  // load 는 '모든 이미지까지' 받은 뒤라 느린 기기에선 수 초 뒤일 수 있다.
+  // 그 사이 유저가 이미 다른 화면으로 갔으면(leftStart) 예약 자체를 걸지 않는다.
+  if(document.readyState==='complete') greetTimer=setTimeout(greet,600);
+  else window.addEventListener('load',function(){ if(!leftStart) greetTimer=setTimeout(greet,600); });
 
   // ---- 화면 전환 시 인트로 손흔들기(및 어떤 반응이든) 확실히 정지·제거 ----
-  // 시작화면을 벗어나는 버튼들을 감싸서, 넘어가기 전에 반응을 끝낸다.
+  // 시작화면을 벗어나는 버튼들을 감싸서, 넘어가기 전에 반응 정리 + 인사 예약 취소.
   ['goModeSelect','goWordCat','goMode','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle'].forEach(function(fn){
     if(typeof window[fn]==='function'){
       var orig=window[fn];
-      window[fn]=function(){ try{ endReaction(); }catch(e){} return orig.apply(this,arguments); };
+      window[fn]=function(){ try{ cancelGreeting(); }catch(e){} return orig.apply(this,arguments); };
     }
   });
-  // 보강: 시작화면이 사라졌는데 시작 개구리를 숨긴 채면(인사 진행 중 전환) 즉시 정리.
+  // 보강: 시작화면을 벗어났는데 시작 개구리를 숨긴 채면(인사 진행 중 전환) 즉시 정리.
   setInterval(function(){
     if(hiddenEl && !hiddenGame){
       var ss=document.getElementById('ss');
-      if(ss && getComputedStyle(ss).display==='none') endReaction();
+      if((ss && getComputedStyle(ss).display==='none') || otherScreenOpen()) endReaction();
     }
   }, 200);
 
