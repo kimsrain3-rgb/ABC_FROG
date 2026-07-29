@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- ★ 테스트 빌드(스펠링 볼륨 시험판) — 라이브 루트는 안 건드림.
+     assets·style.css·frog-reactions.js 는 라이브 공유, script 만 테스트 사본(test/script-fruitvol.js).
+     GA4·에러추적은 뺐음(테스트 플레이가 실유저 통계에 섞이지 않게, test/frogreact 빌드와 동일 방침). -->
+<base href="../">
+<style>#testBadge{position:fixed;left:8px;bottom:8px;z-index:99999;background:#000a;color:#7CFC7C;font:600 11px/1 'Segoe UI',sans-serif;padding:5px 8px;border-radius:6px;pointer-events:none;letter-spacing:.3px}</style>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ABC Frog (TEST 스펠링 볼륨)</title>
+<link rel="manifest" href="test/manifest.json">
+<meta name="theme-color" content="#4CAF50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABC Frog TEST">
+<link rel="apple-touch-icon" href="assets/ui/icons/icon-192x192.png">
+<meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기(버전번호 수동관리 불필요) -->
+<script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>
+</head>
+<body>
+<div id="testBadge">TEST · 스펠링 볼륨 1.0</div>
+<div id="gc">
+  <div class="ss" id="ss">
+    <img class="sf" src="assets/frog/images/frog_4a.png" alt="ABC Frog">
+    <h1>ABC Frog</h1>
+    <div class="sub">I'm hungry~</div>
+    <div class="mode-buttons">
+      <button class="game-card card-abc" onclick="goModeSelect()">
+        <span class="card-icon"><img src="assets/bugs/images/fly_front.png" alt="catch"></span>
+        <span class="card-label">ABC</span>
+      </button>
+      <button class="game-card card-word" onclick="goWordCat()">
+        <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
+        <span class="card-label">Word</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 단어 퍼즐 카테고리 선택 (과일 / 동물 / 채소) -->
+  <div class="wc" id="wc">
+    <button class="wc-back" onclick="wcBack()">‹</button>
+    <img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="wc-title">Pick a puzzle! 🧩</h2>
+    <div class="wc-cards">
+      <button class="game-card wc-card wc-fruit" onclick="goWordPuzzle()">
+        <span class="card-icon">🍎</span>
+        <span class="card-label">Fruit</span>
+      </button>
+      <button class="game-card wc-card wc-animal" onclick="goAnimalPuzzle()">
+        <span class="card-icon"><span class="ic-mask" role="img" aria-label="animal"></span></span>
+        <span class="card-label">Animal</span>
+      </button>
+      <button class="game-card wc-card wc-dino" onclick="goDinoPuzzle()">
+        <span class="card-icon"><span class="dino-sil-ic" role="img" aria-label="dino"></span></span>
+        <span class="card-label">Dino</span>
+      </button>
+      <button class="game-card wc-card wc-locked" onclick="wcLocked(this)">
+        <span class="card-icon">🥕</span>
+        <span class="card-label">Vegetable</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked wc-insect" onclick="wcLocked(this)">
+        <span class="card-icon"><img class="insect-sil-ic" src="assets/ui/icons/insect_silhouette.svg" alt="insect"></span>
+        <span class="card-label">Insect</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+    </div>
+    <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
+  </div>
+
+  <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
+  <div class="wp" id="wp">
+    <button class="wp-back" onclick="wpBack()">‹</button>
+    <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
+    <div class="wp-stage" id="wpStage"></div>
+  </div>
+
+  <!-- ABC 모드 선택 화면 (파리 잡기 글자 모드 고르기) -->
+  <div class="ms" id="ms">
+    <button class="ms-back" onclick="msBack()">‹</button>
+    <img class="ms-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="ms-title">Which letter?</h2>
+    <div class="ms-buttons">
+      <button class="mbtn mbtn-abc" onclick="goMode('ABC')"><span class="mbtn-label">ABC</span></button>
+      <button class="mbtn mbtn-lower" onclick="goMode('abc')"><span class="mbtn-label">abc</span></button>
+      <button class="mbtn mbtn-mix" onclick="goMode('ABc')"><span class="mbtn-label">ABc</span></button>
+    </div>
+  </div>
+  <div class="sc" id="sc">🌟 0</div>
+  <div class="cb" id="cb"></div>
+  <div class="bubble" id="bbl"></div>
+
+  <div class="lilypad"><img src="assets/ui/images/lilypad.png" alt="lilypad"></div>
+  <div class="stump"><img src="assets/ui/images/bg_5-1.png" alt="stump"></div>
+
+  <div class="frog" id="frog">
+    <!-- 5단계 개구리 (각 단계: a=숨쉬기A, b=숨쉬기B, open=입벌림) -->
+    <!-- 1단계 (홀쭉) -->
+    <img id="fs1a" class="frog-img active" src="assets/frog/images/frog_1a.png" alt="frog1a" data-stage="1" data-pose="a">
+    <img id="fs1b" class="frog-img" src="assets/frog/images/frog_1b.png" alt="frog1b" data-stage="1" data-pose="b">
+    <img id="fs1o" class="frog-img" src="assets/frog/images/frog_1_open.png" alt="frog1open" data-stage="1" data-pose="open">
+    <img id="fs1y" class="frog-img" src="assets/frog/images/frog_1_yuck.png" alt="frog1yuck" data-stage="1" data-pose="yuck">
+    <!-- 2단계 (조금) -->
+    <img id="fs2a" class="frog-img" src="assets/frog/images/frog_2a.png" alt="frog2a" data-stage="2" data-pose="a">
+    <img id="fs2b" class="frog-img" src="assets/frog/images/frog_2b.png" alt="frog2b" data-stage="2" data-pose="b">
+    <img id="fs2o" class="frog-img" src="assets/frog/images/frog_2b_open.png" alt="frog2open" data-stage="2" data-pose="open">
+    <img id="fs2y" class="frog-img" src="assets/frog/images/frog_2_yuck.png" alt="frog2yuck" data-stage="2" data-pose="yuck">
+    <!-- 3단계 (통통) -->
+    <img id="fs3a" class="frog-img" src="assets/frog/images/frog_3a.png" alt="frog3a" data-stage="3" data-pose="a">
+    <img id="fs3b" class="frog-img" src="assets/frog/images/frog_3b.png" alt="frog3b" data-stage="3" data-pose="b">
+    <img id="fs3o" class="frog-img" src="assets/frog/images/frog_3_open.png" alt="frog3open" data-stage="3" data-pose="open">
+    <img id="fs3y" class="frog-img" src="assets/frog/images/frog_3_yuck.png" alt="frog3yuck" data-stage="3" data-pose="yuck">
+    <!-- 4단계 (뚜뚜) -->
+    <img id="fs4a" class="frog-img" src="assets/frog/images/frog_4a.png" alt="frog4a" data-stage="4" data-pose="a">
+    <img id="fs4b" class="frog-img" src="assets/frog/images/frog_4b.png" alt="frog4b" data-stage="4" data-pose="b">
+    <img id="fs4o" class="frog-img" src="assets/frog/images/frog_4_open.png" alt="frog4open" data-stage="4" data-pose="open">
+    <img id="fs4y" class="frog-img" src="assets/frog/images/frog_4_yuck.png" alt="frog4yuck" data-stage="4" data-pose="yuck">
+    <!-- 5단계 (만삭) -->
+    <img id="fs5a" class="frog-img" src="assets/frog/images/frog_5a.png" alt="frog5a" data-stage="5" data-pose="a">
+    <img id="fs5b" class="frog-img" src="assets/frog/images/frog_5b.png" alt="frog5b" data-stage="5" data-pose="b">
+    <img id="fs5o" class="frog-img" src="assets/frog/images/frog_5_open.png" alt="frog5open" data-stage="5" data-pose="open">
+    <img id="fs5y" class="frog-img" src="assets/frog/images/frog_5_yuck.png" alt="frog5yuck" data-stage="5" data-pose="yuck">
+  </div>
+
+  <div class="tongue" id="tng"></div>
+  <div id="fc"></div>
+  <div class="cbar" id="cb2"></div>
+</div>
+
+<div id="rotate-warn">
+  <div class="rw-icon">📱</div>
+  <div class="rw-t1">Turn your phone upright!</div>
+  <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
+</div>
+
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
+<script>document.write('<scr' + 'ipt src="test/script-fruitvol.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). test/에서 검증 후 이식, script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드. -->
+<script>document.write('<scr' + 'ipt src="frog-reactions.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<script>
+// 캐시 도우미(서비스워커) 사용 안 함 — 앱은 항상 서버 최신을 직접 로드(푸시 즉시 반영).
+// 과거에 등록된 서비스워커/캐시가 있으면 깨끗이 정리(자가 복구). 새로 등록은 하지 않음.
+try {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(reg){ try { reg.unregister(); } catch (e) {} });
+    }).catch(function(){});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function(keys){
+      keys.forEach(function(k){ try { caches.delete(k); } catch (e) {} });
+    }).catch(function(){});
+  }
+} catch (e) {}
+</script>
+</body>
+</html>

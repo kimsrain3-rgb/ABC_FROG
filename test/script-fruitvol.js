@@ -2114,11 +2114,11 @@ function wpComplete(){
     wpLoadLetter(word[i]).then(function(info){
       var dur=600;   // 디코드 실패 시 폴백
       if(info && ax){ try{ var src=ax.createBufferSource(), g=ax.createGain();
-          src.buffer=info.buffer; g.gain.value=0.5; src.connect(g); g.connect(ax.destination);
+          src.buffer=info.buffer; g.gain.value=1.0; src.connect(g); g.connect(ax.destination);   // 단어 음성(wpSayWord)과 같은 크기
           src.start(0, info.start, info.end-info.start);   // 묵음 잘라낸 발음 구간만 재생
           dur=(info.end-info.start)*1000;
-        }catch(e){ try{ var a=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
-      } else { try{ var a2=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
+        }catch(e){ try{ var a=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=1.0; a.play(); }catch(_){} }
+      } else { try{ var a2=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=1.0; a2.play(); }catch(_){} }
       setTimeout(function(){ playLetter(i+1); }, dur+LETTER_GAP);   // 발음 끝나면 GAP만 쉬고 다음
     });
   }
