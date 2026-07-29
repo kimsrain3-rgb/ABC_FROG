@@ -132,6 +132,27 @@
   //  → 발음 길이·음정은 그대로 두고 '간격(죽은 묵음)'만 줄여 빠르고 자연스러움. 모든 단어 자동 적용.
   //  ▶ LETTER_GAP: 발음과 발음 사이 쉬는 간격(ms). 키우면 또박또박, 줄이면 더 빠름.
   var LETTER_GAP=90;
+  // === 스펠링 음량 부스트 (2026-07-29, 과일 퍼즐 script.js 의 wpLetterOut() 과 동일 방식) ===
+  // letter_*.mp3 는 피크가 이미 0.0~-0.4dB(천장)이라 게인만 1.0 초과로 주면 그대로 깨짐(클리핑).
+  // → 게인 +6dB 뒤에 리미터(DynamicsCompressor, 천장 -1.5dBFS)를 물려 피크만 눌러 담음.
+  //   원래 작던 글자(b·a·t 등)가 4~6dB 올라오고 큰 글자는 소폭만 올라 서로 고르게 됨.
+  // 소리 파일·동물 이름 음성(sayWord, volume=1)·BGM·효과음은 미변경.
+  var LETTER_GAIN=2.0, _lim=null;
+  function letterOut(){          // 리미터 노드(1회 생성 후 재사용) → 없으면 그냥 스피커로
+    var c=actx(); if(!c) return null;
+    if(_lim) return _lim;
+    try{
+      var k=c.createDynamicsCompressor();
+      k.threshold.value=-1.5;    // -1.5dBFS 넘는 부분만 눌러 담음(오버슛 여유 포함해 0dB 안 넘김)
+      k.knee.value=0;            // 딱 잘라 리미터처럼
+      k.ratio.value=20;
+      k.attack.value=0.002;
+      k.release.value=0.08;
+      k.connect(c.destination);
+      _lim=k;
+    }catch(e){ _lim=c.destination; }   // 구형 웹뷰에 압축기 없으면 직결(게인은 1.0으로 낮춤)
+    return _lim;
+  }
   var _lbuf={};   // 글자별 {buffer,start,end} 캐시(중복 디코드 방지)
   function loadLetter(ch){
     ch=ch.toLowerCase(); if(_lbuf[ch]) return _lbuf[ch];
@@ -158,12 +179,14 @@
       spans[i].classList.add('show');
       loadLetter(word[i]).then(function(info){
         var dur=600;   // 디코드 실패 시 폴백
-        if(info){ try{ var c=actx(), src=c.createBufferSource(), g=c.createGain();
-            src.buffer=info.buffer; g.gain.value=0.5; src.connect(g); g.connect(c.destination);
+        if(info){ try{ var c=actx(), src=c.createBufferSource(), g=c.createGain(), out=letterOut()||c.destination;
+            src.buffer=info.buffer;
+            g.gain.value=(out===c.destination)?1.0:LETTER_GAIN;   // 리미터 있으면 +6dB, 없으면 안전하게 1.0(깨짐 방지)
+            src.connect(g); g.connect(out);
             src.start(0, info.start, info.end-info.start);    // 묵음 잘라낸 발음 구간만 재생
             dur=(info.end-info.start)*1000;
-          }catch(e){ try{ var a=new Audio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=0.5; a.play(); }catch(_){} }
-        } else { try{ var a2=new Audio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=0.5; a2.play(); }catch(_){} }
+          }catch(e){ try{ var a=new Audio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=1.0; a.play(); }catch(_){} }
+        } else { try{ var a2=new Audio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a2.volume=1.0; a2.play(); }catch(_){} }
         setTimeout(function(){ playLetter(i+1); }, dur+LETTER_GAP);   // 발음 끝나면 GAP만 쉬고 다음
       });
     }
