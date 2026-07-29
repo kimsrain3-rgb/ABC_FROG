@@ -2045,6 +2045,31 @@ function buildPuzzle(key){
   });
 }
 
+// === 과일 퍼즐 스펠링 전용 음량 부스트 (2026-07-29) ===
+// ffmpeg 실측: letter_*.mp3 는 피크가 이미 0.0~-0.4dB(천장에 붙음), 평균은 -10~-21dB로 들쭉날쭉.
+//  → 볼륨 숫자만 1.0 위로 올리면 곧장 깨짐(클리핑). 그래서 게인 +6dB 뒤에
+//    리미터(DynamicsCompressor, 천장 -1.5dBFS)를 물려 피크만 눌러 담는 방식.
+//  → 시뮬레이션(평균 dB): a -19.1→-14.3 / b -20.8→-14.8 / t -17.6→-13.3 / p -12.6→-11.8 / r -10.4→-10.2
+//    (원래 작던 글자가 크게 올라오고, 이미 큰 글자는 조금만 올라 서로 고르게 됨. 피크는 0dB 미만 유지)
+// 소리 파일·다른 게임(파리잡기 letter, 동물·공룡 퍼즐)은 일절 미변경 — 이 경로는 과일 퍼즐 스펠링 전용.
+var WP_LETTER_GAIN=2.0;          // +6dB. 원본 파일은 그대로 두고 재생할 때만 증폭
+var _wpLim=null;
+function wpLetterOut(){          // 리미터 노드(1회 생성 후 재사용) → 없으면 그냥 스피커로
+  if(!ax) return null;
+  if(_wpLim) return _wpLim;
+  try{
+    var c=ax.createDynamicsCompressor();
+    c.threshold.value=-1.5;      // -1.5dBFS 넘는 부분만 눌러 담음(오버슛 여유 포함해 0dB 안 넘김)
+    c.knee.value=0;              // 딱 잘라 리미터처럼
+    c.ratio.value=20;
+    c.attack.value=0.002;
+    c.release.value=0.08;
+    c.connect(ax.destination);
+    _wpLim=c;
+  }catch(e){ _wpLim=ax.destination; }   // 구형 웹뷰에 압축기 없으면 직결(게인은 1.0으로 낮춤)
+  return _wpLim;
+}
+
 // 글자 음성(letter_*.mp3)의 앞/뒤 묵음을 자동 감지해 잘라내고 발음만 이어붙이기 위한 캐시/로더
 // (동물 퍼즐 proto-animal.html과 동일 방식 — 발음 길이·음정 그대로, 죽은 묵음만 제거)
 var _wpLbuf={};
@@ -2113,8 +2138,10 @@ function wpComplete(){
     spans[i].classList.add('show');
     wpLoadLetter(word[i]).then(function(info){
       var dur=600;   // 디코드 실패 시 폴백
-      if(info && ax){ try{ var src=ax.createBufferSource(), g=ax.createGain();
-          src.buffer=info.buffer; g.gain.value=1.0; src.connect(g); g.connect(ax.destination);   // 단어 음성(wpSayWord)과 같은 크기
+      if(info && ax){ try{ var src=ax.createBufferSource(), g=ax.createGain(), out=wpLetterOut()||ax.destination;
+          src.buffer=info.buffer;
+          g.gain.value=(out===ax.destination)?1.0:WP_LETTER_GAIN;   // 리미터 있으면 +6dB, 없으면 안전하게 1.0(깨짐 방지)
+          src.connect(g); g.connect(out);
           src.start(0, info.start, info.end-info.start);   // 묵음 잘라낸 발음 구간만 재생
           dur=(info.end-info.start)*1000;
         }catch(e){ try{ var a=safeAudio('assets/abc/sounds/letter_'+word[i].toLowerCase()+'.mp3'); a.volume=1.0; a.play(); }catch(_){} }
