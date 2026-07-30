@@ -1423,7 +1423,10 @@ function closeAnimalPuzzle(){
 // 동물 퍼즐(별도 iframe animal.html)이 완성을 알려오면 GA로 기록.
 // 과일과 같은 신호 이름(word_puzzle_complete) + category:'animal' 로 → GA4에서 과일 vs 동물 비교 가능.
 window.addEventListener('message',function(ev){
-  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){ gtag('event','word_puzzle_complete',{category:'animal',word:d.key}); } }catch(e){}
+  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){
+    gtag('event','word_puzzle_complete',{category:'animal',word:d.key});
+    undimBack(_apOverlay&&_apOverlay.querySelector('.gbk'));   // 완성 → 뒤로 버튼 또렷하게
+  } }catch(e){}
 });
 
 // === 공룡 퍼즐 (독립 페이지 dino.html을 전체화면 오버레이로 — 동물 퍼즐과 완전 동일 구조) ===
@@ -1458,7 +1461,10 @@ function closeDinoPuzzle(){
 }
 // 공룡 퍼즐(별도 iframe dino.html)이 완성을 알려오면 GA로 기록. (과일·동물과 같은 신호 이름 + category:'dino')
 window.addEventListener('message',function(ev){
-  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key}); } }catch(e){}
+  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){
+    gtag('event','word_puzzle_complete',{category:'dino',word:d.key});
+    undimBack(_dpOverlay&&_dpOverlay.querySelector('.gbk'));   // 완성 → 뒤로 버튼 또렷하게
+  } }catch(e){}
 });
 // ★ Animal 카드 잠금해제를 '실행 중에' 직접 수행 — script.js는 항상 최신으로 받으므로,
 //   옛 index.html(잠긴 버튼)이 캐시된 폰에서도 이게 버튼을 풀어줌(즉시 모든 폰 반영).
@@ -1565,6 +1571,10 @@ function hideGcBack(){ try{ var b=document.getElementById('gcBack'); if(b) b.cla
 // Play Again / Home 은 글자라 3~5세가 못 읽음 → 화살표가 유일하게 이해되는 탈출구.
 function endGcBack(){ try{ var b=document.getElementById('gcBack');
   if(b){ b.classList.add('show'); b.classList.remove('gbk-dim'); } }catch(e){} }
+// 퍼즐 뒤로 버튼도 같은 원리 — 맞추는 중엔 흐리게(.gbk-dim), 완성하면 또렷하게.
+// (알파벳 엔딩과 이유 동일: 완성 화면엔 아이가 읽을 수 있는 글자가 없음)
+function dimBack(el){ try{ if(el) el.classList.add('gbk-dim'); }catch(e){} }
+function undimBack(el){ try{ if(el) el.classList.remove('gbk-dim'); }catch(e){} }
 // 새로고침으로 되돌아온 직후 → 모드선택 화면 자동 오픈.
 // load 시점에 하는 이유: frog-reactions.js 가 goModeSelect 를 감싸므로(인사영상 중단 처리)
 // 그 애드온이 다 붙은 뒤에 불러야 감싼 버전이 실행된다.
@@ -1799,6 +1809,7 @@ function wpAxisCut(img,bb,n){
 
 function buildPuzzle(key){
   wpCurrent=key||'apple';
+  dimBack(document.querySelector('.wp-back'));   // 새 과일 퍼즐 시작 = 맞추는 중 → 다시 흐리게
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   stage.innerHTML='';
@@ -2126,6 +2137,7 @@ function wpLoadLetter(ch){
 
 function wpComplete(){
   try{gtag('event','word_puzzle_complete',{category:'fruit',word:wpCurrent});}catch(e){}
+  undimBack(document.querySelector('.wp-back'));   // 완성 → 뒤로 버튼 또렷하게 (다음 과일 시작하면 buildPuzzle이 다시 흐리게)
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
