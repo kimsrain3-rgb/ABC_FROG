@@ -30,8 +30,11 @@ cursor:pointer;animation:gbkBounce 1.4s ease-in-out infinite}
 @keyframes gbkBounce{0%,100%{transform:scale(1,1)}18%{transform:scale(1.13,.9)}
 38%{transform:scale(.94,1.09)}58%{transform:scale(1.05,.98)}78%{transform:scale(1,1)}}
 
-/* 알파벳 게임 화면 뒤로 버튼 — 기본 숨김, 게임 시작 때만 표시 */
-.gc-back{display:none}
+/* 알파벳 게임 화면 뒤로 버튼 — 기본 숨김, 게임 시작 때만 표시.
+   게임 중엔 놀이에 방해되지 않게 메뉴 화면보다 작고(78x66 → 70x59, 10% 축소)
+   통통 튀지 않는다. 메뉴·엔딩 화면 버튼은 그대로.
+   누를 때 눌리는 반응(.gbk:active)은 유지 — 아이가 눌린 걸 알 수 있게. */
+.gc-back{display:none;width:70px;height:59px;animation:none}
 .gc-back.show{display:block}
 
 /* 테스트 빌드는 라이브 style.css 를 공유하므로 옛 모양 속성을 '덮어서' 지운다.
