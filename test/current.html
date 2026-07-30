@@ -9,21 +9,21 @@
 <body>
 <div>로딩중… 🐸</div>
 <!--
-  ★ 현재 테스트 콘텐츠 = 뒤로가기 버튼 금빛 화살표 통일 = test/current-goldback.html
-  - 5개 화면(모드선택·Word카테고리·과일퍼즐·알파벳게임·동물/공룡)의 뒤로 버튼을
-    같은 모양(금빛 화살표 78x66, 통통 튀는 애니)·같은 자리(top14 left14)로 통일.
-  - 알파벳 게임 화면엔 뒤로 버튼이 원래 없었음 → 신규 추가(물리 버튼밖엔 못 나갔음).
-    누르면 새로고침으로 통째 리셋 후 모드선택 화면 자동 오픈(파리·BGM 잔존 0).
-  - 점수 표시는 뒤로 버튼과 겹치므로 좌상단 → 우상단으로 옮김.
-  - 새 버튼 CSS는 current-goldback.html 안 <style> 에만 있음 → 라이브 style.css 무수정.
-    script 만 사본(test/script-goldback.js). 라이브 게임(루트)은 안 건드림.
-  - 보관: 과일 스펠링 볼륨=current-fruitvol.html (2026-07-29 라이브 반영 완료),
+  ★ 현재 테스트 콘텐츠 = 물리 뒤로가기: 시작 화면에서 한 번에 종료 = test/current-backexit.html
+  - 문제: 시작 화면에서 물리 뒤로가기를 두 번 눌러야 앱이 꺼졌음(다른 앱은 한 번).
+    원인 = 앱이 열리자마자 히스토리에 '여분 칸'을 무조건 넣어둠(옛 script.js 맨 끝).
+    첫 번째 누름은 그 칸을 소비하는 데 그냥 쓰였고, 시작화면 분기는 칸을 다시 채우기만 했음.
+  - 수정: 여분 칸을 '보호할 화면에 있을 때만' 넣는다(syncBackGuard).
+    시작 화면=칸 없음 → 한 번에 종료 / 게임·퍼즐 중=칸 있음 → 실수로 안 꺼짐(기존 유지).
+  - script 만 사본(test/script-backexit.js). style.css·index 구조는 라이브 공유.
+  - 보관: 금빛 뒤로 화살표=current-goldback.html (2026-07-30 라이브 반영 완료),
+          과일 스펠링 볼륨=current-fruitvol.html (2026-07-29 라이브 반영 완료),
           공룡 6조각=current-dino-6.html (2026-07-28 라이브 반영 완료),
           파닉스=phonics/index.html, 공룡 9조각=current-dino-backup.html,
           개구리 반응=frogreact/index.html (2026-07-21 라이브 반영 완료)
 -->
 <script>
-location.replace('current-goldback.html?b=' + Date.now());
+location.replace('current-backexit.html?b=' + Date.now());
 </script>
 </body>
 </html>
