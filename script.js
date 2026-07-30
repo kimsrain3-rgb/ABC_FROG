@@ -1173,7 +1173,7 @@ function go(mode){
   SND_BGM.play().catch(()=>{});
   bgmStarted=true;
   startFlyBuzz();startFrogBG();initCaterpillar();initButterfly();
-  document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();showGcBack();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
+  document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();showGcBack();syncBackGuard();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
 try{document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});}catch(e){}
 
 // === 단어 퍼즐 (그림 조각 맞추기) ===
@@ -1368,6 +1368,7 @@ let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
 
 function goWordPuzzle(){
   document.getElementById('wp').classList.add('show');
+  syncBackGuard();                                      // 놀이 화면 진입 → 뒤로가기 보호 켜기
   try{gtag('event','word_puzzle_open',{category:'fruit',word:wpCurrent});}catch(e){}
   // 세로 방향 잠금 시도(지원 브라우저/설치앱) — 미지원 시 무시
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
@@ -1376,11 +1377,11 @@ function goWordPuzzle(){
   requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
 }
 function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
-  document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} }
+  document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} syncBackGuard(); }
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
-function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} }
-function wcBack(){ try{document.getElementById('wc').classList.remove('show');}catch(e){} }
+function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} syncBackGuard(); }
+function wcBack(){ try{document.getElementById('wc').classList.remove('show');}catch(e){} syncBackGuard(); }
 var _wcToastT=null;
 function wcLocked(el){
   try{
@@ -1412,6 +1413,7 @@ function goAnimalPuzzle(){
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _apOverlay=ov;
+    syncBackGuard();                              // 퍼즐 진입 → 뒤로가기 보호 켜기
     watchPuzzleBack(ov);                          // 시즌(10종) 완주하면 뒤로 버튼 또렷하게
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
     try{gtag('event','word_puzzle_open',{category:'animal'});}catch(e){}
@@ -1421,6 +1423,7 @@ function closeAnimalPuzzle(){
   stopPuzzleBackWatch();
   try{ if(_apOverlay&&_apOverlay.parentNode){ _apOverlay.parentNode.removeChild(_apOverlay); } }catch(e){}
   _apOverlay=null;
+  syncBackGuard();
 }
 // 동물 퍼즐(별도 iframe animal.html)이 완성을 알려오면 GA로 기록.
 // 과일과 같은 신호 이름(word_puzzle_complete) + category:'animal' 로 → GA4에서 과일 vs 동물 비교 가능.
@@ -1450,6 +1453,7 @@ function goDinoPuzzle(){
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _dpOverlay=ov;
+    syncBackGuard();                              // 퍼즐 진입 → 뒤로가기 보호 켜기
     watchPuzzleBack(ov);                          // 시즌(10종) 완주하면 뒤로 버튼 또렷하게
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
     try{gtag('event','word_puzzle_open',{category:'dino'});}catch(e){}
@@ -1459,6 +1463,7 @@ function closeDinoPuzzle(){
   stopPuzzleBackWatch();
   try{ if(_dpOverlay&&_dpOverlay.parentNode){ _dpOverlay.parentNode.removeChild(_dpOverlay); } }catch(e){}
   _dpOverlay=null;
+  syncBackGuard();
 }
 // 공룡 퍼즐(별도 iframe dino.html)이 완성을 알려오면 GA로 기록. (과일·동물과 같은 신호 이름 + category:'dino')
 window.addEventListener('message',function(ev){
@@ -1546,8 +1551,10 @@ try{ _ensureInsectCard(); }catch(e){}
 try{ document.addEventListener('DOMContentLoaded',_ensureInsectCard); }catch(e){}
 
 // === ABC 모드 선택 화면 ===
-function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
-function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }
+function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} syncBackGuard(); }
+function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} syncBackGuard(); }
+// ※ 여기선 syncBackGuard()를 부르지 않는다: 모드선택을 닫은 뒤 실제 게임 화면이 뜨기까지 0.5초 걸리는데,
+//    그 사이엔 '시작 화면'으로 판정돼 보호가 잠깐 풀린다. 모드선택에서 켠 보호를 그대로 게임까지 이어간다.
 function goMode(mode){ try{document.getElementById('ms').classList.remove('show');}catch(e){} go(mode); }
 
 // === 알파벳 게임 화면 뒤로 버튼 ===
@@ -2326,37 +2333,75 @@ function wpSayWord(w){
 // (Word 카드 사과 아이콘은 index.html에 fruit_apple.png를 직접 넣음 — JS 주입 제거: JS 멈춰도 안 사라지게)
 
 // === 뒤로가기 버튼 처리 (TWA 안정성) ===
+// [원리] 히스토리에 '여분 칸'을 하나 넣어두면, 물리 뒤로가기가 앱을 끄는 대신 그 칸을 소비하면서
+//        popstate 를 일으킨다 → 그 순간을 잡아 화면만 닫는다(놀다가 실수로 앱이 꺼지는 것 방지).
+// [2026-07-30 수정] 예전엔 이 여분 칸을 '앱이 열리자마자 무조건' 넣어서, 시작 화면에서도
+//        뒤로가기를 두 번 눌러야 앱이 꺼졌다(첫 번째는 여분 칸을 소비하는 데 그냥 쓰임).
+//        게다가 시작 화면 분기는 '아무것도 안 하면서 칸만 다시 채워' 눌러도 반응이 없었다.
+//        → 이제 규칙은 하나: **여분 칸은 '보호할 화면'에 있을 때만 존재한다.**
+//          시작 화면 = 여분 칸 없음 = 다른 앱들처럼 뒤로가기 한 번에 종료.
+var _backArmed=false;   // 지금 여분 칸이 들어가 있는가
+var _backSkip=false;    // 우리가 직접 칸을 반납할 때 생기는 popstate 1회는 무시
+
+// 지금이 '보호할 화면'인가 = 뒤로가기로 앱이 꺼지면 안 되는 상황인가
+function inPlayScreen(){
+  try{
+    if(_apOverlay||_dpOverlay) return true;                        // 동물·공룡 퍼즐(오버레이)
+    var ids=['wp','wc','ms'];                                      // 과일퍼즐 · 퍼즐메뉴 · 모드선택
+    for(var i=0;i<ids.length;i++){
+      var el=document.getElementById(ids[i]);
+      if(el&&el.classList.contains('show')) return true;
+    }
+    var ss=document.getElementById('ss');
+    if(ss&&ss.style.display==='none') return true;                  // 파리잡기 진행 중(시작화면이 감춰짐)
+    return false;                                                   // 여기가 시작 화면
+  }catch(e){ return true; }                                         // 판단이 안 되면 안전한 쪽(보호)으로
+}
+// 화면이 바뀔 때마다 불러서 '여분 칸 유무'를 현재 화면에 맞춘다.
+function syncBackGuard(){
+  try{
+    if(inPlayScreen()){
+      if(!_backArmed){ history.pushState(null,null,location.href); _backArmed=true; }
+    } else if(_backArmed){
+      _backArmed=false; _backSkip=true; history.back();              // 시작 화면으로 나왔으면 칸을 반납
+    }
+  }catch(e){}
+}
+
 window.addEventListener('popstate',function(e){
+  if(_backSkip){ _backSkip=false; return; }   // 우리가 반납한 칸 — 사용자가 누른 게 아님
+  _backArmed=false;                            // 방금 여분 칸이 소비됐다
+  // 동물·공룡 퍼즐이 떠 있으면 → 아무것도 안 함(퍼즐 유지). 아래 wc 분기가 뒤 화면을 닫는 것도 막는다.
+  if(_apOverlay||_dpOverlay){ syncBackGuard(); return; }
   // 단어 퍼즐 화면이 열려 있으면 → 닫기만 (시작화면으로 복귀)
   var wp=document.getElementById('wp');
   if(wp&&wp.classList.contains('show')){
     if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
     wp.classList.remove('show');
     try{SND_BGM.pause();}catch(_){}
-    history.pushState(null,null,location.href);
+    syncBackGuard();
     return;
   }
   var wc=document.getElementById('wc');
   if(wc&&wc.classList.contains('show')){
     wc.classList.remove('show');
-    history.pushState(null,null,location.href);
+    syncBackGuard();
     return;
   }
   var ms=document.getElementById('ms');
   if(ms&&ms.classList.contains('show')){
     ms.classList.remove('show');
-    history.pushState(null,null,location.href);
+    syncBackGuard();
     return;
   }
   var ss=document.getElementById('ss');
   if(ss&&ss.style.display!=='none'){
-    // 시작 화면에서 뒤로가기 → 아무것도 안 함 (앱 종료 방지)
-    history.pushState(null,null,location.href);
-  } else {
-    // 게임 중 뒤로가기 → 시작 화면으로
-    history.pushState(null,null,location.href);
-    location.reload();
+    // 시작 화면 → 여분 칸을 다시 만들지 않는다. 다음 뒤로가기 한 번에 앱이 꺼진다.
+    return;
   }
+  // 게임 중 뒤로가기 → 시작 화면으로 (통째 리셋)
+  location.reload();
 });
-// 초기 히스토리 상태 추가
-try{history.pushState(null,null,location.href);}catch(e){}
+// 앱이 열린 직후 = 시작 화면 → 여분 칸을 넣지 않는다(넣던 게 '두 번 눌러야 종료'의 원인이었음).
+// 단, 새로고침으로 모드선택을 자동으로 여는 경우엔 goModeSelect() 안에서 다시 맞춰진다.
+try{ syncBackGuard(); }catch(e){}
