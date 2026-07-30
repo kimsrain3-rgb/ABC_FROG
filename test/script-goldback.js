@@ -1406,7 +1406,7 @@ function goAnimalPuzzle(){
     var bk=document.createElement('button');
     bk.setAttribute('aria-label','back');
     bk.onclick=closeAnimalPuzzle;
-    bk.className='gbk';                          // 모양은 공용 클래스가 담당
+    bk.className='gbk gbk-still';                 // 모양은 공용 클래스, gbk-still=게임중(작게·정지)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
     bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
     ov.appendChild(fr); ov.appendChild(bk);
@@ -1442,7 +1442,7 @@ function goDinoPuzzle(){
     var bk=document.createElement('button');
     bk.setAttribute('aria-label','back');
     bk.onclick=closeDinoPuzzle;
-    bk.className='gbk';                          // 모양은 공용 클래스가 담당
+    bk.className='gbk gbk-still';                 // 모양은 공용 클래스, gbk-still=게임중(작게·정지)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
     bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
     ov.appendChild(fr); ov.appendChild(bk);
