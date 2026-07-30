@@ -1014,7 +1014,7 @@ function rit(){clearRit();it=setTimeout(()=>{if(gp!=='playing'||ia||!ct)return;
 
 function stc(){
   raf();clearRit();
-  hideGcBack();                                  // 엔딩 화면에서는 뒤로 버튼 숨김
+  endGcBack();                                   // 엔딩 화면에서는 뒤로 버튼을 '또렷하게' 보여줌(숨기지 않음)
   // BGM 페이드아웃
   let bgmFade=setInterval(()=>{if(SND_BGM.volume>0.03)SND_BGM.volume-=0.03;else{SND_BGM.pause();clearInterval(bgmFade);}},100);
   
@@ -1406,7 +1406,7 @@ function goAnimalPuzzle(){
     var bk=document.createElement('button');
     bk.setAttribute('aria-label','back');
     bk.onclick=closeAnimalPuzzle;
-    bk.className='gbk gbk-still';                 // 모양은 공용 클래스, gbk-still=게임중(작게·정지)
+    bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=퍼즐하는 중(흐리게)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
     bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
     ov.appendChild(fr); ov.appendChild(bk);
@@ -1442,7 +1442,7 @@ function goDinoPuzzle(){
     var bk=document.createElement('button');
     bk.setAttribute('aria-label','back');
     bk.onclick=closeDinoPuzzle;
-    bk.className='gbk gbk-still';                 // 모양은 공용 클래스, gbk-still=게임중(작게·정지)
+    bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=퍼즐하는 중(흐리게)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
     bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
     ov.appendChild(fr); ov.appendChild(bk);
@@ -1561,6 +1561,10 @@ function gcBack(){
 }
 function showGcBack(){ try{ var b=document.getElementById('gcBack'); if(b) b.classList.add('show'); }catch(e){} }
 function hideGcBack(){ try{ var b=document.getElementById('gcBack'); if(b) b.classList.remove('show'); }catch(e){} }
+// 엔딩 화면: 뒤로 버튼을 숨기지 않고 '또렷하게'(opacity 1) 보여준다.
+// Play Again / Home 은 글자라 3~5세가 못 읽음 → 화살표가 유일하게 이해되는 탈출구.
+function endGcBack(){ try{ var b=document.getElementById('gcBack');
+  if(b){ b.classList.add('show'); b.classList.remove('gbk-dim'); } }catch(e){} }
 // 새로고침으로 되돌아온 직후 → 모드선택 화면 자동 오픈.
 // load 시점에 하는 이유: frog-reactions.js 가 goModeSelect 를 감싸므로(인사영상 중단 처리)
 // 그 애드온이 다 붙은 뒤에 불러야 감싼 버전이 실행된다.

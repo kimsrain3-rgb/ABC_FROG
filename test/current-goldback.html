@@ -21,14 +21,13 @@
 <script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>
 <style>
 /* ===== 테스트 전용: 금빛 뒤로 화살표 (검증 후 이 블록을 style.css 로 옮김) ===== */
-.gbk{position:absolute;top:14px;left:14px;width:78px;height:66px;border:none;padding:0;font-size:0;
+.gbk{position:absolute;top:14px;left:14px;width:66px;height:56px;border:none;padding:0;font-size:0;
 /* 화살표 그림 = 사장님이 주신 투명 PNG (투명 여백 크롭 완료, 208x178).
-   움직임은 아래 animation(gbkBounce)이 그대로 담당 — 그림만 갈아끼움. */
+   통통 튀는 움직임(gbkBounce)은 전 화면에서 제거 — 어느 화면이든 크기·정지 상태 동일. */
 background:transparent url("assets/ui/icons/back_arrow_gold.png") center/contain no-repeat;
-cursor:pointer;animation:gbkBounce 1.4s ease-in-out infinite}
-.gbk:active{animation:none;transform:scale(.9)}
-@keyframes gbkBounce{0%,100%{transform:scale(1,1)}18%{transform:scale(1.13,.9)}
-38%{transform:scale(.94,1.09)}58%{transform:scale(1.05,.98)}78%{transform:scale(1,1)}}
+cursor:pointer;opacity:1;transition:opacity .3s ease}
+/* 누를 때 눌리는 반응만 유지 — 아이가 눌린 걸 알 수 있게 */
+.gbk:active{transform:scale(.9)}
 
 /* 알파벳 게임 화면 뒤로 버튼 — 기본 숨김, 게임 시작 때만 표시 */
 .gc-back{display:none}
@@ -37,16 +36,15 @@ cursor:pointer;animation:gbkBounce 1.4s ease-in-out infinite}
 /* 테스트 빌드는 라이브 style.css 를 공유하므로 옛 모양 속성을 '덮어서' 지운다.
    (라이브 반영 때는 style.css 에서 이 속성들을 실제로 삭제 — 아래는 삭제와 같은 결과) */
 .ms-back.gbk,.wc-back.gbk,.wp-back.gbk{
-  top:14px;left:14px;width:78px;height:66px;border-radius:0;background-color:transparent;
+  top:14px;left:14px;width:66px;height:56px;border-radius:0;background-color:transparent;
   color:transparent;font-size:0;line-height:normal;padding-bottom:0;display:block}
 .ms-back.gbk:active,.wc-back.gbk:active,.wp-back.gbk:active{transform:scale(.9)}
 
-/* 게임 중(파리잡기·과일·동물·공룡) 뒤로 버튼 — 놀이에 방해되지 않게
-   메뉴 화면보다 작고(78x66 → 70x59, 10% 축소) 통통 튀지 않는다.
-   메뉴 화면(모드선택·Word카테고리) 버튼은 그대로.
-   누를 때 눌리는 반응(.gbk:active)은 유지 — 아이가 눌린 걸 알 수 있게.
+/* 게임/퍼즐을 '하는 중'(파리잡기 플레이·과일·동물·공룡 퍼즐)에만 흐리게 — 놀이에 방해되지 않게.
+   크기는 모든 화면 동일(66x56), 달라지는 건 투명도뿐. 메뉴 화면·엔딩은 opacity 1.
+   누를 때 눌리는 반응(.gbk:active)은 유지.
    ※ 위 .wp-back.gbk 규칙(클래스 2개)과 같은 우선순위라, 반드시 그 뒤에 와야 이긴다. */
-.gbk.gbk-still{width:70px;height:59px;animation:none}
+.gbk.gbk-dim{opacity:.3}
 
 /* 점수(.sc)가 좌상단이라 뒤로 버튼과 겹침 → 우상단으로 이동 (콤보 .cb 는 top:60px right:15px) */
 .sc{top:15px;right:15px;left:auto}
@@ -108,7 +106,7 @@ cursor:pointer;animation:gbkBounce 1.4s ease-in-out infinite}
 
   <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
   <div class="wp" id="wp">
-    <button class="wp-back gbk gbk-still" onclick="wpBack()" aria-label="back"></button>
+    <button class="wp-back gbk gbk-dim" onclick="wpBack()" aria-label="back"></button>
     <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
     <div class="wp-stage" id="wpStage"></div>
   </div>
@@ -125,7 +123,7 @@ cursor:pointer;animation:gbkBounce 1.4s ease-in-out infinite}
     </div>
   </div>
   <!-- 알파벳 게임 화면 뒤로 버튼 (기존엔 없어서 물리 뒤로 버튼밖에 못 나갔음) -->
-  <button class="gbk gbk-still gc-back" id="gcBack" onclick="gcBack()" aria-label="back" style="z-index:150"></button>
+  <button class="gbk gbk-dim gc-back" id="gcBack" onclick="gcBack()" aria-label="back" style="z-index:150"></button>
   <div class="sc" id="sc">🌟 0</div>
   <div class="cb" id="cb"></div>
   <div class="bubble" id="bbl"></div>
