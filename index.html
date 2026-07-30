@@ -49,7 +49,7 @@ gtag('config','G-VEN3PCFXXL',{
 
   <!-- 단어 퍼즐 카테고리 선택 (과일 / 동물 / 채소) -->
   <div class="wc" id="wc">
-    <button class="wc-back" onclick="wcBack()">‹</button>
+    <button class="wc-back gbk" onclick="wcBack()" aria-label="back"></button>
     <img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">
     <h2 class="wc-title">Pick a puzzle! 🧩</h2>
     <div class="wc-cards">
@@ -81,14 +81,14 @@ gtag('config','G-VEN3PCFXXL',{
 
   <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
   <div class="wp" id="wp">
-    <button class="wp-back" onclick="wpBack()">‹</button>
+    <button class="wp-back gbk gbk-dim" onclick="wpBack()" aria-label="back"></button>
     <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
     <div class="wp-stage" id="wpStage"></div>
   </div>
 
   <!-- ABC 모드 선택 화면 (파리 잡기 글자 모드 고르기) -->
   <div class="ms" id="ms">
-    <button class="ms-back" onclick="msBack()">‹</button>
+    <button class="ms-back gbk" onclick="msBack()" aria-label="back"></button>
     <img class="ms-frog" src="assets/frog/images/frog_4a.png" alt="frog">
     <h2 class="ms-title">Which letter?</h2>
     <div class="ms-buttons">
@@ -97,6 +97,8 @@ gtag('config','G-VEN3PCFXXL',{
       <button class="mbtn mbtn-mix" onclick="goMode('ABc')"><span class="mbtn-label">ABc</span></button>
     </div>
   </div>
+  <!-- 알파벳 게임 화면 뒤로 버튼 (기존엔 없어서 물리 뒤로 버튼밖에 못 나갔음) -->
+  <button class="gbk gbk-dim gc-back" id="gcBack" onclick="gcBack()" aria-label="back" style="z-index:150"></button>
   <div class="sc" id="sc">🌟 0</div>
   <div class="cb" id="cb"></div>
   <div class="bubble" id="bbl"></div>

@@ -1014,6 +1014,7 @@ function rit(){clearRit();it=setTimeout(()=>{if(gp!=='playing'||ia||!ct)return;
 
 function stc(){
   raf();clearRit();
+  endGcBack();                                   // 엔딩 화면에서는 뒤로 버튼을 '또렷하게' 보여줌(숨기지 않음)
   // BGM 페이드아웃
   let bgmFade=setInterval(()=>{if(SND_BGM.volume>0.03)SND_BGM.volume-=0.03;else{SND_BGM.pause();clearInterval(bgmFade);}},100);
   
@@ -1172,7 +1173,7 @@ function go(mode){
   SND_BGM.play().catch(()=>{});
   bgmStarted=true;
   startFlyBuzz();startFrogBG();initCaterpillar();initButterfly();
-  document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
+  document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();showGcBack();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
 try{document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});}catch(e){}
 
 // === 단어 퍼즐 (그림 조각 맞추기) ===
@@ -1403,17 +1404,21 @@ function goAnimalPuzzle(){
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
     fr.src='animal.html?b='+Date.now();          // HTML 항상 최신(미디어는 내부에서 캐시)
     var bk=document.createElement('button');
-    bk.textContent='‹'; bk.setAttribute('aria-label','back');
+    bk.setAttribute('aria-label','back');
     bk.onclick=closeAnimalPuzzle;
-    bk.style.cssText='position:fixed;top:8px;left:8px;z-index:100000;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.85);color:#333;font-size:26px;line-height:42px;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3)';
+    bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=퍼즐하는 중(흐리게)
+    // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
+    bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _apOverlay=ov;
+    watchPuzzleBack(ov);                          // 시즌(10종) 완주하면 뒤로 버튼 또렷하게
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
     try{gtag('event','word_puzzle_open',{category:'animal'});}catch(e){}
   }catch(e){}
 }
 function closeAnimalPuzzle(){
+  stopPuzzleBackWatch();
   try{ if(_apOverlay&&_apOverlay.parentNode){ _apOverlay.parentNode.removeChild(_apOverlay); } }catch(e){}
   _apOverlay=null;
 }
@@ -1437,17 +1442,21 @@ function goDinoPuzzle(){
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
     fr.src='dino.html?b='+Date.now();            // HTML 항상 최신(미디어는 내부에서 캐시)
     var bk=document.createElement('button');
-    bk.textContent='‹'; bk.setAttribute('aria-label','back');
+    bk.setAttribute('aria-label','back');
     bk.onclick=closeDinoPuzzle;
-    bk.style.cssText='position:fixed;top:8px;left:8px;z-index:100000;width:42px;height:42px;border:none;border-radius:50%;background:rgba(255,255,255,.85);color:#333;font-size:26px;line-height:42px;padding:0;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.3)';
+    bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=퍼즐하는 중(흐리게)
+    // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
+    bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _dpOverlay=ov;
+    watchPuzzleBack(ov);                          // 시즌(10종) 완주하면 뒤로 버튼 또렷하게
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
     try{gtag('event','word_puzzle_open',{category:'dino'});}catch(e){}
   }catch(e){}
 }
 function closeDinoPuzzle(){
+  stopPuzzleBackWatch();
   try{ if(_dpOverlay&&_dpOverlay.parentNode){ _dpOverlay.parentNode.removeChild(_dpOverlay); } }catch(e){}
   _dpOverlay=null;
 }
@@ -1540,6 +1549,65 @@ try{ document.addEventListener('DOMContentLoaded',_ensureInsectCard); }catch(e){
 function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} }
 function goMode(mode){ try{document.getElementById('ms').classList.remove('show');}catch(e){} go(mode); }
+
+// === 알파벳 게임 화면 뒤로 버튼 ===
+// ⚠️ goModeSelect()만 부르면 안 됨: 그건 .ms 를 '덮기만' 하고 게임은 뒤에서 계속 돈다.
+//    gl()은 requestAnimationFrame 무조건 재귀라 멈출 수 없고, startFlyBuzz/startFrogBG/
+//    initButterfly/initCaterpillar 는 타이머 핸들을 저장하지 않아 해제도 못 한다.
+//    → 파리·BGM 잔존 + 모드 재선택 시 게임 루프가 2개로 겹쳐 점점 빨라진다.
+//    그래서 물리 뒤로 버튼이 이미 쓰는 검증된 방식(location.reload = 통째 리셋)을 재사용하고,
+//    새로고침 후 모드선택 화면을 자동으로 열어 '한 단계 위'로만 간 것처럼 보이게 한다.
+function gcBack(){
+  try{ sessionStorage.setItem('abcfrog_backto','ms'); }catch(e){}
+  try{ SND_BGM.pause(); }catch(e){}                       // 새로고침 전 소리 즉시 끊기(체감 반응)
+  try{ if(window.speechSynthesis&&speechSynthesis.cancel) speechSynthesis.cancel(); }catch(e){}
+  try{ location.reload(); }catch(e){ try{location.href=location.href;}catch(_){} }
+}
+function showGcBack(){ try{ var b=document.getElementById('gcBack'); if(b) b.classList.add('show'); }catch(e){} }
+function hideGcBack(){ try{ var b=document.getElementById('gcBack'); if(b) b.classList.remove('show'); }catch(e){} }
+// 엔딩 화면: 뒤로 버튼을 숨기지 않고 '또렷하게'(opacity 1) 보여준다.
+// Play Again / Home 은 글자라 3~5세가 못 읽음 → 화살표가 유일하게 이해되는 탈출구.
+function endGcBack(){ try{ var b=document.getElementById('gcBack');
+  if(b){ b.classList.add('show'); b.classList.remove('gbk-dim'); } }catch(e){} }
+// 퍼즐 뒤로 버튼도 같은 원리 — 맞추는 중엔 흐리게(.gbk-dim), 완성하면 또렷하게.
+// (알파벳 엔딩과 이유 동일: 완성 화면엔 아이가 읽을 수 있는 글자가 없음)
+function dimBack(el){ try{ if(el) el.classList.add('gbk-dim'); }catch(e){} }
+function undimBack(el){ try{ if(el) el.classList.remove('gbk-dim'); }catch(e){} }
+
+// === 동물·공룡 퍼즐(iframe) 뒤로 버튼 밝기 감시 ===
+// 규칙: 10종 '시즌 전체'를 끝냈을 때만 또렷. 한 마리 완성으론 안 밝아진다(과일·알파벳과 동일).
+// 부모가 받는 신호는 완성 때 오는 *_done 하나뿐이라, 다음 퍼즐이 시작되는 순간·다시하기를 알 수 없다.
+// → 같은 서버(동일 출처)라 읽을 수 있는 iframe 상태를 0.5초마다 확인해 맞춘다.
+//   시즌 끝 = "마지막 순번 동물"이면서 "조각을 다 맞춤". 다시하기를 누르면 조각수가 0으로 돌아가 자동으로 다시 흐려진다.
+// ⚠️ 안전장치: animal.html/dino.html 쪽 이름이 바뀌면 조건이 false가 되어 '흐린 상태'로 남을 뿐(=지금까지의 동작). 깨지지 않는다.
+var _pzWatch=0;
+function watchPuzzleBack(ov){
+  stopPuzzleBackWatch();
+  _pzWatch=setInterval(function(){
+    try{
+      var bk=ov&&ov.querySelector('.gbk'), fr=ov&&ov.querySelector('iframe');
+      if(!bk||!fr) return;
+      var w=fr.contentWindow;
+      var seasonEnd=!!(w&&w.ANIMALS&&w.PZ&&
+        w.animalIdx>=w.ANIMALS.length-1 && w.PZ.placedCount>=w.PZ.total);
+      if(seasonEnd) undimBack(bk); else dimBack(bk);
+    }catch(e){}
+  },500);
+}
+function stopPuzzleBackWatch(){ try{ clearInterval(_pzWatch); }catch(e){} _pzWatch=0; }
+// 새로고침으로 되돌아온 직후 → 모드선택 화면 자동 오픈.
+// load 시점에 하는 이유: frog-reactions.js 가 goModeSelect 를 감싸므로(인사영상 중단 처리)
+// 그 애드온이 다 붙은 뒤에 불러야 감싼 버전이 실행된다.
+try{
+  window.addEventListener('load',function(){
+    try{
+      if(sessionStorage.getItem('abcfrog_backto')==='ms'){
+        sessionStorage.removeItem('abcfrog_backto');
+        goModeSelect();
+      }
+    }catch(e){}
+  });
+}catch(e){}
 
 // 조각 붙는 "찰칵" 효과음 (에셋 없이 Web Audio로 합성)
 var wpAC=null;
@@ -1761,6 +1829,7 @@ function wpAxisCut(img,bb,n){
 
 function buildPuzzle(key){
   wpCurrent=key||'apple';
+  dimBack(document.querySelector('.wp-back'));   // 새 퍼즐 시작 = 맞추는 중 → 흐리게 (다시하기로 시즌 재시작해도 여기서 복귀)
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   stage.innerHTML='';
@@ -2157,6 +2226,7 @@ var _wpEndingStop=null;
 // 마지막 과일까지 다 맞추면 개구리 과일바구니 축하 영상 + "Thanks friend!" 음성 재생 → 끝나면 다시하기 버튼
 // (영상은 이 순간에만 불러옴 → 평소 로딩 영향 없음 / 영상은 무음 자동재생, 소리는 음성이 담당 / 음성 끝나면 마무리 / 탭하면 건너뛰기 / 실패해도 버튼만)
 function wpPlayEnding(stage){
+  undimBack(document.querySelector('.wp-back'));   // 과일 10종 완주 엔딩 → 여기서부터 뒤로 버튼 또렷하게
   var done=false, ov=null, voice=null, voiceOk=false, safetyId=0;
   function showReplay(host){
     if(!stage || document.getElementById('wpReplayBtn')) return;

@@ -41,7 +41,8 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .bubble.bbl-round.bbl-left::after{right:10%;bottom:2px;transform:rotate(-40deg);transform-origin:top center}
 .bubble.bbl-round.bbl-right::after{left:10%;bottom:2px;transform:rotate(40deg);transform-origin:top center}
 
-.sc{position:absolute;top:15px;left:15px;font-size:18px;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5);z-index:40}
+/* 점수는 우상단 — 좌상단은 뒤로 화살표(.gbk) 자리라 겹침 */
+.sc{position:absolute;top:15px;right:15px;left:auto;font-size:18px;color:#fff;text-shadow:1px 1px 3px rgba(0,0,0,.5);z-index:40}
 .cb{position:absolute;top:60px;right:15px;font-size:20px;font-weight:900;color:#FFD700;text-shadow:2px 2px 0 #FF6F00;opacity:0;transition:all .3s;z-index:40}
 .cb.show{opacity:1;animation:cbn .5s ease-out}
 
@@ -105,7 +106,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 @keyframes crownBounce{0%{transform:translateX(-50%) scale(0) translateY(-50px);opacity:0}50%{transform:translateX(-50%) scale(1.3) translateY(0);opacity:1}100%{transform:translateX(-50%) scale(1) translateY(0);opacity:1}}
 @keyframes crownBreathe{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
 
-@keyframes bfShake{0%{margin-left:-2px}25%{margin-left:2px}50%{margin-left:-2px}75%{margin-left:2px}100%{margin-left:0}}@media(max-width:768px){.cbar{flex-wrap:wrap;gap:3px;padding:6px 4px}.slot{width:calc((100% - 39px)/13);max-width:none;font-size:3.8vw;aspect-ratio:1;border-radius:4px}.sc{font-size:15px;top:10px;left:10px}.frog{bottom:10%}.lilypad{bottom:13.6%}.stump{bottom:5%}.ss .sf{width:260px;margin-bottom:-40px}.bubble.bbl-left{left:8%}.bubble.bbl-right{right:8%}.bubble{font-size:7vmin;padding:2.5vmin 3.5vmin;max-width:50%}.bubble::after{bottom:-12px;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #fff}.bubble.bbl-left::after{left:auto;right:10%;bottom:-10px;transform:rotate(-30deg);transform-origin:top center}.bubble.bbl-right::after{right:auto;left:10%;bottom:-10px;transform:rotate(30deg);transform-origin:top center}.bubble.bbl-round.bbl-left{left:22%}.bubble.bbl-round.bbl-right{right:22%}}
+@keyframes bfShake{0%{margin-left:-2px}25%{margin-left:2px}50%{margin-left:-2px}75%{margin-left:2px}100%{margin-left:0}}@media(max-width:768px){.cbar{flex-wrap:wrap;gap:3px;padding:6px 4px}.slot{width:calc((100% - 39px)/13);max-width:none;font-size:3.8vw;aspect-ratio:1;border-radius:4px}.sc{font-size:15px;top:10px;right:10px;left:auto}.frog{bottom:10%}.lilypad{bottom:13.6%}.stump{bottom:5%}.ss .sf{width:260px;margin-bottom:-40px}.bubble.bbl-left{left:8%}.bubble.bbl-right{right:8%}.bubble{font-size:7vmin;padding:2.5vmin 3.5vmin;max-width:50%}.bubble::after{bottom:-12px;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #fff}.bubble.bbl-left::after{left:auto;right:10%;bottom:-10px;transform:rotate(-30deg);transform-origin:top center}.bubble.bbl-right::after{right:auto;left:10%;bottom:-10px;transform:rotate(30deg);transform-origin:top center}.bubble.bbl-round.bbl-left{left:22%}.bubble.bbl-round.bbl-right{right:22%}}
 
 
 /* === 모드 선택 버튼 === */
@@ -137,8 +138,26 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .ms.show{display:flex}
 .ms-frog{width:235px;max-width:62vw;margin-bottom:2px;animation:msFrogBreathe 1.6s ease-in-out infinite}
 @keyframes msFrogBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
-.ms-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
-.ms-back:active{transform:scale(.92)}
+/* ===== 뒤로 버튼 = 공용 금빛 화살표 (.gbk) =====
+   모든 화면이 같은 그림·같은 크기(66x56)·정지 상태. 화면마다 다른 건 겹침 순서(z-index)뿐.
+   놀이에 방해되지 않게 '게임/퍼즐 하는 중'에만 흐리게(.gbk-dim) — 아래 규칙 참고. */
+.gbk{position:absolute;top:14px;left:14px;width:66px;height:56px;border:none;padding:0;font-size:0;
+/* 화살표 그림 = 투명 PNG (투명 여백 크롭 완료, 208x178) */
+background:transparent url("assets/ui/icons/back_arrow_gold.png") center/contain no-repeat;
+cursor:pointer;opacity:1;transition:opacity .3s ease}
+/* 누를 때 눌리는 반응만 유지 — 아이가 눌린 걸 알 수 있게 */
+.gbk:active{transform:scale(.9)}
+
+/* 알파벳 게임 화면 뒤로 버튼 — 기본 숨김, 게임 시작 때만 표시 */
+.gc-back{display:none}
+.gc-back.show{display:block}
+
+/* 게임/퍼즐을 '하는 중'(파리잡기 플레이·과일·동물·공룡 퍼즐)에만 흐리게.
+   또렷해지는 시점 = 알파벳 26글자 엔딩 / 퍼즐 10종 시즌 완주 엔딩(한 개 완성으론 안 밝아짐).
+   ※ .ms-back 등 클래스 2개 규칙과 우선순위가 같아지지 않도록 클래스 2개(.gbk.gbk-dim)로 둠. */
+.gbk.gbk-dim{opacity:.3}
+
+.ms-back{z-index:5}
 .ms-title{font-size:30px;color:#FFEB3B;text-shadow:2px 2px 0 #F57F17,3px 3px 0 rgba(0,0,0,.2);margin-bottom:6px}
 .ms-buttons{display:flex;flex-direction:column;gap:18px;align-items:center}
 .ms-buttons .mbtn{min-width:160px}
@@ -146,8 +165,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 /* === 단어 퍼즐 카테고리 선택 (과일/동물/채소) === */
 .wc{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:118;overflow:hidden}
 .wc.show{display:flex}
-.wc-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:5}
-.wc-back:active{transform:scale(.92)}
+.wc-back{z-index:5}
 /* 개구리 세로 위치: 짧은 화면에선 내용물(약 720px)이 화면보다 커서 flex 가운데정렬이 위로 넘쳐 개구리가 천장에 붙거나 잘림.
    → 넘친 만큼의 절반을 아래로 내려 천장~"Pick a puzzle" 문구 사이 중간에 오게 함(최대 56px). 화면이 충분히 길면 0 = 기존 그대로.
    position:relative+top이라 이 그림만 움직이고 문구·카드 배치는 영향 없음. transform은 숨쉬기 애니가 쓰므로 top을 씀. */
@@ -200,8 +218,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 /* === 단어 퍼즐 화면 (그림 직소 퍼즐) === */
 .wp{position:absolute;inset:0;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}
 .wp.show{display:flex}
-.wp-back{position:absolute;top:16px;left:16px;width:48px;height:48px;border-radius:50%;border:none;background:rgba(0,0,0,.18);color:#fff;font-size:34px;line-height:1;font-family:'Fredoka',cursive;cursor:pointer;display:flex;align-items:center;justify-content:center;padding-bottom:4px;z-index:140}
-.wp-back:active{transform:scale(.92)}
+.wp-back{z-index:140}
 .wp-title{font-size:clamp(15px,4.8vw,26px);color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto;width:100%;box-sizing:border-box;padding:0 56px;white-space:nowrap}
 .wp-stage{position:relative;width:100%;flex:1 1 auto;touch-action:none}
 
