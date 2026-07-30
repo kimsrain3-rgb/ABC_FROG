@@ -22,9 +22,9 @@
 <style>
 /* ===== 테스트 전용: 금빛 뒤로 화살표 (검증 후 이 블록을 style.css 로 옮김) ===== */
 .gbk{position:absolute;top:14px;left:14px;width:78px;height:66px;border:none;padding:0;font-size:0;
-/* ⚠️ 스펙 원본 SVG(화살표 몸통 20px에 stroke-width 40)는 홈이 메워져 '금빛 덩어리'로 보였음.
-   → 화살표를 크게(몸통 30px) 키우고 테두리를 13px 로 줄여 화살표 형태가 살아나게 수정. */
-background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 124 104'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23FFF3B0'/%3E%3Cstop offset='.55' stop-color='%23FFE14D'/%3E%3Cstop offset='1' stop-color='%23FFD24D'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M14 52 L52 14 L52 37 L110 37 L110 67 L52 67 L52 90 Z' fill='rgba(0,0,0,.25)' stroke='rgba(0,0,0,.25)' stroke-width='13' stroke-linejoin='round' stroke-linecap='round' transform='translate(3,4)'/%3E%3Cpath d='M14 52 L52 14 L52 37 L110 37 L110 67 L52 67 L52 90 Z' fill='%23E68A00' stroke='%23E68A00' stroke-width='13' stroke-linejoin='round' stroke-linecap='round'/%3E%3Cpath d='M14 52 L52 14 L52 37 L110 37 L110 67 L52 67 L52 90 Z' fill='url(%23g)' stroke='url(%23g)' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M26 50 Q38 36 49 27' fill='none' stroke='%23FFF7CC' stroke-width='6' stroke-linecap='round' opacity='.9'/%3E%3C/svg%3E") center/contain no-repeat;
+/* 화살표 그림 = 사장님이 주신 투명 PNG (투명 여백 크롭 완료, 208x178).
+   움직임은 아래 animation(gbkBounce)이 그대로 담당 — 그림만 갈아끼움. */
+background:transparent url("assets/ui/icons/back_arrow_gold.png") center/contain no-repeat;
 cursor:pointer;animation:gbkBounce 1.4s ease-in-out infinite}
 .gbk:active{animation:none;transform:scale(.9)}
 @keyframes gbkBounce{0%,100%{transform:scale(1,1)}18%{transform:scale(1.13,.9)}
