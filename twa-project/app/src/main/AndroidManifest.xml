@@ -3,8 +3,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- enableOnBackInvokedCallback: targetSdk 35+ 라 어차피 기본값이 true 지만,
+         MainActivity 가 새 방식(OnBackInvokedCallback)을 직접 등록하므로 의도를 명시해 둔다.
+         (이 값이 true 인데 콜백을 등록하지 않으면 시스템이 뒤로가기를 가로채
+          게임 중에도 앱이 홈으로 밀려난다 — 2026-07-30 수정 전 증상) -->
     <application
         android:allowBackup="true"
+        android:enableOnBackInvokedCallback="true"
         android:icon="@mipmap/ic_launcher"
         android:label="ABC Frog"
         android:supportsRtl="true"
