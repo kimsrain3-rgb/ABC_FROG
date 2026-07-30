@@ -1412,21 +1412,20 @@ function goAnimalPuzzle(){
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _apOverlay=ov;
+    watchPuzzleBack(ov);                          // 시즌(10종) 완주하면 뒤로 버튼 또렷하게
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
     try{gtag('event','word_puzzle_open',{category:'animal'});}catch(e){}
   }catch(e){}
 }
 function closeAnimalPuzzle(){
+  stopPuzzleBackWatch();
   try{ if(_apOverlay&&_apOverlay.parentNode){ _apOverlay.parentNode.removeChild(_apOverlay); } }catch(e){}
   _apOverlay=null;
 }
 // 동물 퍼즐(별도 iframe animal.html)이 완성을 알려오면 GA로 기록.
 // 과일과 같은 신호 이름(word_puzzle_complete) + category:'animal' 로 → GA4에서 과일 vs 동물 비교 가능.
 window.addEventListener('message',function(ev){
-  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){
-    gtag('event','word_puzzle_complete',{category:'animal',word:d.key});
-    undimBack(_apOverlay&&_apOverlay.querySelector('.gbk'));   // 완성 → 뒤로 버튼 또렷하게
-  } }catch(e){}
+  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){ gtag('event','word_puzzle_complete',{category:'animal',word:d.key}); } }catch(e){}
 });
 
 // === 공룡 퍼즐 (독립 페이지 dino.html을 전체화면 오버레이로 — 동물 퍼즐과 완전 동일 구조) ===
@@ -1451,20 +1450,19 @@ function goDinoPuzzle(){
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _dpOverlay=ov;
+    watchPuzzleBack(ov);                          // 시즌(10종) 완주하면 뒤로 버튼 또렷하게
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
     try{gtag('event','word_puzzle_open',{category:'dino'});}catch(e){}
   }catch(e){}
 }
 function closeDinoPuzzle(){
+  stopPuzzleBackWatch();
   try{ if(_dpOverlay&&_dpOverlay.parentNode){ _dpOverlay.parentNode.removeChild(_dpOverlay); } }catch(e){}
   _dpOverlay=null;
 }
 // 공룡 퍼즐(별도 iframe dino.html)이 완성을 알려오면 GA로 기록. (과일·동물과 같은 신호 이름 + category:'dino')
 window.addEventListener('message',function(ev){
-  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){
-    gtag('event','word_puzzle_complete',{category:'dino',word:d.key});
-    undimBack(_dpOverlay&&_dpOverlay.querySelector('.gbk'));   // 완성 → 뒤로 버튼 또렷하게
-  } }catch(e){}
+  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key}); } }catch(e){}
 });
 // ★ Animal 카드 잠금해제를 '실행 중에' 직접 수행 — script.js는 항상 최신으로 받으므로,
 //   옛 index.html(잠긴 버튼)이 캐시된 폰에서도 이게 버튼을 풀어줌(즉시 모든 폰 반영).
@@ -1575,6 +1573,28 @@ function endGcBack(){ try{ var b=document.getElementById('gcBack');
 // (알파벳 엔딩과 이유 동일: 완성 화면엔 아이가 읽을 수 있는 글자가 없음)
 function dimBack(el){ try{ if(el) el.classList.add('gbk-dim'); }catch(e){} }
 function undimBack(el){ try{ if(el) el.classList.remove('gbk-dim'); }catch(e){} }
+
+// === 동물·공룡 퍼즐(iframe) 뒤로 버튼 밝기 감시 ===
+// 규칙: 10종 '시즌 전체'를 끝냈을 때만 또렷. 한 마리 완성으론 안 밝아진다(과일·알파벳과 동일).
+// 부모가 받는 신호는 완성 때 오는 *_done 하나뿐이라, 다음 퍼즐이 시작되는 순간·다시하기를 알 수 없다.
+// → 같은 서버(동일 출처)라 읽을 수 있는 iframe 상태를 0.5초마다 확인해 맞춘다.
+//   시즌 끝 = "마지막 순번 동물"이면서 "조각을 다 맞춤". 다시하기를 누르면 조각수가 0으로 돌아가 자동으로 다시 흐려진다.
+// ⚠️ 안전장치: animal.html/dino.html 쪽 이름이 바뀌면 조건이 false가 되어 '흐린 상태'로 남을 뿐(=지금까지의 동작). 깨지지 않는다.
+var _pzWatch=0;
+function watchPuzzleBack(ov){
+  stopPuzzleBackWatch();
+  _pzWatch=setInterval(function(){
+    try{
+      var bk=ov&&ov.querySelector('.gbk'), fr=ov&&ov.querySelector('iframe');
+      if(!bk||!fr) return;
+      var w=fr.contentWindow;
+      var seasonEnd=!!(w&&w.ANIMALS&&w.PZ&&
+        w.animalIdx>=w.ANIMALS.length-1 && w.PZ.placedCount>=w.PZ.total);
+      if(seasonEnd) undimBack(bk); else dimBack(bk);
+    }catch(e){}
+  },500);
+}
+function stopPuzzleBackWatch(){ try{ clearInterval(_pzWatch); }catch(e){} _pzWatch=0; }
 // 새로고침으로 되돌아온 직후 → 모드선택 화면 자동 오픈.
 // load 시점에 하는 이유: frog-reactions.js 가 goModeSelect 를 감싸므로(인사영상 중단 처리)
 // 그 애드온이 다 붙은 뒤에 불러야 감싼 버전이 실행된다.
@@ -1809,7 +1829,7 @@ function wpAxisCut(img,bb,n){
 
 function buildPuzzle(key){
   wpCurrent=key||'apple';
-  dimBack(document.querySelector('.wp-back'));   // 새 과일 퍼즐 시작 = 맞추는 중 → 다시 흐리게
+  dimBack(document.querySelector('.wp-back'));   // 새 퍼즐 시작 = 맞추는 중 → 흐리게 (다시하기로 시즌 재시작해도 여기서 복귀)
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   stage.innerHTML='';
@@ -2137,7 +2157,6 @@ function wpLoadLetter(ch){
 
 function wpComplete(){
   try{gtag('event','word_puzzle_complete',{category:'fruit',word:wpCurrent});}catch(e){}
-  undimBack(document.querySelector('.wp-back'));   // 완성 → 뒤로 버튼 또렷하게 (다음 과일 시작하면 buildPuzzle이 다시 흐리게)
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
@@ -2207,6 +2226,7 @@ var _wpEndingStop=null;
 // 마지막 과일까지 다 맞추면 개구리 과일바구니 축하 영상 + "Thanks friend!" 음성 재생 → 끝나면 다시하기 버튼
 // (영상은 이 순간에만 불러옴 → 평소 로딩 영향 없음 / 영상은 무음 자동재생, 소리는 음성이 담당 / 음성 끝나면 마무리 / 탭하면 건너뛰기 / 실패해도 버튼만)
 function wpPlayEnding(stage){
+  undimBack(document.querySelector('.wp-back'));   // 과일 10종 완주 엔딩 → 여기서부터 뒤로 버튼 또렷하게
   var done=false, ov=null, voice=null, voiceOk=false, safetyId=0;
   function showReplay(host){
     if(!stage || document.getElementById('wpReplayBtn')) return;
