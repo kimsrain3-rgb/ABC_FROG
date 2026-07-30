@@ -9,18 +9,21 @@
 <body>
 <div>로딩중… 🐸</div>
 <!--
-  ★ 현재 테스트 콘텐츠 = 과일 퍼즐 스펠링 볼륨 시험판 = test/current-fruitvol.html
-  - 완성 후 알파벳 읽는 소리를 0.5 → 1.0 으로 올린 판(단어 음성과 같은 크기).
-    라이브 루트 script.js 는 0.5 그대로. 폰에서 들어보고 괜찮으면 라이브에 반영.
-  - 게임 화면·에셋·style.css·frog-reactions.js 는 라이브와 공유, script 만 사본
-    (test/script-fruitvol.js — 라이브 대비 볼륨 숫자 3개만 다름).
-  - 라이브 게임(루트)은 안 건드림. 다른 테스트로 바꾸려면 아래 주소만 갈아끼우면 됨.
-  - 보관: 공룡 6조각=current-dino-6.html (2026-07-28 라이브 반영 완료),
+  ★ 현재 테스트 콘텐츠 = 뒤로가기 버튼 금빛 화살표 통일 = test/current-goldback.html
+  - 5개 화면(모드선택·Word카테고리·과일퍼즐·알파벳게임·동물/공룡)의 뒤로 버튼을
+    같은 모양(금빛 화살표 78x66, 통통 튀는 애니)·같은 자리(top14 left14)로 통일.
+  - 알파벳 게임 화면엔 뒤로 버튼이 원래 없었음 → 신규 추가(물리 버튼밖엔 못 나갔음).
+    누르면 새로고침으로 통째 리셋 후 모드선택 화면 자동 오픈(파리·BGM 잔존 0).
+  - 점수 표시는 뒤로 버튼과 겹치므로 좌상단 → 우상단으로 옮김.
+  - 새 버튼 CSS는 current-goldback.html 안 <style> 에만 있음 → 라이브 style.css 무수정.
+    script 만 사본(test/script-goldback.js). 라이브 게임(루트)은 안 건드림.
+  - 보관: 과일 스펠링 볼륨=current-fruitvol.html (2026-07-29 라이브 반영 완료),
+          공룡 6조각=current-dino-6.html (2026-07-28 라이브 반영 완료),
           파닉스=phonics/index.html, 공룡 9조각=current-dino-backup.html,
           개구리 반응=frogreact/index.html (2026-07-21 라이브 반영 완료)
 -->
 <script>
-location.replace('current-fruitvol.html?b=' + Date.now());
+location.replace('current-goldback.html?b=' + Date.now());
 </script>
 </body>
 </html>
