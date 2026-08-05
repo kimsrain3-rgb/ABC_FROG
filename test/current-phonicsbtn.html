@@ -114,12 +114,27 @@
 .wc-toast{z-index:190}
 /* 카드가 3장이 되어 세로 공간이 부족한 '짧은 화면'에서만 개구리 축소 (긴 폰은 지금 그대로) */
 @media(max-width:768px) and (max-height:700px){ .ss .sf{width:196px;margin-bottom:-20px} }
+/* ── 퍼즐 메뉴(.wc): 짧은 화면에서 마지막 Insect 가 바닥에 붙거나 잘리던 것 → 아래 여백 확보 ──
+   .wc 는 내용을 한가운데 정렬해서 위아래 여백이 항상 같다. 내용이 713px 라 화면이 짧으면 양쪽이 같이 좁아진다
+   (360×740에서 위아래 13px, 360×640에선 Insect 가 37px 잘림). 짧은 화면에서만 조금씩 줄여 여유를 만든다. */
+@media (max-height:800px){
+  .wc-frog{width:190px}
+  .wc-cards{gap:12px}
+  .wc-card{padding:12px 16px}
+  .wc-title{font-size:26px}
+}
+/* 아주 짧은 구형 폰(360×640 등)은 위 단계로도 2px 모자라 Insect 가 닿음 → 한 단계 더 */
+@media (max-height:680px){
+  .wc-frog{width:150px}
+  .wc-cards{gap:10px}
+  .wc-card{padding:10px 16px}
+}
 #testBadge{position:fixed;left:8px;bottom:8px;z-index:99999;background:#000a;color:#7CFC7C;
   font:600 11px/1 'Segoe UI',sans-serif;padding:5px 8px;border-radius:6px;pointer-events:none}
 </style>
 </head>
 <body>
-<div id="testBadge">TEST · 시작화면 Phonics 버튼</div>
+<div id="testBadge">TEST · Phonics 버튼 + 퍼즐메뉴 여백</div>
 <div id="gc">
   <div class="ss" id="ss">
     <img class="sf" src="assets/frog/images/frog_4a.png" alt="ABC Frog">
