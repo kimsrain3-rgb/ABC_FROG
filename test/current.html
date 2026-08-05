@@ -9,17 +9,18 @@
 <body>
 <div>로딩중… 🐸</div>
 <!--
-  ★ 현재 테스트 콘텐츠 = 부팅 가드(로딩 중 눌린 버튼 기억 후 자동 실행) = test/current-bootguard.html
-  - 문제: 시작화면 버튼은 HTML 만으로 즉시 보이고 눌리는데, 그 버튼을 처리하는 함수(goModeSelect 등 11개)는
-    body 맨 끝의 script.js 가 다 받아진 뒤에야 생긴다. 느린 네트워크에서 그 틈에 아이가 누르면
-    "Uncaught ReferenceError: goModeSelect is not defined" 가 나고, script.js 의 window.onerror 가
-    이를 삼켜 화면은 그냥 무반응이 됐다. 10초를 넘기면 init_timeout rs=loading 도 같이 찍혔다.
-    (2026-08-05 GA4 game_error 실측: error_where=init 12건, 멕시코·필리핀·네팔 집중)
-  - 수정: 진짜 함수가 오기 전까지 같은 이름의 '대기표' 함수를 미리 두고, 눌린 것을 기억만 한다.
-    script.js 가 로드되면 진짜 함수가 대기표를 덮어쓰고, __bootFlush() 가 기억해 둔 것을 한 번 실행한다.
-    기다리는 동안엔 개구리 인사말 아래 점점점 + 버튼 눌린 표시로 "먹통 아님"을 보여준다.
-  - index 구조에만 가드가 들어감. script.js·style.css·assets 는 라이브 그대로 공유(사본 없음).
-  - 보관: 물리 뒤로가기=current-backexit.html (2026-07-30 라이브 반영 완료),
+  ★ 현재 테스트 콘텐츠 = 시작화면 Phonics 버튼 추가 = test/current-phonicsbtn.html
+  - 배치: 시작화면 카드를 Word 메뉴(.wc-card)와 같은 **가로로 긴 알약 244px**로 바꾸고 위아래로 3장 쌓음.
+    (지금 카드는 150px 폭이라 3장을 한 줄에 두면 474px 필요 → 모든 폰에서 두 줄로 밀려 개구리 머리가 잘림)
+  - Phonics = 잠긴 카드. `.wc-locked`·`.wc-lock` 재사용 → 회색 배경 + 🔒 배지 + 회색 실루엣 자동.
+    누르면 Vegetable·Insect와 동일하게 흔들림 + "Coming soon!" 안내(기존 wcLocked 그대로 재사용).
+  - 아이콘 👄(말하는 입) — 파닉스=소리 내기라 실루엣으로도 뜻이 읽힘.
+  - 개구리는 **짧은 화면에서만** 25% 축소(≤768px & ≤700px). 요즘 긴 폰은 지금 크기 그대로.
+  - ⚠️ 안내 토스트(#wcToast)를 `.wc` 안에서 `#gc` 직속으로 옮김 — 안 옮기면 시작화면에선
+    부모가 숨겨져 있어 토스트가 안 보임. 위치는 그대로(.wc 가 #gc 와 같은 박스라 좌표 동일), z-index만 190.
+  - script.js·style.css·assets는 라이브 그대로 공유(사본 없음). 이 HTML 한 장에만 변경이 들어있음.
+  - 보관: 부팅 가드=current-bootguard.html (2026-08-05 라이브 반영 완료),
+          물리 뒤로가기=current-backexit.html (2026-07-30 라이브 반영 완료),
           금빛 뒤로 화살표=current-goldback.html (2026-07-30 라이브 반영 완료),
           과일 스펠링 볼륨=current-fruitvol.html (2026-07-29 라이브 반영 완료),
           공룡 6조각=current-dino-6.html (2026-07-28 라이브 반영 완료),
@@ -27,7 +28,7 @@
           개구리 반응=frogreact/index.html (2026-07-21 라이브 반영 완료)
 -->
 <script>
-location.replace('current-bootguard.html?b=' + Date.now());
+location.replace('current-phonicsbtn.html?b=' + Date.now());
 </script>
 </body>
 </html>
