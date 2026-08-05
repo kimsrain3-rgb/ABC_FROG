@@ -116,13 +116,20 @@ gtag('config','G-VEN3PCFXXL',{
     <h1>ABC Frog</h1>
     <div class="sub">I'm hungry~</div>
     <div class="mode-buttons">
-      <button class="game-card card-abc" onclick="goModeSelect()">
+      <button class="game-card wc-card card-abc" onclick="goModeSelect()">
         <span class="card-icon"><img src="assets/bugs/images/fly_front.png" alt="catch"></span>
         <span class="card-label">ABC</span>
       </button>
-      <button class="game-card card-word" onclick="goWordCat()">
+      <button class="game-card wc-card card-word" onclick="goWordCat()">
         <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
         <span class="card-label">Word</span>
+      </button>
+      <!-- 파닉스: 아직 안 만든 게임이라 잠긴 카드. Vegetable·Insect 와 같은 wcLocked 재사용.
+           아이콘은 잠금 실루엣 필터(brightness(0))를 거쳐도 모양이 읽히는 것으로 고름(👄·🅰️·👂 는 덩어리가 돼 탈락). -->
+      <button class="game-card wc-card wc-locked card-phonics" onclick="wcLocked(this)">
+        <span class="card-icon">🗣️</span>
+        <span class="card-label">Phonics</span>
+        <span class="wc-lock">🔒</span>
       </button>
     </div>
   </div>
@@ -156,7 +163,6 @@ gtag('config','G-VEN3PCFXXL',{
         <span class="wc-lock">🔒</span>
       </button>
     </div>
-    <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
   </div>
 
   <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
@@ -182,6 +188,10 @@ gtag('config','G-VEN3PCFXXL',{
   <div class="sc" id="sc">🌟 0</div>
   <div class="cb" id="cb"></div>
   <div class="bubble" id="bbl"></div>
+  <!-- 잠긴 카드 안내 토스트 — 시작화면·퍼즐메뉴 양쪽에서 쓰려고 #gc 직속으로 둔다.
+       .wc 안에 두면 그 화면이 display:none 이라 시작화면에서 눌러도 토스트가 부모째 숨겨져 안 보인다.
+       .wc 가 #gc 와 같은 박스(position:absolute;inset:0)라 옮겨도 화면상 위치는 그대로. -->
+  <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
 
   <div class="lilypad"><img src="assets/ui/images/lilypad.png" alt="lilypad"></div>
   <div class="stump"><img src="assets/ui/images/bg_5-1.png" alt="stump"></div>
