@@ -9,21 +9,25 @@
 <body>
 <div>로딩중… 🐸</div>
 <!--
-  ★ 현재 테스트 콘텐츠 = 물리 뒤로가기: 시작 화면에서 한 번에 종료 = test/current-backexit.html
-  - 문제: 시작 화면에서 물리 뒤로가기를 두 번 눌러야 앱이 꺼졌음(다른 앱은 한 번).
-    원인 = 앱이 열리자마자 히스토리에 '여분 칸'을 무조건 넣어둠(옛 script.js 맨 끝).
-    첫 번째 누름은 그 칸을 소비하는 데 그냥 쓰였고, 시작화면 분기는 칸을 다시 채우기만 했음.
-  - 수정: 여분 칸을 '보호할 화면에 있을 때만' 넣는다(syncBackGuard).
-    시작 화면=칸 없음 → 한 번에 종료 / 게임·퍼즐 중=칸 있음 → 실수로 안 꺼짐(기존 유지).
-  - script 만 사본(test/script-backexit.js). style.css·index 구조는 라이브 공유.
-  - 보관: 금빛 뒤로 화살표=current-goldback.html (2026-07-30 라이브 반영 완료),
+  ★ 현재 테스트 콘텐츠 = 부팅 가드(로딩 중 눌린 버튼 기억 후 자동 실행) = test/current-bootguard.html
+  - 문제: 시작화면 버튼은 HTML 만으로 즉시 보이고 눌리는데, 그 버튼을 처리하는 함수(goModeSelect 등 11개)는
+    body 맨 끝의 script.js 가 다 받아진 뒤에야 생긴다. 느린 네트워크에서 그 틈에 아이가 누르면
+    "Uncaught ReferenceError: goModeSelect is not defined" 가 나고, script.js 의 window.onerror 가
+    이를 삼켜 화면은 그냥 무반응이 됐다. 10초를 넘기면 init_timeout rs=loading 도 같이 찍혔다.
+    (2026-08-05 GA4 game_error 실측: error_where=init 12건, 멕시코·필리핀·네팔 집중)
+  - 수정: 진짜 함수가 오기 전까지 같은 이름의 '대기표' 함수를 미리 두고, 눌린 것을 기억만 한다.
+    script.js 가 로드되면 진짜 함수가 대기표를 덮어쓰고, __bootFlush() 가 기억해 둔 것을 한 번 실행한다.
+    기다리는 동안엔 개구리 인사말 아래 점점점 + 버튼 눌린 표시로 "먹통 아님"을 보여준다.
+  - index 구조에만 가드가 들어감. script.js·style.css·assets 는 라이브 그대로 공유(사본 없음).
+  - 보관: 물리 뒤로가기=current-backexit.html (2026-07-30 라이브 반영 완료),
+          금빛 뒤로 화살표=current-goldback.html (2026-07-30 라이브 반영 완료),
           과일 스펠링 볼륨=current-fruitvol.html (2026-07-29 라이브 반영 완료),
           공룡 6조각=current-dino-6.html (2026-07-28 라이브 반영 완료),
           파닉스=phonics/index.html, 공룡 9조각=current-dino-backup.html,
           개구리 반응=frogreact/index.html (2026-07-21 라이브 반영 완료)
 -->
 <script>
-location.replace('current-backexit.html?b=' + Date.now());
+location.replace('current-bootguard.html?b=' + Date.now());
 </script>
 </body>
 </html>

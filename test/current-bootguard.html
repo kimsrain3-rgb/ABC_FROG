@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- ★ 테스트 빌드(부팅 가드: 로딩 중 눌린 버튼을 기억했다가 자동 실행) — 라이브 루트는 안 건드림.
+     assets·style.css·script.js·frog-reactions.js 는 전부 라이브 공유. 이 파일에만 가드가 들어있다.
+     GA4·에러추적은 뺐음(테스트 플레이가 실유저 통계에 섞이지 않게, 기존 테스트 빌드와 동일 방침). -->
+<base href="../">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ABC Frog (TEST 부팅가드)</title>
+<link rel="manifest" href="test/manifest.json">
+<meta name="theme-color" content="#4CAF50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABC Frog">
+<link rel="apple-touch-icon" href="assets/ui/icons/icon-192x192.png">
+<meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기(버전번호 수동관리 불필요) -->
+<script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>
+<!-- 테스트 빌드라 GA4·에러추적 없음 (실유저 통계 오염 방지) -->
+<script>window.gtag=window.gtag||function(){};</script>
+
+<!-- ★ 부팅 가드 — script.js 가 도착하기 전에 눌린 버튼을 기억했다가, 도착 즉시 자동 실행한다.
+     [문제] 시작화면 버튼은 HTML 만으로 즉시 보이고 눌린다. 그런데 그 버튼을 처리하는 함수
+       (goModeSelect 등 11개)는 body 맨 끝의 script.js 가 다 받아진 뒤에야 생긴다.
+       느린 네트워크에서 그 틈에 아이가 누르면 "Uncaught ReferenceError: goModeSelect is not defined"
+       가 나고, script.js 의 window.onerror 가 이를 삼켜서 화면은 그냥 무반응이 됐다.
+       (2026-08-05 GA4 game_error 실측: error_where=init 12건, 멕시코·필리핀·네팔에 집중)
+     [원리] 진짜 함수가 오기 전까지 같은 이름의 '대기표' 함수를 미리 만들어 둔다.
+       대기표가 불리면 무엇을 눌렀는지 기억만 해 두고, script.js 가 실행되면서 진짜 함수가
+       대기표를 덮어쓴다(script.js 의 함수는 전부 function 선언이라 자동으로 덮어씀).
+       그 직후 body 끝의 __bootFlush() 가 기억해 둔 것을 한 번 실행한다.
+     [안전] 진짜 함수가 끝내 안 오면(로드 실패) 아무것도 실행하지 않는다 — 지금과 같은 상태로 남을 뿐,
+       더 나빠지지 않는다. 전체가 try-catch 라 가드가 고장나도 게임은 그대로 돈다. -->
+<script>
+(function () {
+  'use strict';
+  try {
+    var NAMES = ['goModeSelect','goWordCat','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle',
+                 'goMode','wcBack','wcLocked','msBack','wpBack','gcBack'];
+    var stubs = {}, pending = null, dotsEl = null, ready = false;
+
+    // 기다리는 중 표시(개구리 인사말 아래 점점점). style.css 가 아직 안 왔어도 보이게 인라인 스타일만 사용.
+    function showDots() {
+      try {
+        if (dotsEl || ready) return;
+        var host = document.querySelector('.ss .sub') || document.querySelector('.ss');
+        if (!host) return;
+        var st = document.createElement('style');
+        st.textContent = '@keyframes bootBlink{0%,100%{opacity:.25}50%{opacity:.95}}';
+        (document.head || document.documentElement).appendChild(st);
+        dotsEl = document.createElement('div');
+        dotsEl.id = 'bootWait';
+        dotsEl.textContent = '• • •';
+        dotsEl.style.cssText = 'font:700 22px/1 system-ui,sans-serif;color:#fff;text-align:center;' +
+          'margin-top:8px;letter-spacing:3px;animation:bootBlink 1s infinite;' +
+          'text-shadow:0 1px 3px rgba(0,0,0,.35);pointer-events:none';
+        if (host.parentNode) host.parentNode.insertBefore(dotsEl, host.nextSibling);
+      } catch (e) {}
+    }
+    function hideDots() {
+      try { if (dotsEl && dotsEl.parentNode) dotsEl.parentNode.removeChild(dotsEl); } catch (e) {}
+      dotsEl = null;
+    }
+
+    // 대기표 함수 등록 — 마지막에 누른 것 하나만 기억(연타해도 한 번만 실행)
+    for (var i = 0; i < NAMES.length; i++) {
+      (function (n) {
+        if (typeof window[n] === 'function') return;   // 이미 진짜가 있으면 절대 건드리지 않음
+        stubs[n] = function () { pending = { n: n, a: [].slice.call(arguments) }; showDots(); };
+        window[n] = stubs[n];
+      })(NAMES[i]);
+    }
+
+    // 눌렀다는 느낌은 줘야 하므로 살짝 눌린 표시(로딩 중일 때만)
+    document.addEventListener('click', function (ev) {
+      try {
+        if (ready) return;
+        var t = ev && ev.target;
+        var b = (t && t.closest) ? t.closest('.game-card,.gbk,.mbtn') : null;
+        if (!b) return;
+        b.style.transform = 'scale(.94)'; b.style.opacity = '.75';
+        setTimeout(function () { try { b.style.transform = ''; b.style.opacity = ''; } catch (e) {} }, 200);
+      } catch (e) {}
+    }, true);
+
+    // script.js(+frog-reactions.js) 실행 직후 호출 — 기억해 둔 버튼을 실행한다.
+    // document.write 로 넣은 스크립트는 파서를 멈추고 동기 실행되므로, 이 함수가 불릴 시점엔 이미 로드가 끝나 있다.
+    window.__bootFlush = function () {
+      try {
+        ready = true;
+        hideDots();
+        if (!pending) return;
+        var p = pending; pending = null;
+        var f = window[p.n];
+        if (typeof f === 'function' && f !== stubs[p.n]) f.apply(null, p.a);   // 대기표가 아직 그대로면 실행 안 함
+      } catch (e) {}
+    };
+    window.__bootState = function () { return { ready: ready, pending: pending && pending.n }; };  // 테스트 확인용
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="testBadge" style="position:fixed;left:8px;bottom:8px;z-index:99999;background:#000a;color:#7CFC7C;font:600 11px/1 'Segoe UI',sans-serif;padding:5px 8px;border-radius:6px;pointer-events:none;letter-spacing:.3px">TEST · 부팅 가드(로딩 중 탭 기억)</div>
+<div id="gc">
+  <div class="ss" id="ss">
+    <img class="sf" src="assets/frog/images/frog_4a.png" alt="ABC Frog">
+    <h1>ABC Frog</h1>
+    <div class="sub">I'm hungry~</div>
+    <div class="mode-buttons">
+      <button class="game-card card-abc" onclick="goModeSelect()">
+        <span class="card-icon"><img src="assets/bugs/images/fly_front.png" alt="catch"></span>
+        <span class="card-label">ABC</span>
+      </button>
+      <button class="game-card card-word" onclick="goWordCat()">
+        <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
+        <span class="card-label">Word</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 단어 퍼즐 카테고리 선택 (과일 / 동물 / 채소) -->
+  <div class="wc" id="wc">
+    <button class="wc-back gbk" onclick="wcBack()" aria-label="back"></button>
+    <img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="wc-title">Pick a puzzle! 🧩</h2>
+    <div class="wc-cards">
+      <button class="game-card wc-card wc-fruit" onclick="goWordPuzzle()">
+        <span class="card-icon">🍎</span>
+        <span class="card-label">Fruit</span>
+      </button>
+      <button class="game-card wc-card wc-animal" onclick="goAnimalPuzzle()">
+        <span class="card-icon"><span class="ic-mask" role="img" aria-label="animal"></span></span>
+        <span class="card-label">Animal</span>
+      </button>
+      <button class="game-card wc-card wc-dino" onclick="goDinoPuzzle()">
+        <span class="card-icon"><span class="dino-sil-ic" role="img" aria-label="dino"></span></span>
+        <span class="card-label">Dino</span>
+      </button>
+      <button class="game-card wc-card wc-locked" onclick="wcLocked(this)">
+        <span class="card-icon">🥕</span>
+        <span class="card-label">Vegetable</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked wc-insect" onclick="wcLocked(this)">
+        <span class="card-icon"><img class="insect-sil-ic" src="assets/ui/icons/insect_silhouette.svg" alt="insect"></span>
+        <span class="card-label">Insect</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+    </div>
+    <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
+  </div>
+
+  <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
+  <div class="wp" id="wp">
+    <button class="wp-back gbk gbk-dim" onclick="wpBack()" aria-label="back"></button>
+    <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
+    <div class="wp-stage" id="wpStage"></div>
+  </div>
+
+  <!-- ABC 모드 선택 화면 (파리 잡기 글자 모드 고르기) -->
+  <div class="ms" id="ms">
+    <button class="ms-back gbk" onclick="msBack()" aria-label="back"></button>
+    <img class="ms-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="ms-title">Which letter?</h2>
+    <div class="ms-buttons">
+      <button class="mbtn mbtn-abc" onclick="goMode('ABC')"><span class="mbtn-label">ABC</span></button>
+      <button class="mbtn mbtn-lower" onclick="goMode('abc')"><span class="mbtn-label">abc</span></button>
+      <button class="mbtn mbtn-mix" onclick="goMode('ABc')"><span class="mbtn-label">ABc</span></button>
+    </div>
+  </div>
+  <!-- 알파벳 게임 화면 뒤로 버튼 (기존엔 없어서 물리 뒤로 버튼밖에 못 나갔음) -->
+  <button class="gbk gbk-dim gc-back" id="gcBack" onclick="gcBack()" aria-label="back" style="z-index:150"></button>
+  <div class="sc" id="sc">🌟 0</div>
+  <div class="cb" id="cb"></div>
+  <div class="bubble" id="bbl"></div>
+
+  <div class="lilypad"><img src="assets/ui/images/lilypad.png" alt="lilypad"></div>
+  <div class="stump"><img src="assets/ui/images/bg_5-1.png" alt="stump"></div>
+
+  <div class="frog" id="frog">
+    <!-- 5단계 개구리 (각 단계: a=숨쉬기A, b=숨쉬기B, open=입벌림) -->
+    <!-- 1단계 (홀쭉) -->
+    <img id="fs1a" class="frog-img active" src="assets/frog/images/frog_1a.png" alt="frog1a" data-stage="1" data-pose="a">
+    <img id="fs1b" class="frog-img" src="assets/frog/images/frog_1b.png" alt="frog1b" data-stage="1" data-pose="b">
+    <img id="fs1o" class="frog-img" src="assets/frog/images/frog_1_open.png" alt="frog1open" data-stage="1" data-pose="open">
+    <img id="fs1y" class="frog-img" src="assets/frog/images/frog_1_yuck.png" alt="frog1yuck" data-stage="1" data-pose="yuck">
+    <!-- 2단계 (조금) -->
+    <img id="fs2a" class="frog-img" src="assets/frog/images/frog_2a.png" alt="frog2a" data-stage="2" data-pose="a">
+    <img id="fs2b" class="frog-img" src="assets/frog/images/frog_2b.png" alt="frog2b" data-stage="2" data-pose="b">
+    <img id="fs2o" class="frog-img" src="assets/frog/images/frog_2b_open.png" alt="frog2open" data-stage="2" data-pose="open">
+    <img id="fs2y" class="frog-img" src="assets/frog/images/frog_2_yuck.png" alt="frog2yuck" data-stage="2" data-pose="yuck">
+    <!-- 3단계 (통통) -->
+    <img id="fs3a" class="frog-img" src="assets/frog/images/frog_3a.png" alt="frog3a" data-stage="3" data-pose="a">
+    <img id="fs3b" class="frog-img" src="assets/frog/images/frog_3b.png" alt="frog3b" data-stage="3" data-pose="b">
+    <img id="fs3o" class="frog-img" src="assets/frog/images/frog_3_open.png" alt="frog3open" data-stage="3" data-pose="open">
+    <img id="fs3y" class="frog-img" src="assets/frog/images/frog_3_yuck.png" alt="frog3yuck" data-stage="3" data-pose="yuck">
+    <!-- 4단계 (뚜뚜) -->
+    <img id="fs4a" class="frog-img" src="assets/frog/images/frog_4a.png" alt="frog4a" data-stage="4" data-pose="a">
+    <img id="fs4b" class="frog-img" src="assets/frog/images/frog_4b.png" alt="frog4b" data-stage="4" data-pose="b">
+    <img id="fs4o" class="frog-img" src="assets/frog/images/frog_4_open.png" alt="frog4open" data-stage="4" data-pose="open">
+    <img id="fs4y" class="frog-img" src="assets/frog/images/frog_4_yuck.png" alt="frog4yuck" data-stage="4" data-pose="yuck">
+    <!-- 5단계 (만삭) -->
+    <img id="fs5a" class="frog-img" src="assets/frog/images/frog_5a.png" alt="frog5a" data-stage="5" data-pose="a">
+    <img id="fs5b" class="frog-img" src="assets/frog/images/frog_5b.png" alt="frog5b" data-stage="5" data-pose="b">
+    <img id="fs5o" class="frog-img" src="assets/frog/images/frog_5_open.png" alt="frog5open" data-stage="5" data-pose="open">
+    <img id="fs5y" class="frog-img" src="assets/frog/images/frog_5_yuck.png" alt="frog5yuck" data-stage="5" data-pose="yuck">
+  </div>
+
+  <div class="tongue" id="tng"></div>
+  <div id="fc"></div>
+  <div class="cbar" id="cb2"></div>
+</div>
+
+<div id="rotate-warn">
+  <div class="rw-icon">📱</div>
+  <div class="rw-t1">Turn your phone upright!</div>
+  <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
+</div>
+
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
+<script>document.write('<scr' + 'ipt src="script.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). test/에서 검증 후 이식, script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드. -->
+<script>document.write('<scr' + 'ipt src="frog-reactions.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- ★ 부팅 가드 마무리 — 위 두 스크립트가 동기 로드라 여기 오면 진짜 함수가 이미 준비됐다.
+     로딩 중에 눌러 둔 버튼이 있으면 지금 한 번 실행한다(없으면 아무 일도 안 함). -->
+<script>try{ if(window.__bootFlush) window.__bootFlush(); }catch(e){}</script>
+<script>
+// 캐시 도우미(서비스워커) 사용 안 함 — 앱은 항상 서버 최신을 직접 로드(푸시 즉시 반영).
+// 과거에 등록된 서비스워커/캐시가 있으면 깨끗이 정리(자가 복구). 새로 등록은 하지 않음.
+try {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(reg){ try { reg.unregister(); } catch (e) {} });
+    }).catch(function(){});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function(keys){
+      keys.forEach(function(k){ try { caches.delete(k); } catch (e) {} });
+    }).catch(function(){});
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
