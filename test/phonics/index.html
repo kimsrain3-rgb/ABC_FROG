@@ -68,9 +68,12 @@ window.onerror=function(){return true};
 
 /* ── 데이터: 단어 추가는 여기에만 ─────────────────────────── */
 var WORDS=[
-  // videos: 완성 영상 후보(동물별) — 파일명 = 단어_동물.mp4 (예: sat_dog.mp4), 있는 것 중 랜덤 재생
-  {word:'sat', traps:[], videos:['dog','cat','raccoon']}
+  // videos: 완성 영상(동물별) — 파일명 = 단어_동물.mp4 (예: sat_dog.mp4). 배열 순서대로 재생.
+  //         없는 영상은 그냥 건너뛴다(에러 안 남) → 에셋이 아직이어도 안전.
+  {word:'sat', traps:[], videos:['dog','cat','raccoon']},
+  {word:'pat', traps:[], videos:['cat','dog','rabbit']}
 ];
+// 마지막 단어까지 끝나면 🔄 버튼, 그 전까지는 다음 단어로 자동 진행(동물 퍼즐 animal.html 과 같은 방식)
 var CUR=0;
 
 /* ── 소리: assets/phonics/sounds/ 에 파일 있으면 재생, 없으면 임시 삑소리 ──
@@ -84,13 +87,19 @@ var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) �
 var SND_VER='?v='+Date.now();
 /* ── 영상: assets/phonics/videos/word_sat.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../../assets/phonics/videos/';
-/* 동물별 영상 화면 위치·크기 — 동물마다 프레임이 달라 따로 맞춤(파일명 기준).
-   pos=object-position(세로 크롭 위치; 기본 '50% 50%', 값 클수록 동물이 화면 위로),
-   scale=확대배율(기본 1). 여기 값만 바꾸면 동물별 위치·크기 조정됨 */
+/* 영상 화면 위치·크기 — 영상마다 인물·동물이 잡힌 크기가 달라 따로 맞춤.
+   pos=object-position(세로 크롭 위치; 기본 '50% 50%', 값 클수록 피사체가 화면 위로),
+   scale=확대배율(기본 1).
+   ★ 키는 두 가지를 쓸 수 있다: '단어_동물'(그 영상 전용) 또는 '동물'(그 동물 공통, 예비값).
+     같은 cat 이라도 sat_cat(전신)과 pat_cat(얼굴 클로즈업)은 프레임이 달라서 전용 키가 필요하다. */
 var VIDFX={
   dog:    {pos:'50% 90%'},             // 강아지: 위로 40%p (50→90; 80%에서 추가로 위로 10%p)
   cat:    {pos:'50% 45%'},             // 고양이: 아래로 5%p (50→45)
-  raccoon:{pos:'50% 50%', scale:1.10}  // 너구리: 위치 그대로 + 10% 확대
+  raccoon:{pos:'50% 50%', scale:1.10}, // 너구리: 위치 그대로 + 10% 확대
+  // pat 3종 — 아이가 안고 있는 그림이라 sat(동물만)과 프레임이 다름. 실제 화면 보고 맞춘 값.
+  pat_cat:   {pos:'50% 50%'},
+  pat_dog:   {pos:'50% 50%'},
+  pat_rabbit:{pos:'50% 50%'}
 };
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
@@ -151,10 +160,19 @@ var slots=[],tiles=[],locked=false;
 
 function shuffle(arr){ for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t; } return arr; }
 
+/* ★ 빌드 세대번호 — 단어가 자동으로 넘어가면서 생긴 문제 방지.
+   앞 단어의 예약된 소리·자막(setTimeout 으로 걸어둔 것들)이 다음 단어 화면에서 뒤늦게 터지는 걸 막는다.
+   화면을 새로 지을 때마다 번호를 올리고, 예약된 일은 자기 번호가 아직 유효할 때만 실행한다.
+   (사람이 🔄 를 눌러야만 넘어가던 때는 이런 겹침이 없었다) */
+var BUILD_ID=0;
+
 function build(){
+  BUILD_ID++;
   var W=WORDS[CUR]; locked=false;
   slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
   bigWord.style.display='none'; replayBtn.style.display='none';
+  bigWord.style.visibility='';                    // 앞 단어의 글자별 강조가 켜진 채 넘어왔을 때 복구
+  satEmph.style.display='none'; satEmph.innerHTML='';
   videoBox.style.display='none'; videoBox.innerHTML=''; // 다시 하기 시 영상 제거(회색 플레이스홀더 없이 → 블랭크 방지)
   slots=[]; tiles=[];
   W.word.split('').forEach(function(ch){
@@ -289,8 +307,15 @@ function finish(){
     function onSit(){                            // ③-3 각 동물 앉는 순간: sat 다시 반짝 + 발음 (세 번 반복)
       showBigWord(sp); sayWord();
     }
-    function onAllDone(){                        // 세 동물 다 앉으면 다시 하기 버튼
-      replayBtn.style.display='block';
+    function onAllDone(){
+      // 영상 3편이 다 끝남 → 다음 단어가 있으면 자동으로 이어서, 마지막 단어면 🔄 버튼.
+      // (동물 퍼즐 animal.html 과 같은 방식 — 아이가 멈추지 않고 계속 놀 수 있게)
+      if(CUR < WORDS.length-1){
+        CUR++;
+        setTimeout(build, 1200);                 // 마지막 발음 여운 듣고 다음 단어로
+      }else{
+        replayBtn.style.display='block';         // 마지막 단어까지 끝 → 처음부터 다시 하기
+      }
     }
   }
   function showBigWord(sp){                      // 큰 단어 표시 + 반짝임(wordpop) 재시작 — 애니메이션 걸린 span 기준 리셋
@@ -314,12 +339,15 @@ function finish(){
    없는 영상은 앉음 취급 없이 건너뜀. 전부 없으면 바로 onAllDone */
 function playVideo(W, onSit, onAllDone){
   var list=W.videos||[];
+  var myBuild=BUILD_ID;                            // 이 재생이 속한 화면 세대
+  function stale(){ return myBuild!==BUILD_ID; }   // 그 사이 다음 단어로 넘어갔으면 true
   if(!list.length){ if(onAllDone)onAllDone(); return; }
   var GAP=1600;                                  // 앉은 뒤 sat 발음 들려주고 다음 동물 입장까지 쉼
   /* 둘째·셋째 동물: 영상이 재생 시작된 뒤 그 위에서 스·애·트 강조. 아래 sat를 글자별로 나눠(오버레이)
      소리에 맞춰 한 글자씩 확대(노래방 자막식). 소리(phonemeSound)·간격(850)·볼륨은 완성연출과 동일.
      완성연출용 통글자 sat(#bigWord span)은 그대로 두고 잠깐만 숨겨 겹침 방지 */
   function phonemeIntro(){
+    if(stale()) return;                            // 이미 다음 단어로 넘어갔으면 시작하지 않음
     var real=bigWord.querySelector('span');
     satEmph.style.fontSize=getComputedStyle(real).fontSize; // 진짜 sat와 같은 크기·자리
     satEmph.innerHTML=''; var spans=[];
@@ -327,6 +355,7 @@ function playVideo(W, onSit, onAllDone){
     satEmph.style.display='flex'; bigWord.style.visibility='hidden';
     var j=0;
     (function step(){
+      if(stale()){ satEmph.style.display='none'; bigWord.style.visibility=''; return; }  // 넘어갔으면 즉시 정리
       if(j<W.word.length){
         var el=spans[j];
         el.style.animation='none'; void el.offsetWidth; el.style.animation='pulse .45s ease'; // 그 글자만 확대
@@ -342,7 +371,7 @@ function playVideo(W, onSit, onAllDone){
       v.src=VID_BASE+W.word+'_'+list[k]+'.mp4';   // 예: sat_dog.mp4
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
-      var fx=VIDFX[list[k]];                       // 동물별 화면 위치·크기 적용(파일명 기준)
+      var fx=VIDFX[W.word+'_'+list[k]] || VIDFX[list[k]];   // 그 영상 전용 값 우선, 없으면 동물 공통값
       if(fx){ if(fx.pos) v.style.objectPosition=fx.pos; if(fx.scale) v.style.transform='scale('+fx.scale+')'; }
       var shown=false;                             // animal.html 방식: 첫 프레임 실제로 나오면 페이드인(회색 블랭크 안 스침)
       function reveal(){ if(shown)return; shown=true; v.style.opacity='1'; }
@@ -351,12 +380,14 @@ function playVideo(W, onSit, onAllDone){
       setTimeout(reveal,1500);                     // 안전장치: 못 잡아도 1.5초 뒤 표시
       function afterSit(){                         // 이 동물이 앉음: sat 반짝+발음 → 잠깐 뒤 다음 동물
         if(done) return; done=true;
+        if(stale()) return;                        // 그 사이 다음 단어로 넘어갔으면 아무것도 하지 않음
         if(onSit)onSit();
         if(isLast){ if(onAllDone)onAllDone(); }
         else setTimeout(function(){ playAt(k+1); }, GAP);
       }
-      v.addEventListener('error',function(){ if(done)return; done=true; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
+      v.addEventListener('error',function(){ if(done)return; done=true; if(stale())return; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
       v.addEventListener('loadeddata',function(){
+        if(stale()) return;                        // 넘어간 뒤 늦게 도착한 영상은 붙이지 않음
         videoBox.textContent=''; videoBox.appendChild(v);  // 앞 영상 치우고 새 영상 넣기
         var p=v.play(); if(p&&p.catch) p.catch(function(){});
         if(k>=1) setTimeout(phonemeIntro,800);     // 영상 뜬 뒤 한 박자(800ms) 쉬고 스·애·트(둘째·셋째만) — 동물 잠깐 보고 여유
@@ -369,8 +400,9 @@ function playVideo(W, onSit, onAllDone){
     }catch(e){ if(!done){ done=true; playAt(k+1); } }
   }
   function playAt(k){
+    if(stale()) return;                                     // 다음 단어로 넘어갔으면 재생 중단
     if(k>=list.length){ if(onAllDone)onAllDone(); return; } // 마지막까지 끝 → 종료
-    startVideo(k);                                          // 영상 먼저 (강아지=강조X, 고양이·너구리는 영상 뜬 뒤 강조)
+    startVideo(k);                                          // 영상 먼저 (첫 영상=강조X, 둘째·셋째는 영상 뜬 뒤 강조)
   }
   playAt(0);
 }
@@ -382,7 +414,8 @@ function fitWord(sp){
     sp.style.fontSize=(parseFloat(getComputedStyle(sp).fontSize)*0.92)+'px';
   }
 }
-replayBtn.addEventListener('click',build);
+// 🔄 다시 하기 = 첫 단어(sat)부터 다시 (마지막 단어까지 끝낸 상태에서만 이 버튼이 보인다)
+replayBtn.addEventListener('click',function(){ CUR=0; build(); });
 build();
 </script>
 </body>
