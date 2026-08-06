@@ -110,6 +110,9 @@
   align-items:center;padding:16px;border-radius:22px;position:relative}
 .mode-buttons .game-card .card-icon{width:34px;height:34px;font-size:26px;line-height:1;flex:0 0 auto}
 .mode-buttons .game-card .card-icon img{width:100%;height:100%;object-fit:contain}
+/* 인라인 SVG 아이콘(Phonics). style.css 의 `.game-card .card-icon svg{width:66px;height:66px}` 는
+   시작화면 카드(아이콘 칸 34px)엔 너무 커서 삐져나온다 → 칸에 맞춰 덮어씀. */
+.mode-buttons .game-card .card-icon svg{width:100%;height:100%;display:block}
 .mode-buttons .game-card .card-label{font-size:28px;letter-spacing:0;line-height:1;white-space:nowrap}
 .mode-buttons .wc-locked{padding-right:36px}
 /* 잠금 해제된 Phonics 카드 색 — ABC(초록)·Word(주황)와 겹치지 않는 보라/파랑 계열.
@@ -154,9 +157,20 @@
         <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
         <span class="card-label">Word</span>
       </button>
-      <!-- 잠금 해제됨(테스트): wc-locked·🔒 배지 제거 → 🗣️ 가 제 색으로 나오고 card-phonics 색이 적용된다 -->
+      <!-- 잠금 해제됨(테스트): wc-locked·🔒 배지 제거 → 아이콘이 제 색으로 나오고 card-phonics 색이 적용된다.
+           아이콘: 🗣️ 이모지 → 인라인 SVG(입 벌린 옆얼굴 + 소리 물결 2줄).
+           ⚠️ 눈동자 #7F5BC2 = 카드 그라데이션(#9575CD→#5E35B1)의 '눈 높이' 지점 색 실측값.
+              카드 배경이 단색이 아니라 그라데이션이므로, 카드 색이나 아이콘 위치를 바꾸면 이 값도 다시 재야 한다. -->
       <button class="game-card wc-card card-phonics" onclick="goPhonics()">
-        <span class="card-icon">🗣️</span>
+        <span class="card-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">
+            <path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/>
+            <circle cx="32" cy="30" r="10" fill="#fff"/>
+            <circle cx="32" cy="28" r="4" fill="#7F5BC2"/>
+            <path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
         <span class="card-label">Phonics</span>
       </button>
     </div>
