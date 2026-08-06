@@ -14,11 +14,11 @@
 - 시리즈 전체 기획: 🎮 게임 아이디어 (page_id: 3097112a-ae24-819b-b5b5-c3ce269888f0)
 
 ## 현재 상태 (요약)
-- ✅ **프로덕션 라이브** — versionCode 9 / 1.0.9 (targetSdk 36) · 실유저 300명+
+- ✅ **프로덕션 라이브** — versionCode 10 / 1.1.0 (targetSdk 36) · 실유저 300명+ · 2026-08-06 기준 **프로덕션 100% 출시 완료**
 - ✅ 게임: 파리잡기(ABC/abc/ABc) + 단어퍼즐 3종(과일·동물·공룡) + 엔딩 영상·음성
 - ✅ 연출: 개구리 반응 클립 + 글자 반짝 + 온보딩 · 시작화면 퍼즐 선택 메뉴 개선
-- 🩺 **전역 에러 추적 가동** — `error-tracker.js`가 GA4 `game_error` 전송(script/video/timeout). 일부 기기 "시작 안 됨" 원인 수집용. **vc10(1.1.0) 빌드·제출 대기**
-- ⬅️ **물리 뒤로가기 수정 = 웹 반영 완료 + 앱은 vc10 대기** — 예측형 뒤로가기(targetSdk 35+ 기본 ON)가 `onKeyDown`을 안 불러 우리 처리가 통째 무시되고 있었음. `OnBackInvokedCallback` 등록으로 해결(코드 완료, 미제출). **웹만으론 효과 없음 — 앱 업데이트가 나가야 완성.** 자세한 원인은 CHANGELOG 2026-07-30 참고
+- 🩺 **전역 에러 추적 가동** — `error-tracker.js`가 GA4 `game_error` 전송(script/video/timeout). ※ **웹 파일이라 앱 업데이트와 무관하게 2026-07-28부터 이미 동작 중**이었음(vc10 버전 이름만 "에러 추적"이었던 것)
+- ✅ **물리 뒤로가기 수정 완료 — vc10 출시로 실유저 반영**(2026-08-06) — 예측형 뒤로가기(targetSdk 35+ 기본 ON)가 `onKeyDown`을 안 불러 우리 처리가 통째 무시되고 있었음. `OnBackInvokedCallback` 등록으로 해결. **vc10이 앱에 실제로 새로 넣은 변경은 이것**(에러추적은 웹 쪽). 자세한 원인은 CHANGELOG 2026-07-30 참고
 - 🖼️ **이미지 축소 완료** — 개구리 2953²→768²(시작화면용 4a·4b만 1024²)·사과·연잎·배경압축. 첫 화면 9.21→3.20MB, 디코딩 RAM 700→54MB (저사양 기기 멈춤 대응). 원본=`assets/_original/`
 - 🔤 **파닉스 satpin 음가 6종 확보 완료**(s·a·t·p·i·n, 2026-08-04 커밋 `4cee2a4`). 아직 `test/phonics`에서만 사용 — 라이브 미노출. 새 단어를 만들려면 단어별 **통발음(`word_*.mp3`)+보상 영상**이 추가로 필요
 - ✅ **"로딩 중 버튼 먹통" 수정 라이브 반영 완료**(2026-08-05, 커밋 `af4261a`, 백업태그 `backup-before-bootguard-20260805`) — 시작화면 버튼은 HTML만으로 즉시 눌리는데 처리 함수(인라인 onclick 11개)는 body 끝 `script.js` 도착 후에야 생김 → 느린 네트워크(멕시코·필리핀·네팔)에서 `ReferenceError`. `window.onerror`가 삼켜서 **조용히 무반응**이었음. `index.html` head에 '대기표' 함수를 두고 눌린 걸 기억했다가 `__bootFlush()`로 자동 실행(83줄 순수 추가). **효과 확인 = 며칠 뒤 GA4 `ReferenceError` 건수 감소 여부**(`init_timeout`은 로딩을 안 건드렸으므로 남는 게 정상). 자세한 건 CHANGELOG 2026-08-05
@@ -62,8 +62,9 @@ ABC_FROG/
 
 ## Google Play 배포 정보
 - **패키지명**: com.ggomzipapa.abcfrog
-- **현재 버전**: versionCode 9 / 1.0.9 (프로덕션 라이브, targetSdk 36, 2026-07-27 심사 통과)
-- **다음 버전**: versionCode 10 / 1.1.0 (전역 에러 추적 — build.gradle 반영 완료, **AAB 빌드·제출 대기**)
+- **현재 버전**: versionCode 10 / 1.1.0 (프로덕션 100% 출시, targetSdk 36, 2026-08-06 확인) — 앱 쪽 변경 = 물리 뒤로가기(`OnBackInvokedCallback`) 수정
+- **이전 버전**: versionCode 9 / 1.0.9 (2026-07-27 심사 통과)
+- **다음 버전**: versionCode 11 미정 — 묶어 처리할 후보는 아래 TODO의 `onReceivedError` 오프라인 안내화면 · `setTextZoom(100)`
 - **서명키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
 - **서명키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
 - **서명키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
