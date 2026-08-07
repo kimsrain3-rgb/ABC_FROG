@@ -71,7 +71,7 @@ var WORDS=[
   // videos: 완성 영상(동물별) — 파일명 = 단어_동물.mp4 (예: sat_dog.mp4). 배열 순서대로 재생.
   //         없는 영상은 그냥 건너뛴다(에러 안 남) → 에셋이 아직이어도 안전.
   {word:'sat', traps:[], videos:['dog','cat','raccoon']},
-  {word:'pat', traps:[], videos:['cat','dog','rabbit']}
+  {word:'pat', traps:[], videos:['dog','rabbit','mother_kid']}
 ];
 // 마지막 단어까지 끝나면 🔄 버튼, 그 전까지는 다음 단어로 자동 진행(동물 퍼즐 animal.html 과 같은 방식)
 var CUR=0;
@@ -87,19 +87,25 @@ var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) �
 var SND_VER='?v='+Date.now();
 /* ── 영상: assets/phonics/videos/word_sat.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../../assets/phonics/videos/';
+/* ── 영상 캐시 꼬리표 ──
+   영상을 "같은 파일명으로 교체"하면 폰이 옛 영상을 계속 쓴다(CLAUDE.md 배포/캐시 규칙).
+   소리(SND_VER)처럼 매번 새로 받게 하면 편당 1.7MB라 낭비 → 날짜 상수로 둔다.
+   ★ 영상 파일을 갈아끼운 날엔 이 날짜를 반드시 바꿀 것. 그날 한 번만 새로 받고 이후엔 정상 캐시. */
+var VID_VER='?v=20260807';
 /* 영상 화면 위치·크기 — 영상마다 인물·동물이 잡힌 크기가 달라 따로 맞춤.
    pos=object-position(세로 크롭 위치; 기본 '50% 50%', 값 클수록 피사체가 화면 위로),
    scale=확대배율(기본 1).
    ★ 키는 두 가지를 쓸 수 있다: '단어_동물'(그 영상 전용) 또는 '동물'(그 동물 공통, 예비값).
-     같은 cat 이라도 sat_cat(전신)과 pat_cat(얼굴 클로즈업)은 프레임이 달라서 전용 키가 필요하다. */
+     같은 dog 이라도 sat_dog(동물만)과 pat_dog(아이가 안고 있음)은 프레임이 달라서 전용 키가 필요하다. */
 var VIDFX={
   dog:    {pos:'50% 90%'},             // 강아지: 위로 40%p (50→90; 80%에서 추가로 위로 10%p)
   cat:    {pos:'50% 45%'},             // 고양이: 아래로 5%p (50→45)
   raccoon:{pos:'50% 50%', scale:1.10}, // 너구리: 위치 그대로 + 10% 확대
   // pat 3종 — 아이가 안고 있는 그림이라 sat(동물만)과 프레임이 다름. 실제 화면 보고 맞춘 값.
-  pat_cat:   {pos:'50% 50%'},
-  pat_dog:   {pos:'50% 50%'},
-  pat_rabbit:{pos:'50% 50%'}
+  pat_dog:       {pos:'50% 50%'},
+  pat_rabbit:    {pos:'50% 50%'},
+  pat_mother_kid:{pos:'50% 33%'}       // 엄마가 아이 머리를 쓰다듬음(아이는 개구리 인형을 안고 있음).
+                                       // 50%면 엄마 얼굴이 위로 잘림 → 33%로 내려 엄마얼굴·쓰다듬는 손·아이·개구리를 다 담음
 };
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
@@ -368,7 +374,7 @@ function playVideo(W, onSit, onAllDone){
     var isLast=(k===list.length-1),done=false;
     try{
       var v=document.createElement('video');
-      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4';   // 예: sat_dog.mp4
+      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4'+VID_VER;   // 예: sat_dog.mp4?v=20260807
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
       var fx=VIDFX[W.word+'_'+list[k]] || VIDFX[list[k]];   // 그 영상 전용 값 우선, 없으면 동물 공통값
