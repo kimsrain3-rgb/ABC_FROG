@@ -102,7 +102,8 @@ var WORDS=[
   // videos: 완성 영상(동물별) — 파일명 = 단어_동물.mp4 (예: sat_dog.mp4). 배열 순서대로 재생.
   //         없는 영상은 그냥 건너뛴다(에러 안 남) → 에셋이 아직이어도 안전.
   {word:'sat', traps:[], videos:['dog','cat','raccoon']},
-  {word:'pat', traps:[], videos:['dog','rabbit','mother_kid']}
+  {word:'pat', traps:[], videos:['dog','rabbit','mother_kid']},
+  {word:'nap', traps:[], videos:['owl','sloth','baby']}       // pat 과 같은 짜임 — 동물 둘 먼저, 사람(아기)으로 마무리
 ];
 // 마지막 단어까지 끝나면 🔄 버튼, 그 전까지는 다음 단어로 자동 진행(동물 퍼즐 animal.html 과 같은 방식)
 var CUR=0;
@@ -135,8 +136,14 @@ var VIDFX={
   // pat 3종 — 아이가 안고 있는 그림이라 sat(동물만)과 프레임이 다름. 실제 화면 보고 맞춘 값.
   pat_dog:       {pos:'50% 50%'},
   pat_rabbit:    {pos:'50% 50%'},
-  pat_mother_kid:{pos:'50% 33%'}       // 엄마가 아이 머리를 쓰다듬음(아이는 개구리 인형을 안고 있음).
+  pat_mother_kid:{pos:'50% 33%'},      // 엄마가 아이 머리를 쓰다듬음(아이는 개구리 인형을 안고 있음).
                                        // 50%면 엄마 얼굴이 위로 잘림 → 33%로 내려 엄마얼굴·쓰다듬는 손·아이·개구리를 다 담음
+  // nap 3종 — 처음부터 자고 있고 머리 위 ZZZ 가 떠다니는 연출. ZZZ 가 "자는 중" 신호라 안 잘리는 게 중요하다.
+  // ZZZ 는 화면 높이 위쪽 3~33% 를 떠다니는데 기본 50% 로는 영상칸(높이의 58%만 보임)에 안 들어와 잘렸다 → 20% 로 내림.
+  // ※ 늘보는 2.5~3.5초에 ZZZ 가 잠깐 사라진다(원본 연출) — 그 시점만 보고 "잘렸다"고 오판하지 말 것.
+  nap_owl:   {pos:'50% 20%'},
+  nap_sloth: {pos:'50% 20%'},
+  nap_baby:  {pos:'50% 20%'}
 };
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
