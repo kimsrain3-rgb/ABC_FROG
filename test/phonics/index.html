@@ -256,15 +256,45 @@ function attachDrag(tile){
     el.addEventListener('pointercancel',up);
   });
 }
+/* ── 스냅 허용 반경 ─────────────────────────────────────────────
+   3~5세는 소근육이 덜 발달해 빈칸에 정확히 조준하지 못한다. 살짝 빗나갔다고 튕겨나가면 아이가 지쳐 그만둔다.
+   → 기존 퍼즐 3종과 같은 '중심 거리' 방식으로 통일:
+       과일  = min(판*0.34, 100)px   (script.js 주석: "후하게 — 정답 근처에 대충 놔도 착 붙게(키즈 친화)")
+       동물·공룡 = 조각 짧은변 * 0.55
+   기본값 = 조각 크기의 절반.
+   ★ 상한 = '옆 빈칸의 가까운 모서리까지의 거리' — 여기 닿으면 옆칸에 제대로 놓은 조각을 뺏어오게 된다.
+     (칸간격 × 0.6 같은 어림수는 쓰지 않는다. 슬롯이 간격의 80% 보다 넓어지면 그 어림수가 옆칸을 침범한다.
+      실제로 412px 화면이 그런 경우 — 슬롯/간격 = 0.87.)
+   크기는 CSS(vw)라 화면마다 달라지므로 전부 실측한다.
+   실측값: 360px폰 → 반경 47 (옆칸 모서리 49) · 412px폰 → 반경 54 (옆칸 모서리 56) */
+function snapRadius(tr){
+  var r=Math.min(tr.width,tr.height)*0.5;
+  if(slots.length>1){
+    var a=slots[0].el.getBoundingClientRect(), b=slots[1].el.getBoundingClientRect(),
+        pitch=Math.hypot((b.left+b.width/2)-(a.left+a.width/2),(b.top+b.height/2)-(a.top+a.height/2)),
+        edge=pitch-Math.min(a.width,a.height)/2-2;  // 옆칸 모서리 직전(2px 여유)
+    if(edge>0) r=Math.min(r,edge);
+  }
+  return r;
+}
 function drop(tile){
   var tr=tile.el.getBoundingClientRect(),
-      cx=tr.left+tr.width/2, cy=tr.top+tr.height/2, hit=null;
-  slots.forEach(function(s){
-    if(s.filled) return;
-    var r=s.el.getBoundingClientRect(),pad=r.width*0.35;
-    if(cx>r.left-pad&&cx<r.right+pad&&cy>r.top-pad&&cy<r.bottom+pad) hit=s;
-  });
-  if(hit&&hit.letter===tile.letter){            // 정답: 착 붙기
+      cx=tr.left+tr.width/2, cy=tr.top+tr.height/2,
+      SNAP=snapRadius(tr);
+  function distTo(s){ var r=s.el.getBoundingClientRect();
+    return Math.hypot(cx-(r.left+r.width/2), cy-(r.top+r.height/2)); }
+  // 받아주는 범위 = 빈칸 '안' 또는 중심에서 SNAP 이내.
+  // 칸 안을 항상 포함시키는 이유: 원만 쓰면 네모 빈칸의 네 모서리가 원 밖으로 삐져나가
+  // "칸 안에 넣었는데 튕기는" 자리가 남는다(모서리는 중심에서 54px, 반경은 47px).
+  function accepts(s){ var r=s.el.getBoundingClientRect();
+    return distTo(s)<SNAP || (cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom); }
+  // ① 이 조각이 들어갈 '자기 빈칸'만 본다 — 옆칸과 경쟁시키지 않는다.
+  //    (예전엔 겹친 허용범위에서 '더 오른쪽 칸'이 이겨서, 정답 칸 안에 넣어도 오른쪽 끝이면 튕겼다)
+  //    같은 글자 칸이 둘 이상인 단어(pip 등) 대비 — 그중 가까운 쪽으로.
+  var hit=null,hitD=Infinity;
+  slots.forEach(function(s){ if(s.filled||s.letter!==tile.letter||!accepts(s)) return;
+    var d=distTo(s); if(d<hitD){ hitD=d; hit=s; } });
+  if(hit){                                      // 정답: 착 붙기
     var sr=hit.el.getBoundingClientRect(),pr=trayEl.getBoundingClientRect();
     tile.el.classList.add('placed');
     tile.el.style.left=(sr.left-pr.left+(sr.width-tile.el.offsetWidth)/2)+'px';
@@ -278,7 +308,12 @@ function drop(tile){
     },200);
     if(slots.every(function(s){return s.filled;})) setTimeout(finish,2000); // 글자이름 끝나고 음가 시작까지 약 2초 쉼
   }else{                                        // 오답/빈 곳: 제자리로
-    if(hit) beep(196,0.25);
+    // ② 다른 글자 빈칸에 갖다 놨으면 삑 — "여긴 아니야" 신호는 그대로 유지한다.
+    //    (빈 바닥에 그냥 놓은 경우엔 소리 없음 — 예전과 같음)
+    var near=null,nd=Infinity;
+    slots.forEach(function(s){ if(s.filled||!accepts(s)) return;
+      var d=distTo(s); if(d<nd){ nd=d; near=s; } });
+    if(near&&near.letter!==tile.letter) beep(196,0.25);
     tile.el.classList.add('back');
     place(tile);
   }
