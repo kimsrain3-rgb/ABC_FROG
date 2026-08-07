@@ -47,6 +47,24 @@
 
   #replay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;border:4px solid #fff;border-radius:40px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:6vw;color:#fff;background:linear-gradient(180deg,#81C784,#4CAF50);box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);cursor:pointer}
   #tag{position:absolute;top:6px;left:10px;z-index:50;font-size:12px;color:#7a8a70;opacity:.7}
+
+  /* ══ 테스트 전용 개발 메뉴 ══ 아이 화면엔 안 나온다(주소가 /test/ 아래일 때만 표시).
+     아이 손이 잘 안 가는 오른쪽 위 구석에, 게임 요소와 안 겹치게 작게. */
+  #dev{display:none;position:absolute;top:4px;right:6px;z-index:200;gap:6px}
+  #dev button{width:34px;height:34px;padding:0;border:2px solid rgba(255,255,255,.85);border-radius:9px;
+    background:rgba(60,80,55,.55);color:#fff;font-family:inherit;font-size:16px;line-height:1;cursor:pointer}
+  #dev button:active{background:rgba(60,80,55,.85)}
+  #devPanel{display:none;position:absolute;inset:0;z-index:210;background:rgba(30,40,28,.92);
+    flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
+  #devPanel h3{margin:0;color:#cde6c3;font-size:15px;font-weight:700;letter-spacing:.5px}
+  #devWords{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:100%}
+  #devWords button{min-width:82px;padding:12px 16px;border:3px solid #81C784;border-radius:14px;
+    background:#fff;color:#33691E;font-family:inherit;font-weight:700;font-size:22px;cursor:pointer}
+  #devWords button.now{background:#FFEB3B;border-color:#F57F17}   /* 지금 보고 있는 단어 */
+  #devWords button.noassets{opacity:.45}                          /* 영상/통발음이 아직 없는 단어 */
+  #devClose{margin-top:4px;padding:8px 22px;border:2px solid #cde6c3;border-radius:20px;
+    background:transparent;color:#cde6c3;font-family:inherit;font-size:14px;cursor:pointer}
+  #devNote{color:#8fa886;font-size:11px;text-align:center;line-height:1.5}
 </style>
 </head>
 <body>
@@ -61,6 +79,19 @@
   <div id="satEmph"></div>
   <div id="hand">&#128070;</div>
   <button id="replay" aria-label="다시 하기">&#128260;</button>
+
+  <!-- ══ 테스트 전용 개발 메뉴 ══ 원하는 단어만 골라 보고, 지루한 구간은 넘기기 위한 것.
+       라이브에는 절대 안 나간다 — 주소가 /test/ 아래일 때만 켜진다(아래 DEVMENU). -->
+  <div id="dev">
+    <button id="devList" aria-label="단어 목록">&#9776;</button>
+    <button id="devSkip" aria-label="넘기기">&#187;</button>
+  </div>
+  <div id="devPanel">
+    <h3>단어 고르기 (테스트 전용)</h3>
+    <div id="devWords"></div>
+    <button id="devClose">닫기</button>
+    <div id="devNote">≫ 는 넘기기 — 조각 맞추는 중이면 바로 완성, 영상 중이면 다음 영상</div>
+  </div>
 </div>
 <script>
 'use strict';
@@ -131,7 +162,7 @@ function loadSound(base,key,freq){ // base+key+'.mp3' 있으면 재생, 없으�
     try{ a=new Audio(base+key+'.mp3'+SND_VER); a.preload='auto';
       a.addEventListener('error',function(){bad=true;},{once:true});
     }catch(e){ bad=true; }
-    sndCache[id]={play:function(){ if(SILENT) return;
+    sndCache[id]={au:a,play:function(){ if(SILENT) return;   // au = 개발 메뉴에서 점프할 때 끊으려고 붙잡아 둠
       if(a&&!bad){ try{ a.currentTime=0; var p=a.play(); if(p&&p.catch) p.catch(function(){beep(freq);}); return; }catch(e){} }
       beep(freq); }};
   }
@@ -163,6 +194,10 @@ var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tra
     videoBox=document.getElementById('videoBox'),replayBtn=document.getElementById('replay'),
     hand=document.getElementById('hand'),satEmph=document.getElementById('satEmph');
 var slots=[],tiles=[],locked=false;
+/* 아래 둘은 테스트 전용 개발 메뉴(파일 맨 아래)가 쓰는 손잡이 — 게임 흐름 자체는 안 건드린다.
+   _devSkipVideo: 지금 재생 중인 영상을 "끝난 걸로 치는" 함수(영상 재생 중에만 값이 있음)
+   _lastWordAudio: 마지막으로 튼 단어 통발음 — 점프할 때 끊으려고 */
+var _devSkipVideo=null,_lastWordAudio=null;
 
 function shuffle(arr){ for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t; } return arr; }
 
@@ -174,6 +209,7 @@ var BUILD_ID=0;
 
 function build(){
   BUILD_ID++;
+  _devSkipVideo=null;                             // (개발 메뉴) 새 화면 = 넘길 영상 없음
   var W=WORDS[CUR]; locked=false;
   slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
   bigWord.style.display='none'; replayBtn.style.display='none';
@@ -369,6 +405,7 @@ function finish(){
     var arped=false;
     function arp(){ if(arped) return; arped=true; W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
     try{ var a=new Audio(SND_BASE+'word_'+W.word+'.mp3'+SND_VER);
+      _lastWordAudio=a;                            // 개발 메뉴에서 점프할 때 끊으려고 붙잡아 둠
       a.addEventListener('error',function(){ arp(); },{once:true});
       var p=a.play(); if(p&&p.catch) p.catch(function(){ arp(); });
     }catch(e){ arp(); }
@@ -421,11 +458,15 @@ function playVideo(W, onSit, onAllDone){
       setTimeout(reveal,1500);                     // 안전장치: 못 잡아도 1.5초 뒤 표시
       function afterSit(){                         // 이 동물이 앉음: sat 반짝+발음 → 잠깐 뒤 다음 동물
         if(done) return; done=true;
+        _devSkipVideo=null;                        // (개발 메뉴) 이 영상은 끝 — 넘기기 대상에서 뺀다
         if(stale()) return;                        // 그 사이 다음 단어로 넘어갔으면 아무것도 하지 않음
         if(onSit)onSit();
         if(isLast){ if(onAllDone)onAllDone(); }
         else setTimeout(function(){ playAt(k+1); }, GAP);
       }
+      /* (개발 메뉴 전용) ≫ 넘기기 = "지금 영상이 끝난 것으로 친다".
+         정상 종료와 같은 길(afterSit)로 보내므로 sat 반짝·발음·다음 영상 흐름이 그대로 이어진다. */
+      _devSkipVideo=function(){ try{ v.pause(); }catch(e){} afterSit(); };
       v.addEventListener('error',function(){ if(done)return; done=true; if(stale())return; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
       v.addEventListener('loadeddata',function(){
         if(stale()) return;                        // 넘어간 뒤 늦게 도착한 영상은 붙이지 않음
@@ -457,6 +498,69 @@ function fitWord(sp){
 }
 // 🔄 다시 하기 = 첫 단어(sat)부터 다시 (마지막 단어까지 끝낸 상태에서만 이 버튼이 보인다)
 replayBtn.addEventListener('click',function(){ CUR=0; build(); });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   테스트 전용 개발 메뉴 — 원하는 단어만 골라 보고, 지루한 구간은 건너뛴다.
+
+   ★ 라이브 유출 방지: 플래그를 사람이 끄는 걸 잊는 사고를 막으려고 **주소로 판별**한다.
+     이 파일이 라이브(루트)로 복사되면 경로에 /test/ 가 없어져 메뉴가 저절로 사라진다.
+     (강제로 켜서 볼 일이 있으면 주소 뒤에 ?dev=1)
+   ★ 여기서 아래로는 전부 개발용 — 라이브로 옮길 때 이 블록만 통째로 지우면 된다.
+   ══════════════════════════════════════════════════════════════════════════ */
+var DEVMENU = /\/test\//.test(location.pathname) || /[?&]dev=1/.test(location.search);
+if(DEVMENU){ (function(){
+  var devBar=document.getElementById('dev'), devPanel=document.getElementById('devPanel'),
+      devWords=document.getElementById('devWords');
+  devBar.style.display='flex';
+
+  /* 점프하면 앞 단어의 소리가 다음 화면에 얹혀 들린다.
+     화면(영상·자막)은 BUILD_ID 가 막아주지만 소리는 DOM 밖의 Audio 라 따로 끊어야 한다.
+     끊을 대상 3종: ①글자이름·음가(sndCache) ②단어 통발음(_lastWordAudio) ③재생 중인 영상 */
+  function devStopSound(){
+    try{ Object.keys(sndCache).forEach(function(k){
+      var a=sndCache[k].au; if(a){ try{ a.pause(); a.currentTime=0; }catch(e){} } }); }catch(e){}
+    try{ if(_lastWordAudio){ _lastWordAudio.pause(); _lastWordAudio=null; } }catch(e){}
+    try{ document.querySelectorAll('#videoBox video').forEach(function(v){ try{v.pause();}catch(e){} }); }catch(e){}
+  }
+  function devGoto(i){
+    devStopSound();
+    _devSkipVideo=null;
+    CUR=i; build();                 // build() 가 BUILD_ID 를 올려 앞 단어의 예약된 일들을 무효화한다
+    devPanel.style.display='none';
+  }
+
+  /* ≫ 넘기기 — 지금 상태에 따라 알아서 */
+  document.getElementById('devSkip').addEventListener('click',function(){
+    if(_devSkipVideo){ _devSkipVideo(); return; }                     // ① 영상 중 → 다음 영상으로
+    if(replayBtn.style.display==='block'){ devGoto(0); return; }      // ③ 마지막까지 끝 → 처음 단어로
+    if(locked) return;                                                // 완성 연출(음가 읽는 중)은 건드리지 않는다
+    // ② 조각 맞추는 중 → 남은 조각을 즉시 다 끼워 완성 연출로 보낸다
+    slots.forEach(function(s){
+      if(s.filled) return;
+      var t=null;
+      tiles.forEach(function(x){ if(!t&&!x.placed&&x.letter===s.letter) t=x; });
+      if(t){ t.placed=true; s.filled=true; t.el.style.display='none'; s.el.classList.add('filled'); }
+    });
+    hand.style.display='none';
+    finish();
+  });
+
+  /* ☰ 단어 목록 */
+  document.getElementById('devList').addEventListener('click',function(){
+    devWords.innerHTML='';
+    WORDS.forEach(function(W,i){
+      var b=document.createElement('button');
+      b.textContent=W.word;
+      if(i===CUR) b.className='now';
+      if(!(W.videos&&W.videos.length)) b.className+=' noassets';   // 영상 없는 단어는 흐리게
+      b.addEventListener('click',function(){ devGoto(i); });
+      devWords.appendChild(b);
+    });
+    devPanel.style.display='flex';
+  });
+  document.getElementById('devClose').addEventListener('click',function(){ devPanel.style.display='none'; });
+})(); }
+
 build();
 </script>
 </body>
