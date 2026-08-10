@@ -28,8 +28,8 @@
   #bigWord{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:5;align-items:center;justify-content:center;pointer-events:none}
   #bigWord span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;transform:scale(0);animation:wordpop 1.5s ease forwards}
   /* 글자별 확대 강조용 오버레이: bigWord와 같은 자리, 글자 하나씩 pulse (완성연출 통글자는 그대로 둠) */
-  #satEmph{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:6;align-items:center;justify-content:center;pointer-events:none}
-  #satEmph span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1}
+  #wordEmph{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:6;align-items:center;justify-content:center;pointer-events:none}
+  #wordEmph span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1}
   /* 등장(팝) 후 두 번 반짝임 — 앉는 순간 단어 발음과 함께 */
   @keyframes wordpop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.12);opacity:1}32%{transform:scale(1)}48%{opacity:.25}60%{opacity:1}74%{opacity:.25}86%{opacity:1}100%{transform:scale(1);opacity:1}}
 
@@ -76,7 +76,7 @@
   </div>
   <div id="tray"></div>
   <div id="bigWord"><span></span></div>
-  <div id="satEmph"></div>
+  <div id="wordEmph"></div>
   <div id="hand">&#128070;</div>
   <button id="replay" aria-label="다시 하기">&#128260;</button>
 
@@ -99,9 +99,12 @@ window.onerror=function(){return true};
 
 /* ── 데이터: 단어 추가는 여기에만 ─────────────────────────── */
 var WORDS=[
-  // videos: 완성 영상(동물별) — 파일명 = 단어_동물.mp4 (예: sat_dog.mp4). 배열 순서대로 재생.
+  // videos: 완성 영상(동물별) — 파일명 = 단어_동물.mp4 (예: sit_dog.mp4). 배열 순서대로 재생.
   //         없는 영상은 그냥 건너뛴다(에러 안 남) → 에셋이 아직이어도 안전.
-  {word:'sat', traps:[], videos:['dog','cat','raccoon']},
+  // sit — 2026-08-10 에 sat 에서 바꿈. sat 은 과거형이라 3~7세에 안 맞는다.
+  //   "앉아 있는" 영상은 sit 에도 그대로 맞으므로 영상 3편은 파일명만 바꿔 재활용(sat_* → sit_*).
+  //   음가도 s·a·t → s·i·t 로 바뀐다(phoneme_i.mp3 는 이미 있던 satpin 6종에 포함).
+  {word:'sit', traps:[], videos:['dog','cat','raccoon']},
   {word:'pat', traps:[], videos:['dog','rabbit','mother_kid']},
   {word:'nap', traps:[], videos:['owl','sloth','baby']},      // pat 과 같은 짜임 — 동물 둘 먼저, 사람(아기)으로 마무리
   // pan 은 '사물'이라 앞 세 단어(동작)와 짜임이 다르다. 사물을 먼저 딱 보여줘 뜻을 심고(pan_pan),
@@ -112,7 +115,7 @@ var WORDS=[
 var CUR=0;
 
 /* ── 소리: assets/phonics/sounds/ 에 파일 있으면 재생, 없으면 임시 삑소리 ──
-   글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sat.mp3 */
+   글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sit.mp3 */
 var SND_BASE='../../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(word_*)
 var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
 /* ── 소리 캐시 무력화(새로고침 꼬리표) ──
@@ -120,7 +123,7 @@ var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) �
    → 앱을 껐다 켤 때마다(=매 페이지 로드) 새 주소가 되어 폰이 무조건 최신 소리를 받음.
    한 세션 안에선 같은 버전이라 재다운로드 없음. (소리 파일을 같은 이름으로 교체해도 즉시 반영) */
 var SND_VER='?v='+Date.now();
-/* ── 영상: assets/phonics/videos/word_sat.mp4 있으면 재생, 없으면 회색 박스 ── */
+/* ── 영상: assets/phonics/videos/sit_dog.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../../assets/phonics/videos/';
 /* ── 영상 캐시 꼬리표 ──
    영상을 "같은 파일명으로 교체"하면 폰이 옛 영상을 계속 쓴다(CLAUDE.md 배포/캐시 규칙).
@@ -131,12 +134,17 @@ var VID_VER='?v=20260807';
    pos=object-position(세로 크롭 위치; 기본 '50% 50%', 값 클수록 피사체가 화면 위로),
    scale=확대배율(기본 1).
    ★ 키는 두 가지를 쓸 수 있다: '단어_동물'(그 영상 전용) 또는 '동물'(그 동물 공통, 예비값).
-     같은 dog 이라도 sat_dog(동물만)과 pat_dog(아이가 안고 있음)은 프레임이 달라서 전용 키가 필요하다. */
+     같은 dog 이라도 sit_dog(동물만)과 pat_dog(아이가 안고 있음)은 프레임이 달라서 전용 키가 필요하다.
+   ★ 새 영상은 되도록 '단어_동물' 전용 키로 적을 것. 공통 키(dog/cat/…)에만 의존하면 나중에 같은 동물이
+     다른 단어에 나올 때 엉뚱한 값을 물려받는다(2026-08-10 pan_cat 이 실제로 그럴 뻔했음). */
 var VIDFX={
-  dog:    {pos:'50% 90%'},             // 강아지: 위로 40%p (50→90; 80%에서 추가로 위로 10%p)
-  cat:    {pos:'50% 45%'},             // 고양이: 아래로 5%p (50→45)
-  raccoon:{pos:'50% 50%', scale:1.10}, // 너구리: 위치 그대로 + 10% 확대
-  // pat 3종 — 아이가 안고 있는 그림이라 sat(동물만)과 프레임이 다름. 실제 화면 보고 맞춘 값.
+  // sit 3종 — 원래 sat 이던 영상 그대로(2026-08-10 파일명만 sat_* → sit_* 로 바꿔 재활용).
+  //   값은 sat 때 실제 화면 보고 맞춘 것을 그대로 옮겼다. 공통 키(dog/cat/raccoon)에 두던 것을
+  //   전용 키로 승격 — 다른 단어에 같은 동물이 나와도 서로 안 섞이게.
+  sit_dog:    {pos:'50% 90%'},            // 강아지: 위로 40%p (50→90; 80%에서 추가로 위로 10%p)
+  sit_cat:    {pos:'50% 45%'},            // 고양이: 아래로 5%p (50→45)
+  sit_raccoon:{pos:'50% 50%', scale:1.10},// 너구리: 위치 그대로 + 10% 확대
+  // pat 3종 — 아이가 안고 있는 그림이라 sit(동물만)과 프레임이 다름. 실제 화면 보고 맞춘 값.
   pat_dog:       {pos:'50% 50%'},
   pat_rabbit:    {pos:'50% 50%'},
   pat_mother_kid:{pos:'50% 33%'},      // 엄마가 아이 머리를 쓰다듬음(아이는 개구리 인형을 안고 있음).
@@ -151,8 +159,9 @@ var VIDFX={
   nap_baby:  {pos:'50% 20%'},         // 아기는 20% 가 딱 맞음(ZZZ 전체 + 얼굴) — 그대로 둠
   // pan 3종 — 뜻을 담은 '팬'이 화면 한가운데라 기본값 50% 로 세 편 다 팬이 온전히 보인다(잘림 조정 불필요).
   //   요리사 모자 윗부분만 살짝 잘리는데 'pan' 뜻과 무관해 그대로 둔다(내리면 아래쪽 불꽃이 잘림).
-  // ★ 값이 기본과 같아도 **일부러 적어 둔다** — 안 적으면 pan_cat 이 예비값인 동물 공통키 `cat`(50% 45%,
-  //   sat_cat 용으로 맞춘 값)을 물려받아 의도치 않게 어긋난다. 전용 키가 공통키보다 우선한다.
+  // ★ 값이 기본과 같아도 **일부러 적어 둔다** — 전용 키가 없으면 동물 공통키를 물려받아 어긋날 수 있다.
+  //   (2026-08-10 당시 pan_cat 이 sit_cat 용 값 50% 45% 를 물려받을 뻔했음. 지금은 공통키를 안 쓰지만
+  //    코드의 `VIDFX[단어_동물] || VIDFX[동물]` 규칙은 그대로라 습관을 유지한다.)
   pan_pan:    {pos:'50% 50%'},
   pan_rabbit: {pos:'50% 50%'},
   pan_cat:    {pos:'50% 50%'}
@@ -211,7 +220,7 @@ window.addEventListener('pagehide',_pauseAllSound);
 var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tray'),
     stage=document.getElementById('stage'),bigWord=document.getElementById('bigWord'),
     videoBox=document.getElementById('videoBox'),replayBtn=document.getElementById('replay'),
-    hand=document.getElementById('hand'),satEmph=document.getElementById('satEmph');
+    hand=document.getElementById('hand'),wordEmph=document.getElementById('wordEmph');
 var slots=[],tiles=[],locked=false;
 /* 아래 둘은 테스트 전용 개발 메뉴(파일 맨 아래)가 쓰는 손잡이 — 게임 흐름 자체는 안 건드린다.
    _devSkipVideo: 지금 재생 중인 영상을 "끝난 걸로 치는" 함수(영상 재생 중에만 값이 있음)
@@ -233,7 +242,7 @@ function build(){
   slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
   bigWord.style.display='none'; replayBtn.style.display='none';
   bigWord.style.visibility='';                    // 앞 단어의 글자별 강조가 켜진 채 넘어왔을 때 복구
-  satEmph.style.display='none'; satEmph.innerHTML='';
+  wordEmph.style.display='none'; wordEmph.innerHTML='';
   videoBox.style.display='none'; videoBox.innerHTML=''; // 다시 하기 시 영상 제거(회색 플레이스홀더 없이 → 블랭크 방지)
   slots=[]; tiles=[];
   W.word.split('').forEach(function(ch){
@@ -378,7 +387,7 @@ function drop(tile){
 function finish(){
   locked=true;
   var W=WORDS[CUR],i=0;
-  tiles.forEach(function(t){ if(!t.placed){ // 남은 함정 글자 사라지게(아래 자리 비움 → sat 들어갈 자리)
+  tiles.forEach(function(t){ if(!t.placed){ // 남은 함정 글자 사라지게(아래 자리 비움 → 단어 들어갈 자리)
     t.el.style.transition='opacity .3s'; t.el.style.opacity='0';
     setTimeout(function(){ t.el.style.display='none'; },300);
   }});
@@ -392,15 +401,15 @@ function finish(){
       setTimeout(showWord,750);                 // ② 잠깐 쉬기
     }
   }
-  function showWord(){                          // ③ 완성 후: sat 반짝+발음 → 영상(걷다가 앉기) → 앉는 순간 sat 반짝+발음
+  function showWord(){                          // ③ 완성 후: 단어 반짝+발음 → 영상(걷다가 앉기) → 앉는 순간 단어 반짝+발음
     slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
     videoBox.style.display='flex';              // 위쪽: 영상 영역(회색 → 곧 영상)
     var sp=bigWord.querySelector('span'); sp.textContent=W.word;
-    // ③-1 영상 들어가기 전: 아래쪽 sat 반짝 + 발음 한 번
+    // ③-1 영상 들어가기 전: 아래쪽 단어 반짝 + 발음 한 번
     showBigWord(sp); sayWord();
-    // ③-2 잠깐 뒤 위쪽에서 영상 재생 (강아지→고양이→너구리 차례로, sat은 아래 그대로 유지)
+    // ③-2 잠깐 뒤 위쪽에서 영상 재생 (강아지→고양이→너구리 차례로, 단어는 아래 그대로 유지)
     setTimeout(function(){ playVideo(W, onSit, onAllDone); },1600);
-    function onSit(){                            // ③-3 각 동물 앉는 순간: sat 다시 반짝 + 발음 (세 번 반복)
+    function onSit(){                            // ③-3 각 동물 앉는 순간: 단어 다시 반짝 + 발음 (세 번 반복)
       showBigWord(sp); sayWord();
     }
     function onAllDone(){
@@ -419,7 +428,7 @@ function finish(){
     sp.style.animation='none'; void sp.offsetWidth; sp.style.animation=''; // span 리플로우로 애니메이션 재시작
     fitWord(sp);
   }
-  function sayWord(){                            // 단어 통발음(word_sat.mp3, 없으면 임시 연결음)
+  function sayWord(){                            // 단어 통발음(word_sit.mp3, 없으면 임시 연결음)
     if(SILENT) return;
     var arped=false;
     function arp(){ if(arped) return; arped=true; W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
@@ -439,33 +448,33 @@ function playVideo(W, onSit, onAllDone){
   var myBuild=BUILD_ID;                            // 이 재생이 속한 화면 세대
   function stale(){ return myBuild!==BUILD_ID; }   // 그 사이 다음 단어로 넘어갔으면 true
   if(!list.length){ if(onAllDone)onAllDone(); return; }
-  var GAP=1600;                                  // 앉은 뒤 sat 발음 들려주고 다음 동물 입장까지 쉼
-  /* 둘째·셋째 동물: 영상이 재생 시작된 뒤 그 위에서 스·애·트 강조. 아래 sat를 글자별로 나눠(오버레이)
+  var GAP=1600;                                  // 앉은 뒤 단어 발음 들려주고 다음 동물 입장까지 쉼
+  /* 둘째·셋째 동물: 영상이 재생 시작된 뒤 그 위에서 스·애·트 강조. 아래 단어를 글자별로 나눠(오버레이)
      소리에 맞춰 한 글자씩 확대(노래방 자막식). 소리(phonemeSound)·간격(850)·볼륨은 완성연출과 동일.
-     완성연출용 통글자 sat(#bigWord span)은 그대로 두고 잠깐만 숨겨 겹침 방지 */
+     완성연출용 통글자(#bigWord span)은 그대로 두고 잠깐만 숨겨 겹침 방지 */
   function phonemeIntro(){
     if(stale()) return;                            // 이미 다음 단어로 넘어갔으면 시작하지 않음
     var real=bigWord.querySelector('span');
-    satEmph.style.fontSize=getComputedStyle(real).fontSize; // 진짜 sat와 같은 크기·자리
-    satEmph.innerHTML=''; var spans=[];
-    W.word.split('').forEach(function(ch){ var s=document.createElement('span'); s.textContent=ch; satEmph.appendChild(s); spans.push(s); });
-    satEmph.style.display='flex'; bigWord.style.visibility='hidden';
+    wordEmph.style.fontSize=getComputedStyle(real).fontSize; // 진짜 단어와 같은 크기·자리
+    wordEmph.innerHTML=''; var spans=[];
+    W.word.split('').forEach(function(ch){ var s=document.createElement('span'); s.textContent=ch; wordEmph.appendChild(s); spans.push(s); });
+    wordEmph.style.display='flex'; bigWord.style.visibility='hidden';
     var j=0;
     (function step(){
-      if(stale()){ satEmph.style.display='none'; bigWord.style.visibility=''; return; }  // 넘어갔으면 즉시 정리
+      if(stale()){ wordEmph.style.display='none'; bigWord.style.visibility=''; return; }  // 넘어갔으면 즉시 정리
       if(j<W.word.length){
         var el=spans[j];
         el.style.animation='none'; void el.offsetWidth; el.style.animation='pulse .45s ease'; // 그 글자만 확대
         phonemeSound(W.word[j]); j++;             // 음가("스"·"애"·"트")
         setTimeout(step,850);
-      }else{ satEmph.style.display='none'; bigWord.style.visibility=''; } // 끝: 오버레이 치우고 통글자 복원
+      }else{ wordEmph.style.display='none'; bigWord.style.visibility=''; } // 끝: 오버레이 치우고 통글자 복원
     })();
   }
   function startVideo(k){                         // (영상 재생 로직 — 흐름·앉을때 발음·GAP 미변경)
     var isLast=(k===list.length-1),done=false;
     try{
       var v=document.createElement('video');
-      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4'+VID_VER;   // 예: sat_dog.mp4?v=20260807
+      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4'+VID_VER;   // 예: sit_dog.mp4?v=20260807
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
       var fx=VIDFX[W.word+'_'+list[k]] || VIDFX[list[k]];   // 그 영상 전용 값 우선, 없으면 동물 공통값
@@ -475,7 +484,7 @@ function playVideo(W, onSit, onAllDone){
       function chkShow(){ if(v.currentTime>0 && !v.paused) reveal(); }
       v.addEventListener('timeupdate',chkShow); v.addEventListener('playing',chkShow);
       setTimeout(reveal,1500);                     // 안전장치: 못 잡아도 1.5초 뒤 표시
-      function afterSit(){                         // 이 동물이 앉음: sat 반짝+발음 → 잠깐 뒤 다음 동물
+      function afterSit(){                         // 이 동물이 앉음: 단어 반짝+발음 → 잠깐 뒤 다음 동물
         if(done) return; done=true;
         _devSkipVideo=null;                        // (개발 메뉴) 이 영상은 끝 — 넘기기 대상에서 뺀다
         if(stale()) return;                        // 그 사이 다음 단어로 넘어갔으면 아무것도 하지 않음
@@ -484,7 +493,7 @@ function playVideo(W, onSit, onAllDone){
         else setTimeout(function(){ playAt(k+1); }, GAP);
       }
       /* (개발 메뉴 전용) ≫ 넘기기 = "지금 영상이 끝난 것으로 친다".
-         정상 종료와 같은 길(afterSit)로 보내므로 sat 반짝·발음·다음 영상 흐름이 그대로 이어진다. */
+         정상 종료와 같은 길(afterSit)로 보내므로 단어 반짝·발음·다음 영상 흐름이 그대로 이어진다. */
       _devSkipVideo=function(){ try{ v.pause(); }catch(e){} afterSit(); };
       v.addEventListener('error',function(){ if(done)return; done=true; if(stale())return; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
       v.addEventListener('loadeddata',function(){
@@ -515,7 +524,7 @@ function fitWord(sp){
     sp.style.fontSize=(parseFloat(getComputedStyle(sp).fontSize)*0.92)+'px';
   }
 }
-// 🔄 다시 하기 = 첫 단어(sat)부터 다시 (마지막 단어까지 끝낸 상태에서만 이 버튼이 보인다)
+// 🔄 다시 하기 = 첫 단어(sit)부터 다시 (마지막 단어까지 끝낸 상태에서만 이 버튼이 보인다)
 replayBtn.addEventListener('click',function(){ CUR=0; build(); });
 
 /* ══════════════════════════════════════════════════════════════════════════

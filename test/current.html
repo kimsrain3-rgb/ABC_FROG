@@ -9,7 +9,7 @@
 <body>
 <div>로딩중… 🐸</div>
 <!--
-  ★ 현재 테스트 콘텐츠 = 시작화면 Phonics 카드 → 파닉스(sat·pat·nap) 게임 열기 = test/current-phonics-open.html
+  ★ 현재 테스트 콘텐츠 = 시작화면 Phonics 카드 → 파닉스(sit·pat·nap·pan) 게임 열기 = test/current-phonics-open.html
   ※ 시작화면 인사 클립 끄기는 2026-08-10 **라이브 반영 완료**(커밋 fb1b4a5) → 테스트판은 파닉스로 되돌림.
     이 페이지도 라이브 frog-reactions.js 를 공유하므로 여기서도 인사는 안 나온다.
   - Phonics 카드 **잠금 해제**: `wc-locked`·🔒 배지 제거 → 🗣️ 가 제 색으로 나오고 보라색 카드가 됨.
@@ -20,7 +20,7 @@
   - ⚠️ 라이브 공용 파일을 안 건드리려고 **두 가지를 이 파일에서 우회**하고 있음. 라이브 갈 땐 정식 반영 필요:
     ① script.js `inPlayScreen()` 이 파닉스를 모름 → 감싸서 "게임 중"으로 인식시킴 (안 하면 뒤로가기에 앱 종료)
     ② frog-reactions.js `otherScreenOpen()` 도 파닉스를 모름 → 열 때 `__frogreact.stop()` 으로 인사 정리
-  - 파닉스 내용물: 단어 `sat` 하나 · 음가 s/a/t · 통발음 word_sat.mp3 · 완성영상 dog/cat/raccoon 3종
+  - 파닉스 내용물: 단어 4개(sit·pat·nap·pan) · 음가 satpin 6종 · 단어별 통발음 word_*.mp3 · 단어별 완성영상 3편씩
   - script.js·style.css·assets는 라이브 그대로 공유(사본 없음). 이 HTML 한 장에만 변경이 들어있음.
   - 보관: Phonics 버튼(잠긴 상태)=current-phonicsbtn.html (2026-08-05 라이브 반영 완료),
           부팅 가드=current-bootguard.html (2026-08-05 라이브 반영 완료),
