@@ -1,8 +1,12 @@
 /* =====================================================================
-   ABC Frog — 개구리 반응 클립 애드온 (★ 테스트 전용, 라이브 미반영)
+   ABC Frog — 개구리 반응 클립 애드온
+   ★ 이 파일은 라이브다 — index.html 이 script.js 뒤에서 로드한다. 고치면 즉시 전 유저 반영.
+     (2026-07-21 커밋 a8dfd11 로 공개. 예전 "테스트 전용, 라이브 미반영" 주석은 사실과 달라
+      2026-08-10 에 바로잡음 — 그 주석 때문에 라이브 파일을 테스트 파일로 오해할 뻔했다.)
    - script.js 뒤에 로드. 라이브 script.js는 손대지 않고 전역 함수만 후킹.
    - 정답 파리 먹음(occ) → 5개 동작 중 랜덤 하나 (콤보/빙고 구분 없음)
-   - 시작화면 → 손 흔들기 인사 (앱 켜질 때 딱 1번, 화면 바뀌면 즉시 정지)
+   - 시작화면 인사(손 흔들기)는 **끔**(2026-08-10). 시작화면엔 앉은 개구리만 나온다.
+     액션 클립은 게임 안에서만 재생. (아래 GREET_ON 참고 — 코드는 지우지 않고 예약만 막음)
    - 재생 중 기존 개구리 이미지는 숨기고, 끝나면 복귀. 게임(파리)은 안 멈춤.
 
    ★ 안전 원칙: 반응 클립이 어떤 이유로 실패/정지하더라도, 화면에서 개구리가
@@ -350,10 +354,19 @@
       playClip(GREET, sf, sf, false);
     }catch(e){ console.warn('[frogreact] greet',e); try{ endReaction(); }catch(_){} }
   }
-  // load 는 '모든 이미지까지' 받은 뒤라 느린 기기에선 수 초 뒤일 수 있다.
-  // 그 사이 유저가 이미 다른 화면으로 갔으면(leftStart) 예약 자체를 걸지 않는다.
-  if(document.readyState==='complete') greetTimer=setTimeout(greet,600);
-  else window.addEventListener('load',function(){ if(!leftStart) greetTimer=setTimeout(greet,600); });
+  // ★ 시작화면 인사 끔 (2026-08-10, 사장님 지시)
+  //   "첫 화면에는 앉은 개구리만" — 액션 클립(손흔들기 포함 5종)은 게임 안에서만 재생한다.
+  //   손흔들기 webm 은 게임 중 반응 5종 중 하나로 계속 쓰이므로 파일은 그대로 둔다.
+  //   되살리려면 GREET_ON=true 로만 바꾸면 됨 — 아래 예약 코드는 지우지 않고 그대로 보존.
+  //   ※ greet()/cancelGreeting()/otherScreenOpen() 도 그대로 남겨둠. 화면 전환 래퍼가 부르는
+  //     cancelGreeting() 은 '재생 중인 반응 정리'(endReaction) 역할도 겸하므로 빼면 안 된다.
+  var GREET_ON=false;
+  if(GREET_ON){
+    // load 는 '모든 이미지까지' 받은 뒤라 느린 기기에선 수 초 뒤일 수 있다.
+    // 그 사이 유저가 이미 다른 화면으로 갔으면(leftStart) 예약 자체를 걸지 않는다.
+    if(document.readyState==='complete') greetTimer=setTimeout(greet,600);
+    else window.addEventListener('load',function(){ if(!leftStart) greetTimer=setTimeout(greet,600); });
+  }
 
   // ---- 화면 전환 시 인트로 손흔들기(및 어떤 반응이든) 확실히 정지·제거 ----
   // 시작화면을 벗어나는 버튼들을 감싸서, 넘어가기 전에 반응 정리 + 인사 예약 취소.
