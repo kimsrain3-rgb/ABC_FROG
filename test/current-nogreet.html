@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<!-- ★ 테스트 빌드(시작화면 인사 클립 끄기) — 라이브 루트 미변경.
-     ▸ 이번 검증 대상: 시작화면 손흔들기 인사 제거. 첫 화면엔 앉은 개구리만 나와야 한다.
-       그래서 frog-reactions.js 만 라이브 대신 **테스트 사본**(test/frog-reactions-nogreet.js)을 로드한다.
-       나머지(assets·style.css·script.js)는 여전히 라이브 그대로 공유 — 이 파일에만 변경이 들어있다.
-     ▸ 확인할 것: ①시작화면 인사 안 나옴 ②게임 안 액션 클립(춤 5종)은 그대로 ③글자 반짝·손가락 안내 그대로.
+<!-- ★ 보관용 — 시작화면 인사 클립 끄기 테스트판 (2026-08-10 **라이브 반영 완료**, 커밋 fb1b4a5)
+     검증 당시엔 frog-reactions.js 를 테스트 사본(test/frog-reactions-nogreet.js)으로 갈아끼워 확인했고,
+     라이브 반영 후 그 사본은 지웠다(라이브 frog-reactions.js 와 실행 코드가 같아져 중복이라서).
+     지금 이 파일은 다른 보관본들과 마찬가지로 **라이브 js/css/assets 를 그대로 공유**한다.
+     ▸ 당시 검증: ①시작화면 인사 안 나옴 ②게임 안 액션 클립 5종 그대로 ③글자 반짝·손가락 안내 그대로.
      GA4·에러추적은 뺐음(테스트 플레이가 실유저 통계에 안 섞이게).
-     바탕: current-phonics-open.html(2026-08-07 파닉스 테스트판) 그대로 + 위 한 줄 교체. -->
+     바탕: current-phonics-open.html(2026-08-07 파닉스 테스트판). -->
 <base href="../">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
@@ -282,10 +282,8 @@
 <!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
 <script>document.write('<scr' + 'ipt src="script.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드.
-     ★ 여기만 라이브(frog-reactions.js) 대신 테스트 사본을 로드한다 — 시작화면 인사만 끈 판.
-       base href 가 '../' 라 상대주소는 저장소 뿌리 기준 → test/ 를 반드시 붙일 것.
-       검증 끝나면 이 사본 내용을 라이브 frog-reactions.js 에 반영하고, 이 줄은 원래대로 되돌린다. -->
-<script>document.write('<scr' + 'ipt src="test/frog-reactions-nogreet.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+     ※ 2026-08-10 라이브 반영 완료 → 테스트 사본을 쓰던 줄을 라이브 공유로 되돌림. -->
+<script>document.write('<scr' + 'ipt src="frog-reactions.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 
 <!-- ★★ 파닉스(satpin) 열기 — 테스트 전용. 동물·공룡 퍼즐과 완전히 같은 구조(전체화면 iframe 오버레이).
      기존 게임 코드와 분리돼 있어 충돌 위험이 없고, 라이브 script.js 는 한 글자도 안 고친다.
