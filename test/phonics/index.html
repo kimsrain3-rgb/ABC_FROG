@@ -103,7 +103,10 @@ var WORDS=[
   //         없는 영상은 그냥 건너뛴다(에러 안 남) → 에셋이 아직이어도 안전.
   {word:'sat', traps:[], videos:['dog','cat','raccoon']},
   {word:'pat', traps:[], videos:['dog','rabbit','mother_kid']},
-  {word:'nap', traps:[], videos:['owl','sloth','baby']}       // pat 과 같은 짜임 — 동물 둘 먼저, 사람(아기)으로 마무리
+  {word:'nap', traps:[], videos:['owl','sloth','baby']},      // pat 과 같은 짜임 — 동물 둘 먼저, 사람(아기)으로 마무리
+  // pan 은 '사물'이라 앞 세 단어(동작)와 짜임이 다르다. 사물을 먼저 딱 보여줘 뜻을 심고(pan_pan),
+  // 그 다음 쓰는 장면 둘로 활기차게 마무리. pan_pan 은 거의 정지 화면이라 끝에 두면 밋밋해진다.
+  {word:'pan', traps:[], videos:['pan','rabbit','cat']}
 ];
 // 마지막 단어까지 끝나면 🔄 버튼, 그 전까지는 다음 단어로 자동 진행(동물 퍼즐 animal.html 과 같은 방식)
 var CUR=0;
@@ -145,7 +148,14 @@ var VIDFX={
   //    ZZZ 와 맞바꾸는 관계 — 35% 에서도 ZZZ 는 읽히지만 윗부분이 조금 잘린다. 더 내리면 ZZZ 가 거의 사라진다.
   nap_owl:   {pos:'50% 35%'},
   nap_sloth: {pos:'50% 35%'},
-  nap_baby:  {pos:'50% 20%'}          // 아기는 20% 가 딱 맞음(ZZZ 전체 + 얼굴) — 그대로 둠
+  nap_baby:  {pos:'50% 20%'},         // 아기는 20% 가 딱 맞음(ZZZ 전체 + 얼굴) — 그대로 둠
+  // pan 3종 — 뜻을 담은 '팬'이 화면 한가운데라 기본값 50% 로 세 편 다 팬이 온전히 보인다(잘림 조정 불필요).
+  //   요리사 모자 윗부분만 살짝 잘리는데 'pan' 뜻과 무관해 그대로 둔다(내리면 아래쪽 불꽃이 잘림).
+  // ★ 값이 기본과 같아도 **일부러 적어 둔다** — 안 적으면 pan_cat 이 예비값인 동물 공통키 `cat`(50% 45%,
+  //   sat_cat 용으로 맞춘 값)을 물려받아 의도치 않게 어긋난다. 전용 키가 공통키보다 우선한다.
+  pan_pan:    {pos:'50% 50%'},
+  pan_rabbit: {pos:'50% 50%'},
+  pan_cat:    {pos:'50% 50%'}
 };
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
