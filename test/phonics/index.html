@@ -109,7 +109,10 @@ var WORDS=[
   {word:'nap', traps:[], videos:['owl','sloth','baby']},      // pat 과 같은 짜임 — 동물 둘 먼저, 사람(아기)으로 마무리
   // pan 은 '사물'이라 앞 세 단어(동작)와 짜임이 다르다. 사물을 먼저 딱 보여줘 뜻을 심고(pan_pan),
   // 그 다음 쓰는 장면 둘로 활기차게 마무리. pan_pan 은 거의 정지 화면이라 끝에 두면 밋밋해진다.
-  {word:'pan', traps:[], videos:['pan','rabbit','cat']}
+  {word:'pan', traps:[], videos:['pan','rabbit','cat']},
+  // sip — 아기 동물들이 머그컵으로 마시는 장면. 작은→큰 순서로, 가장 친숙한 북극곰으로 마무리.
+  // ⚠️ 이 3편은 **그림체가 앞 네 단어(수채화 그림책풍)와 다르다**(3D 렌더). 사장님 확인 대기 중.
+  {word:'sip', traps:[], videos:['harpseal','penguin','polarbear']}
 ];
 // 마지막 단어까지 끝나면 🔄 버튼, 그 전까지는 다음 단어로 자동 진행(동물 퍼즐 animal.html 과 같은 방식)
 var CUR=0;
@@ -164,7 +167,14 @@ var VIDFX={
   //    코드의 `VIDFX[단어_동물] || VIDFX[동물]` 규칙은 그대로라 습관을 유지한다.)
   pan_pan:    {pos:'50% 50%'},
   pan_rabbit: {pos:'50% 50%'},
-  pan_cat:    {pos:'50% 50%'}
+  pan_cat:    {pos:'50% 50%'},
+  // sip 3종 — 아기 동물 + 머그컵이 화면 한가운데라 기본값 50% 로 얼굴·컵이 모두 들어온다.
+  // ⚠️ `sip_penguin.mp4` 는 **맨 아래 약 3%(1240~1280px)에 화면녹화 UI 막대**(파란 아이콘·마우스
+  //    커서)가 찍혀 있다. 게임이 보여주는 구간은 21~79% 라 **지금은 안 보이지만**, 이 영상만은
+  //    pos 세로값을 크게 올리면(아래쪽을 보여주면) 막대가 화면에 들어온다 → 값을 바꾸지 말 것.
+  sip_harpseal:  {pos:'50% 50%'},
+  sip_penguin:   {pos:'50% 50%'},
+  sip_polarbear: {pos:'50% 50%'}
 };
 var SILENT=/[?&]silent=1/.test(location.search);
 var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
