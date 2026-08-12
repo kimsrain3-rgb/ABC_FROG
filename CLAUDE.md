@@ -65,7 +65,7 @@ ABC_FROG/
 - **패키지명**: com.ggomzipapa.abcfrog
 - **현재 버전**: versionCode 10 / 1.1.0 (프로덕션 100% 출시, targetSdk 36, 2026-08-06 확인) — 앱 쪽 변경 = 물리 뒤로가기(`OnBackInvokedCallback`) 수정
 - **이전 버전**: versionCode 9 / 1.0.9 (2026-07-27 심사 통과)
-- **다음 버전**: versionCode 11 미정 — 묶어 처리할 후보는 아래 TODO의 `onReceivedError` 오프라인 안내화면 · `setTextZoom(100)`
+- **다음 버전**: **versionCode 11 / 1.1.1 — 코드 준비 완료, 빌드·제출 대기**(커밋 `03da907`, 2026-08-12). 내용 3건 = ①**최신 반영**(`onResume`에서 30분↑ 이탈 + 시작화면일 때만 `reload`. `loadUrl`이 `onCreate`에만 있어 백그라운드 복귀 시 옛 화면이 남던 문제 — 2026-08-10 인사 클립·2026-08-12 파닉스 잠김의 공통 원인) ②**오프라인 안내화면**(`onReceivedError` + `isForMainFrame()` 검사 필수) ③`setTextZoom(100)`
 - **서명키 SHA1**: D7:D4:13:7D:B1:44:7D:00:35:0F:1C:CD:26:18:90:DB:7B:87:68:29
 - **서명키 SHA256**: 6F:DE:2D:08:2E:33:E0:B8:C9:E4:20:E4:D2:08:68:41:AC:2F:27:27:53:23:3F:EC:FB:B0:7D:CB:67:06:95:54
 - **서명키 위치**: GitHub Secret `KEYSTORE_BASE64` + 로컬 백업 (`/d/1Game_projec/AAB, AAB_KEY/`)
@@ -85,8 +85,7 @@ ABC_FROG/
 - [ ] 🟢 파리 먹힐 때 입 위치 고정값(0.5,0.38) — 4~5단계 뚱뚱 개구리 입(0.56)과 어긋남
 - [ ] 🟢 `wpSayWord`가 `new Audio()` 직접 사용 → `safeAudio()`로 통일 권장 (위험 낮음)
 - [ ] 🟢 `buildPuzzle` 비동기 race(잠재): `_im.onload`가 전역 `wpCurrent` 참조 → 빌드 겹치면 엉뚱한 과일. 실플레이 미발생, 우선순위 낮음. (※ 퍼즐이 '깨진 이미지'면 거의 항상 **로컬 테스트서버 꺼짐**이 원인, 코드버그 아님)
-- [ ] ➕ **안드로이드(MainActivity.java)**: 오프라인 시 `onReceivedError` 비어있어 깨진 에러화면 노출 → 안내화면 추가 (Play 업데이트 때 묶어 처리)
-- [ ] ➕ **안드로이드(MainActivity.java)**: `setTextZoom(100)` 추가 — WebView가 폰 '글자 크기' 설정을 웹 글자에 곱해 UI가 커지는 것 차단(2026-07-10 공룡 이름 잘림의 근본 원인, 웹쪽 fitWord로 이미 방어됨. Play 업데이트 때 묶어 처리)
+- [ ] 🔴📦 **vc11 AAB 빌드 → Play 제출 대기** — 코드는 준비 완료(커밋 `03da907`). 앱 3건(최신 반영·오프라인 안내화면·글자크기 고정)이 들어있고 **빌드/업로드 전까지 실유저 미반영**. GitHub Actions → Build AAB → 비공개 테스트 업로드 → **"저장"만** → 프리런치 보고서 확인 → 그때 "검토 시작" (제출 규칙 준수)
 - [ ] 🔴🔐 **서명키 비밀번호 교체**: `twa-project/app/build.gradle`에 `abcfrog123` 평문 노출(깃 히스토리 포함). keytool로 비번 변경 → Secret 재등록 → build.gradle 평문 제거(환경변수 참조) → AAB 재빌드. (서명키 자체는 교체 불가, 비번만)
 - [ ] 🔵 refactor 브랜치(`data-word-fruits.js` 데이터 분리) main 병합 — 검증 완료, always-fresh 방식과 정합 확인 후 머지
 - [ ] 🟢 동물 퍼즐 `animal_raccoon_image.png`(527KB)만 아직 PNG — JPG화로 용량↓ (나머지 곰·토끼·고양이·강아지는 JPG 완료)
