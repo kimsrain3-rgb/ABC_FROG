@@ -45,7 +45,7 @@ gtag('config','G-VEN3PCFXXL',{
   'use strict';
   try {
     var NAMES = ['goModeSelect','goWordCat','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle',
-                 'goMode','wcBack','wcLocked','msBack','wpBack','gcBack'];
+                 'goMode','wcBack','wcLocked','msBack','wpBack','gcBack','goPhonics'];
     var stubs = {}, pending = null, dotsEl = null, ready = false;
 
     // 기다리는 중 표시(개구리 인사말 아래 점점점). style.css 가 아직 안 왔어도 보이게 인라인 스타일만 사용.
@@ -124,12 +124,22 @@ gtag('config','G-VEN3PCFXXL',{
         <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
         <span class="card-label">Word</span>
       </button>
-      <!-- 파닉스: 아직 안 만든 게임이라 잠긴 카드. Vegetable·Insect 와 같은 wcLocked 재사용.
-           아이콘은 잠금 실루엣 필터(brightness(0))를 거쳐도 모양이 읽히는 것으로 고름(👄·🅰️·👂 는 덩어리가 돼 탈락). -->
-      <button class="game-card wc-card wc-locked card-phonics" onclick="wcLocked(this)">
-        <span class="card-icon">🗣️</span>
+      <!-- 파닉스(satpin) — 2026-08-12 잠금 해제. wc-locked·🔒 배지를 떼면 아이콘이 제 색으로 나오고
+           .card-phonics 보라색이 적용된다. 누르면 phonics/index.html 이 전체화면 오버레이로 열림.
+           아이콘: 🗣️ 이모지 → 인라인 SVG(입 벌린 옆얼굴 + 소리 물결 2줄).
+           ⚠️ 눈동자 #7F5BC2 = 카드 그라데이션(#9575CD→#5E35B1)의 '눈 높이' 지점 색 실측값.
+              카드 색이나 아이콘 위치를 바꾸면 이 값도 다시 재야 한다. -->
+      <button class="game-card wc-card card-phonics" onclick="goPhonics()">
+        <span class="card-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">
+            <path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/>
+            <circle cx="32" cy="30" r="10" fill="#fff"/>
+            <circle cx="32" cy="28" r="4" fill="#7F5BC2"/>
+            <path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
         <span class="card-label">Phonics</span>
-        <span class="wc-lock">🔒</span>
       </button>
     </div>
   </div>

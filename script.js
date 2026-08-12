@@ -1469,6 +1469,86 @@ function closeDinoPuzzle(){
 window.addEventListener('message',function(ev){
   try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key}); } }catch(e){}
 });
+
+// === 파닉스 satpin (독립 페이지 phonics/index.html을 전체화면 오버레이로 — 동물·공룡 퍼즐과 동일 구조) ===
+// 2026-08-12 라이브 반영. 기존 게임 코드와 완전 분리(iframe) → 충돌/크래시 위험 0.
+// HTML은 ?b=로 항상 최신, 내부 소리는 페이지가 매번 새로 받고, 영상은 그 안의 VID_VER 날짜로 관리한다.
+var _phOverlay=null;
+function goPhonics(){
+  try{
+    if(_phOverlay) return;                       // 중복 열기 방지
+    // 개구리 인사/반응이 돌고 있으면 먼저 정리 — 파닉스 위로 소리가 겹치지 않게.
+    // (frog-reactions.js 쪽에서도 goPhonics 를 감싸 cancelGreeting 을 부르지만, 그 파일이
+    //  로드 실패해도 안전하도록 여기서도 한 번 세워준다. 두 번 불려도 문제 없는 함수다.)
+    try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(e){}
+    var ov=document.createElement('div');
+    ov.id='phOverlay';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    var fr=document.createElement('iframe');
+    fr.setAttribute('allow','autoplay; fullscreen');
+    fr.style.cssText='border:0;width:100%;height:100%;display:block;';
+    fr.src='phonics/index.html?b='+Date.now();   // HTML 항상 최신(미디어는 내부에서 캐시)
+    var bk=document.createElement('button');
+    bk.setAttribute('aria-label','back');
+    bk.onclick=closePhonics;
+    bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=노는 중(흐리게)
+    // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
+    bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
+    ov.appendChild(fr); ov.appendChild(bk);
+    document.body.appendChild(ov);
+    _phOverlay=ov;
+    syncBackGuard();                              // 파닉스 진입 → 뒤로가기 보호 켜기
+    try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
+    try{gtag('event','phonics_open',{set:'satpin'});}catch(e){}
+  }catch(e){}
+}
+function closePhonics(){
+  try{ if(_phOverlay&&_phOverlay.parentNode){ _phOverlay.parentNode.removeChild(_phOverlay); } }catch(e){}
+  _phOverlay=null;
+  syncBackGuard();
+}
+window.__phState=function(){ return { open: !!_phOverlay }; };   // 검증 확인용
+
+// ★ Phonics 카드 잠금해제를 '실행 중에' 직접 수행 — Animal·Dino 카드와 똑같은 안전장치.
+//   index.html 은 (script.js/style.css 와 달리) 캐시버스터가 안 붙는 진입점이라 폰에 옛 판이 남을 수 있다.
+//   그대로 두면 오늘 푸시해도 기존 폰에선 며칠간 '잠긴 Phonics(🔒)'가 그대로 보이고
+//   눌러도 "Coming soon" 토스트만 뜬다. script.js 는 항상 최신이므로 여기서 풀어주면 즉시 모든 폰 반영.
+//   ※ 이 카드는 퍼즐메뉴(.wc-cards)가 아니라 시작화면(.mode-buttons)에 있다.
+function _unlockPhonicsCard(){
+  try{
+    // 아이콘: 입 벌린 옆얼굴 + 소리 물결 2줄 (index.html 의 인라인 SVG와 같은 그림)
+    var iconHTML='<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">'+
+      '<path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/>'+
+      '<circle cx="32" cy="30" r="10" fill="#fff"/>'+
+      '<circle cx="32" cy="28" r="4" fill="#7F5BC2"/>'+
+      '<path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+      '<path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>';
+    var wrap=document.querySelector('.mode-buttons');
+    if(!wrap) return;
+    var cards=wrap.querySelectorAll('.game-card'), ph=null;
+    for(var i=0;i<cards.length;i++){
+      var lbl=cards[i].querySelector('.card-label');
+      if(lbl && lbl.textContent.trim().toLowerCase()==='phonics'){ ph=cards[i]; break; }
+    }
+    if(ph){
+      ph.classList.remove('wc-locked'); ph.classList.add('card-phonics');
+      var lock=ph.querySelector('.wc-lock'); if(lock&&lock.parentNode) lock.parentNode.removeChild(lock);
+      var ic=ph.querySelector('.card-icon');
+      if(ic && !ic.querySelector('svg')){ ic.innerHTML=iconHTML; }   // 옛 🗣️ 이모지도 SVG로 교체
+      ph.onclick=function(){ goPhonics(); };
+    } else {
+      // 2026-08-05 이전 index.html 이 캐시된 폰 — 카드 자체가 없다 → 만들어 붙인다.
+      var b=document.createElement('button');
+      b.className='game-card wc-card card-phonics';
+      b.onclick=function(){ goPhonics(); };
+      b.innerHTML='<span class="card-icon">'+iconHTML+'</span><span class="card-label">Phonics</span>';
+      wrap.appendChild(b);
+    }
+  }catch(e){}
+}
+try{ _unlockPhonicsCard(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',_unlockPhonicsCard); }catch(e){}
+
 // ★ Animal 카드 잠금해제를 '실행 중에' 직접 수행 — script.js는 항상 최신으로 받으므로,
 //   옛 index.html(잠긴 버튼)이 캐시된 폰에서도 이게 버튼을 풀어줌(즉시 모든 폰 반영).
 function _unlockAnimalCard(){
@@ -2346,7 +2426,7 @@ var _backSkip=false;    // 우리가 직접 칸을 반납할 때 생기는 popst
 // 지금이 '보호할 화면'인가 = 뒤로가기로 앱이 꺼지면 안 되는 상황인가
 function inPlayScreen(){
   try{
-    if(_apOverlay||_dpOverlay) return true;                        // 동물·공룡 퍼즐(오버레이)
+    if(_apOverlay||_dpOverlay||_phOverlay) return true;            // 동물·공룡 퍼즐 · 파닉스(오버레이)
     var ids=['wp','wc','ms'];                                      // 과일퍼즐 · 퍼즐메뉴 · 모드선택
     for(var i=0;i<ids.length;i++){
       var el=document.getElementById(ids[i]);
@@ -2371,6 +2451,12 @@ function syncBackGuard(){
 window.addEventListener('popstate',function(e){
   if(_backSkip){ _backSkip=false; return; }   // 우리가 반납한 칸 — 사용자가 누른 게 아님
   _backArmed=false;                            // 방금 여분 칸이 소비됐다
+  // 파닉스가 떠 있으면 → 닫고 시작화면으로. (동물·공룡 퍼즐과 일부러 다르게 간다:
+  //   퍼즐은 조각을 맞추던 중에 실수로 날아가면 아깝지만, 파닉스는 언제 나가도 잃는 게 없다.
+  //   2026-08-12 사장님 판단 — 폰 테스트에서 확인한 동작 그대로.)
+  // ※ 여기서 _backArmed 는 이미 false 다 → closePhonics 의 syncBackGuard 는 칸을 반납하지 않고,
+  //   시작화면에서 뒤로 한 번 더 누르면 정상적으로 앱이 꺼진다.
+  if(_phOverlay){ closePhonics(); return; }
   // 동물·공룡 퍼즐이 떠 있으면 → 아무것도 안 함(퍼즐 유지). 아래 wc 분기가 뒤 화면을 닫는 것도 막는다.
   if(_apOverlay||_dpOverlay){ syncBackGuard(); return; }
   // 단어 퍼즐 화면이 열려 있으면 → 닫기만 (시작화면으로 복귀)

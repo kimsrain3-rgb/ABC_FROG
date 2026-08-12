@@ -278,8 +278,13 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
 .mode-buttons .game-card{flex-direction:row;width:244px;gap:8px;justify-content:center;align-items:center;padding:16px;border-radius:22px;position:relative}
 .mode-buttons .game-card .card-icon{width:34px;height:34px;font-size:26px;line-height:1;flex:0 0 auto}
 .mode-buttons .game-card .card-icon img{width:100%;height:100%;object-fit:contain}
+/* 인라인 SVG 아이콘(Phonics). 위쪽 `.game-card .card-icon svg{width:66px;height:66px}` 는
+   시작화면 카드(아이콘 칸 34px)엔 너무 커서 알약 밖으로 삐져나온다 → 칸에 맞춰 덮어쓴다. */
+.mode-buttons .game-card .card-icon svg{width:100%;height:100%;display:block}
 .mode-buttons .game-card .card-label{font-size:28px;letter-spacing:0;line-height:1;white-space:nowrap}
 .mode-buttons .wc-locked{padding-right:36px}
+/* 잠금 해제된 Phonics 카드 색 (2026-08-12) — ABC(초록)·Word(주황)와 안 겹치는 보라 계열 */
+.card-phonics{background:linear-gradient(180deg,#9575CD,#5E35B1);border-color:#4527A0}
 /* 잠금 안내 토스트를 시작화면 위에도 띄우려면 화면(.ss=100 / .wc=118)보다 위층이어야 함 */
 .wc-toast{z-index:190}
 /* 카드 3장이라 세로가 빠듯한 '짧은 화면'에서만 개구리 축소. 요즘 긴 폰은 260 그대로 유지 */

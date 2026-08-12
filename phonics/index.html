@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ABC Frog - Phonics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
+<!-- 전역 에러 추적(GA4 game_error) — 이 페이지엔 GA 태그가 없어, 추적기가 "에러가 실제로 났을 때만" gtag를 1회 불러온다(방문수 집계는 안 건드림). -->
+<script>window.__ETRK_WHERE='phonics';document.write('<scr' + 'ipt src="../error-tracker.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<style>
+  html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive}
+  #stage{position:relative;width:100%;height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
+
+  /* 위쪽: 단어 보드 */
+  #board{position:relative;flex:0 0 58%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vh}
+  /* 영상: 위쪽 board 영역을 꽉 채움 (세로 9:16 영상) */
+  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:transparent;align-items:center;justify-content:center;color:#e0e0e0;font-size:6vw}
+  #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}   /* animal.html 방식: 첫 프레임 준비되면 페이드인 → 회색 블랭크 안 스침 */
+  #slots{display:flex;gap:3vw}
+  .slot{position:relative;width:19vw;height:19vw;max-width:104px;max-height:104px;border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
+  .slot .ghost{font-size:12vw;font-weight:700;color:#c5d4bb;line-height:1}
+  .slot.filled{border-style:solid;border-color:#F57F17;background:#fffde7}
+  .slot.filled .ghost{color:#F57F17}
+  .slot.pulse{animation:pulse .45s ease}
+  @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+  /* 완성 단어: 아래쪽(조각 있던 빈 자리, board 아래 42%) 가운데. tray 밖(stage 직속)이라 리셋에도 안 지워짐 */
+  #bigWord{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:5;align-items:center;justify-content:center;pointer-events:none}
+  #bigWord span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;transform:scale(0);animation:wordpop 1.5s ease forwards}
+  /* 글자별 확대 강조용 오버레이: bigWord와 같은 자리, 글자 하나씩 pulse (완성연출 통글자는 그대로 둠) */
+  #wordEmph{display:none;position:absolute;left:0;right:0;top:58%;bottom:0;z-index:6;align-items:center;justify-content:center;pointer-events:none}
+  #wordEmph span{display:inline-block;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1}
+  /* 등장(팝) 후 두 번 반짝임 — 앉는 순간 단어 발음과 함께 */
+  @keyframes wordpop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.12);opacity:1}32%{transform:scale(1)}48%{opacity:.25}60%{opacity:1}74%{opacity:.25}86%{opacity:1}100%{transform:scale(1);opacity:1}}
+
+  /* 아래쪽: 글자 조각 트레이 */
+  #tray{position:relative;flex:1;background:linear-gradient(180deg,#cde6c3,#a8d19a)}
+  /* 바닥 글자: 완성화면 노란 통통 글씨(#bigWord span, 27줄)와 동일한 색·3중 그림자. 흰 박스/테두리/그림자 없음. 히트영역(w/h 17vw)은 유지 */
+  .tile{position:absolute;width:26vw;height:26vw;max-width:130px;max-height:130px;display:flex;align-items:center;justify-content:center;font-size:26vw;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;cursor:grab;touch-action:none;transition:transform .15s}
+  .tile.drag{z-index:60;transform:scale(1.15);transition:none;cursor:grabbing}
+  .tile.back{transition:left .35s cubic-bezier(.22,1,.36,1),top .35s cubic-bezier(.22,1,.36,1),transform .2s}
+  .tile.placed{transition:left .18s ease-out,top .18s ease-out,opacity .15s;pointer-events:none}
+
+  /* 드래그 안내 손가락: 첫 글자 위에서 첫 빈칸 쪽으로 왔다갔다. 실제로 끌기 시작하면 JS가 숨김 */
+  #hand{display:none;position:absolute;z-index:65;font-size:13vw;line-height:1;margin-left:-.5em;margin-top:-.12em;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(0,0);animation:handmove 1.5s ease-in-out infinite;will-change:transform}
+  @keyframes handmove{0%{transform:translate(0,0) scale(1)}12%{transform:translate(0,0) scale(1.14)}55%{transform:translate(var(--hdx,0),var(--hdy,0)) scale(1)}100%{transform:translate(0,0) scale(1)}}
+
+  #replay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;border:4px solid #fff;border-radius:40px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:6vw;color:#fff;background:linear-gradient(180deg,#81C784,#4CAF50);box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);cursor:pointer}
+  /* 개발용 라벨 — 라이브에선 숨긴다(아이에게 의미 없는 글씨이고, 부모 화면의 뒤로 화살표와 자리가 겹친다).
+     test/phonics/index.html 쪽에는 그대로 보이게 남겨둠. */
+  #tag{display:none;position:absolute;top:6px;left:10px;z-index:50;font-size:12px;color:#7a8a70;opacity:.7}
+
+  /* ══ 테스트 전용 개발 메뉴 ══ 아이 화면엔 안 나온다(주소가 /test/ 아래일 때만 표시).
+     아이 손이 잘 안 가는 오른쪽 위 구석에, 게임 요소와 안 겹치게 작게. */
+  #dev{display:none;position:absolute;top:4px;right:6px;z-index:200;gap:6px}
+  #dev button{width:34px;height:34px;padding:0;border:2px solid rgba(255,255,255,.85);border-radius:9px;
+    background:rgba(60,80,55,.55);color:#fff;font-family:inherit;font-size:16px;line-height:1;cursor:pointer}
+  #dev button:active{background:rgba(60,80,55,.85)}
+  #devPanel{display:none;position:absolute;inset:0;z-index:210;background:rgba(30,40,28,.92);
+    flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px}
+  #devPanel h3{margin:0;color:#cde6c3;font-size:15px;font-weight:700;letter-spacing:.5px}
+  #devWords{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;max-width:100%}
+  #devWords button{min-width:82px;padding:12px 16px;border:3px solid #81C784;border-radius:14px;
+    background:#fff;color:#33691E;font-family:inherit;font-weight:700;font-size:22px;cursor:pointer}
+  #devWords button.now{background:#FFEB3B;border-color:#F57F17}   /* 지금 보고 있는 단어 */
+  #devWords button.noassets{opacity:.45}                          /* 영상/통발음이 아직 없는 단어 */
+  #devClose{margin-top:4px;padding:8px 22px;border:2px solid #cde6c3;border-radius:20px;
+    background:transparent;color:#cde6c3;font-family:inherit;font-size:14px;cursor:pointer}
+  #devNote{color:#8fa886;font-size:11px;text-align:center;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="tag">phonics proto · satpin 1</div>
+  <div id="board">
+    <div id="videoBox">&#127916; 영상 자리</div>
+    <div id="slots"></div>
+  </div>
+  <div id="tray"></div>
+  <div id="bigWord"><span></span></div>
+  <div id="wordEmph"></div>
+  <div id="hand">&#128070;</div>
+  <button id="replay" aria-label="다시 하기">&#128260;</button>
+
+  <!-- ══ 테스트 전용 개발 메뉴 ══ 원하는 단어만 골라 보고, 지루한 구간은 넘기기 위한 것.
+       라이브에는 절대 안 나간다 — 주소가 /test/ 아래일 때만 켜진다(아래 DEVMENU). -->
+  <div id="dev">
+    <button id="devList" aria-label="단어 목록">&#9776;</button>
+    <button id="devSkip" aria-label="넘기기">&#187;</button>
+  </div>
+  <div id="devPanel">
+    <h3>단어 고르기 (테스트 전용)</h3>
+    <div id="devWords"></div>
+    <button id="devClose">닫기</button>
+    <div id="devNote">≫ 는 넘기기 — 조각 맞추는 중이면 바로 완성, 영상 중이면 다음 영상</div>
+  </div>
+</div>
+<script>
+'use strict';
+window.onerror=function(){return true};
+
+/* ── 데이터: 단어 추가는 여기에만 ─────────────────────────── */
+var WORDS=[
+  // videos: 완성 영상(동물별) — 파일명 = 단어_동물.mp4 (예: sit_dog.mp4). 배열 순서대로 재생.
+  //         없는 영상은 그냥 건너뛴다(에러 안 남) → 에셋이 아직이어도 안전.
+  // sit — 2026-08-10 에 sat 에서 바꿈. sat 은 과거형이라 3~7세에 안 맞는다.
+  //   "앉아 있는" 영상은 sit 에도 그대로 맞으므로 영상 3편은 파일명만 바꿔 재활용(sat_* → sit_*).
+  //   음가도 s·a·t → s·i·t 로 바뀐다(phoneme_i.mp3 는 이미 있던 satpin 6종에 포함).
+  {word:'sit', traps:[], videos:['dog','cat','raccoon']},
+  {word:'pat', traps:[], videos:['dog','rabbit','mother_kid']},
+  {word:'nap', traps:[], videos:['owl','sloth','baby']},      // pat 과 같은 짜임 — 동물 둘 먼저, 사람(아기)으로 마무리
+  // pan 은 '사물'이라 앞 세 단어(동작)와 짜임이 다르다. 사물을 먼저 딱 보여줘 뜻을 심고(pan_pan),
+  // 그 다음 쓰는 장면 둘로 활기차게 마무리. pan_pan 은 거의 정지 화면이라 끝에 두면 밋밋해진다.
+  {word:'pan', traps:[], videos:['pan','rabbit','cat']},
+  // sip — 아기 동물들이 머그컵으로 마시는 장면. 작은→큰 순서로, 가장 친숙한 북극곰으로 마무리.
+  // ⚠️ 이 3편은 **그림체가 앞 네 단어(수채화 그림책풍)와 다르다**(3D 렌더). 사장님 확인 대기 중.
+  {word:'sip', traps:[], videos:['harpseal','penguin','polarbear']},
+  // tap — 재생 순서는 **이 배열 순서**다(파일명 가나다순 아님). 사장님 지시 순서: 토끼(도입) → 고양이 → 강아지.
+  //   토끼가 책상 앞에서 조용히 시작해 뜻을 심고, 그 뒤 "자는 아기를 톡톡 깨우는" 같은 짜임 둘로 마무리.
+  //   (pan 과 같은 원리 — 조용한 도입 먼저, 활기찬 장면으로 끝냄)
+  {word:'tap', traps:[], videos:['rabbit','cat','dog']}
+];
+// 마지막 단어까지 끝나면 🔄 버튼, 그 전까지는 다음 단어로 자동 진행(동물 퍼즐 animal.html 과 같은 방식)
+var CUR=0;
+
+/* ── 소리: assets/phonics/sounds/ 에 파일 있으면 재생, 없으면 임시 삑소리 ──
+   글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sit.mp3 */
+var SND_BASE='../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(word_*)
+var ABC_BASE='../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
+/* ── 소리 캐시 무력화(새로고침 꼬리표) ──
+   페이지 열 때 한 번 버전을 정해 모든 mp3 뒤에 ?v=... 를 붙인다.
+   → 앱을 껐다 켤 때마다(=매 페이지 로드) 새 주소가 되어 폰이 무조건 최신 소리를 받음.
+   한 세션 안에선 같은 버전이라 재다운로드 없음. (소리 파일을 같은 이름으로 교체해도 즉시 반영) */
+var SND_VER='?v='+Date.now();
+/* ── 영상: assets/phonics/videos/sit_dog.mp4 있으면 재생, 없으면 회색 박스 ── */
+var VID_BASE='../assets/phonics/videos/';
+/* ── 영상 캐시 꼬리표 ──
+   영상을 "같은 파일명으로 교체"하면 폰이 옛 영상을 계속 쓴다(CLAUDE.md 배포/캐시 규칙).
+   소리(SND_VER)처럼 매번 새로 받게 하면 편당 1.7MB라 낭비 → 날짜 상수로 둔다.
+   ★ 영상 파일을 갈아끼운 날엔 이 날짜를 반드시 바꿀 것. 그날 한 번만 새로 받고 이후엔 정상 캐시. */
+var VID_VER='?v=20260811';   // 2026-08-11 pan_cat.mp4 를 같은 이름으로 교체(그림체 통일) → 날짜 갱신
+/* 영상 화면 위치·크기 — 영상마다 인물·동물이 잡힌 크기가 달라 따로 맞춤.
+   pos=object-position(세로 크롭 위치; 기본 '50% 50%', 값 클수록 피사체가 화면 위로),
+   scale=확대배율(기본 1).
+   ★ 키는 두 가지를 쓸 수 있다: '단어_동물'(그 영상 전용) 또는 '동물'(그 동물 공통, 예비값).
+     같은 dog 이라도 sit_dog(동물만)과 pat_dog(아이가 안고 있음)은 프레임이 달라서 전용 키가 필요하다.
+   ★ 새 영상은 되도록 '단어_동물' 전용 키로 적을 것. 공통 키(dog/cat/…)에만 의존하면 나중에 같은 동물이
+     다른 단어에 나올 때 엉뚱한 값을 물려받는다(2026-08-10 pan_cat 이 실제로 그럴 뻔했음). */
+var VIDFX={
+  // sit 3종 — 원래 sat 이던 영상 그대로(2026-08-10 파일명만 sat_* → sit_* 로 바꿔 재활용).
+  //   값은 sat 때 실제 화면 보고 맞춘 것을 그대로 옮겼다. 공통 키(dog/cat/raccoon)에 두던 것을
+  //   전용 키로 승격 — 다른 단어에 같은 동물이 나와도 서로 안 섞이게.
+  sit_dog:    {pos:'50% 90%'},            // 강아지: 위로 40%p (50→90; 80%에서 추가로 위로 10%p)
+  sit_cat:    {pos:'50% 45%'},            // 고양이: 아래로 5%p (50→45)
+  sit_raccoon:{pos:'50% 50%', scale:1.10},// 너구리: 위치 그대로 + 10% 확대
+  // pat 3종 — 아이가 안고 있는 그림이라 sit(동물만)과 프레임이 다름. 실제 화면 보고 맞춘 값.
+  pat_dog:       {pos:'50% 50%'},
+  pat_rabbit:    {pos:'50% 50%'},
+  pat_mother_kid:{pos:'50% 33%'},      // 엄마가 아이 머리를 쓰다듬음(아이는 개구리 인형을 안고 있음).
+                                       // 50%면 엄마 얼굴이 위로 잘림 → 33%로 내려 엄마얼굴·쓰다듬는 손·아이·개구리를 다 담음
+  // nap 3종 — 처음부터 자고 있고 머리 위 ZZZ 가 떠다니는 연출. ZZZ 가 "자는 중" 신호라 안 잘리는 게 중요하다.
+  // ZZZ 는 화면 높이 위쪽 3~33% 를 떠다니는데 기본 50% 로는 영상칸(높이의 58%만 보임)에 안 들어와 잘렸다 → 20% 로 내림.
+  // ※ 늘보는 2.5~3.5초에 ZZZ 가 잠깐 사라진다(원본 연출) — 그 시점만 보고 "잘렸다"고 오판하지 말 것.
+  // ※ 부엉이·늘보는 20% 로는 아래쪽(몸통·나뭇가지)이 너무 잘려 35% 로 내림(사장님 폰 확인, 2026-08-07).
+  //    ZZZ 와 맞바꾸는 관계 — 35% 에서도 ZZZ 는 읽히지만 윗부분이 조금 잘린다. 더 내리면 ZZZ 가 거의 사라진다.
+  nap_owl:   {pos:'50% 35%'},
+  nap_sloth: {pos:'50% 35%'},
+  nap_baby:  {pos:'50% 20%'},         // 아기는 20% 가 딱 맞음(ZZZ 전체 + 얼굴) — 그대로 둠
+  // pan 3종 — 뜻을 담은 '팬'이 화면 한가운데라 기본값 50% 로 세 편 다 팬이 온전히 보인다(잘림 조정 불필요).
+  //   요리사 모자 윗부분만 살짝 잘리는데 'pan' 뜻과 무관해 그대로 둔다(내리면 아래쪽 불꽃이 잘림).
+  // ★ 값이 기본과 같아도 **일부러 적어 둔다** — 전용 키가 없으면 동물 공통키를 물려받아 어긋날 수 있다.
+  //   (2026-08-10 당시 pan_cat 이 sit_cat 용 값 50% 45% 를 물려받을 뻔했음. 지금은 공통키를 안 쓰지만
+  //    코드의 `VIDFX[단어_동물] || VIDFX[동물]` 규칙은 그대로라 습관을 유지한다.)
+  pan_pan:    {pos:'50% 50%'},
+  pan_rabbit: {pos:'50% 50%'},
+  pan_cat:    {pos:'50% 50%'},
+  // sip 3종 — 아기 동물 + 머그컵이 화면 한가운데라 기본값 50% 로 얼굴·컵이 모두 들어온다.
+  // ⚠️ `sip_penguin.mp4` 는 **맨 아래 약 3%(1240~1280px)에 화면녹화 UI 막대**(파란 아이콘·마우스
+  //    커서)가 찍혀 있다. 게임이 보여주는 구간은 21~79% 라 **지금은 안 보이지만**, 이 영상만은
+  //    pos 세로값을 크게 올리면(아래쪽을 보여주면) 막대가 화면에 들어온다 → 값을 바꾸지 말 것.
+  sip_harpseal:  {pos:'50% 50%'},
+  sip_penguin:   {pos:'50% 50%'},
+  sip_polarbear: {pos:'50% 50%'},
+  // tap 3종 — 게임이 보여주는 세로 구간(보수적으로 21~79%)으로 실제 프레임을 잘라 보고 맞춘 값.
+  //   고양이·강아지는 '엄마가 위, 아기가 아래' 구도라 기본 50% 로는 **엄마 얼굴(눈)이 위로 잘린다.**
+  //   톡톡 치는 앞발과 엄마 표정이 같이 보여야 뜻이 읽히므로 위쪽을 더 보여주도록 값을 내렸다.
+  //   (pat_mother_kid 을 33% 로 내린 것과 같은 이유)
+  tap_rabbit: {pos:'50% 50%'},   // 토끼 얼굴·앞발이 화면 가운데 — 기본값으로 다 들어옴
+  tap_cat:    {pos:'50% 40%'},   // 50%면 엄마 고양이 눈이 잘림 → 10%p 위로
+  tap_dog:    {pos:'50% 35%'}    // 50%면 엄마 개 눈이 잘려 코만 보임 → 15%p 위로
+};
+var SILENT=/[?&]silent=1/.test(location.search);
+var FREQ={s:523,a:587,t:659,p:784,i:880,n:698}; // 글자별 임시 음높이(도레미솔라파)
+var ax=null;
+function ea(){ if(ax) return ax;
+  try{ var AC=window.AudioContext||window.webkitAudioContext; if(AC) ax=new AC(); }catch(e){}
+  return ax; }
+function beep(freq,dur){ if(SILENT) return;
+  try{ var c=ea(); if(!c) return;
+    var o=c.createOscillator(),g=c.createGain();
+    o.type='sine'; o.frequency.value=freq||440;
+    g.gain.setValueAtTime(0.0001,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.4,c.currentTime+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,c.currentTime+(dur||0.22));
+    o.connect(g); g.connect(c.destination);
+    o.start(); o.stop(c.currentTime+(dur||0.22)+0.05);
+  }catch(e){} }
+var sndCache={};
+function loadSound(base,key,freq){ // base+key+'.mp3' 있으면 재생, 없으면 삑소리
+  var id=base+key;
+  if(!sndCache[id]){
+    var a=null,bad=false;
+    try{ a=new Audio(base+key+'.mp3'+SND_VER); a.preload='auto';
+      a.addEventListener('error',function(){bad=true;},{once:true});
+    }catch(e){ bad=true; }
+    sndCache[id]={au:a,play:function(){ if(SILENT) return;   // au = 개발 메뉴에서 점프할 때 끊으려고 붙잡아 둠
+      if(a&&!bad){ try{ a.currentTime=0; var p=a.play(); if(p&&p.catch) p.catch(function(){beep(freq);}); return; }catch(e){} }
+      beep(freq); }};
+  }
+  return sndCache[id]; }
+function letterName(ch){ loadSound(ABC_BASE,'letter_'+ch,FREQ[ch]||440).play(); }    // 스테이지1: 글자 이름("에스")
+function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(); }  // 스테이지2: 음가("스")
+
+/* ── 배경음악(메인 게임과 동일 bgm.mp3, 방식 그대로) ── loop 반복 + 화면끔/앱닫기 때 정지·복귀.
+   파닉스는 음가(스·애·트)·발음(샛!)이 또렷해야 하는 학습 게임이라 볼륨을 아주 은은하게(0.13).
+   자동재생 정책 때문에 시작하자마자가 아니라 첫 글자 터치/드래그 순간(startBGM)에 재생 */
+var bgm=null,bgmStarted=false,_bgmWasPlaying=false;
+try{ bgm=new Audio('../assets/game/sounds/bgm.mp3'+SND_VER); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
+function startBGM(){ if(SILENT||bgmStarted||!bgm) return; bgmStarted=true;
+  try{ var p=bgm.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
+function _pauseAllSound(){                        // 홈버튼/멀티태스킹/화면끔 → 소리 정지(WebView서 앱 닫아도 BGM 계속 나오는 문제 방지)
+  try{ _bgmWasPlaying = bgm && !bgm.paused; }catch(e){ _bgmWasPlaying=false; }
+  try{ if(bgm) bgm.pause(); }catch(e){}
+  try{ document.querySelectorAll('video,audio').forEach(function(m){ try{m.pause();}catch(e){} }); }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden){ _pauseAllSound(); }
+  else if(_bgmWasPlaying){ try{ if(bgm) bgm.play().catch(function(){}); }catch(e){} } // 다시 보이면 재생중이던 BGM만 복귀
+});
+window.addEventListener('pagehide',_pauseAllSound);
+
+/* ── 판 만들기 ───────────────────────────────────────────── */
+var slotsEl=document.getElementById('slots'),trayEl=document.getElementById('tray'),
+    stage=document.getElementById('stage'),bigWord=document.getElementById('bigWord'),
+    videoBox=document.getElementById('videoBox'),replayBtn=document.getElementById('replay'),
+    hand=document.getElementById('hand'),wordEmph=document.getElementById('wordEmph');
+var slots=[],tiles=[],locked=false;
+/* 아래 둘은 테스트 전용 개발 메뉴(파일 맨 아래)가 쓰는 손잡이 — 게임 흐름 자체는 안 건드린다.
+   _devSkipVideo: 지금 재생 중인 영상을 "끝난 걸로 치는" 함수(영상 재생 중에만 값이 있음)
+   _lastWordAudio: 마지막으로 튼 단어 통발음 — 점프할 때 끊으려고 */
+var _devSkipVideo=null,_lastWordAudio=null;
+
+function shuffle(arr){ for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)),t=arr[i];arr[i]=arr[j];arr[j]=t; } return arr; }
+
+/* ★ 빌드 세대번호 — 단어가 자동으로 넘어가면서 생긴 문제 방지.
+   앞 단어의 예약된 소리·자막(setTimeout 으로 걸어둔 것들)이 다음 단어 화면에서 뒤늦게 터지는 걸 막는다.
+   화면을 새로 지을 때마다 번호를 올리고, 예약된 일은 자기 번호가 아직 유효할 때만 실행한다.
+   (사람이 🔄 를 눌러야만 넘어가던 때는 이런 겹침이 없었다) */
+var BUILD_ID=0;
+
+function build(){
+  BUILD_ID++;
+  _devSkipVideo=null;                             // (개발 메뉴) 새 화면 = 넘길 영상 없음
+  var W=WORDS[CUR]; locked=false;
+  slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
+  bigWord.style.display='none'; replayBtn.style.display='none';
+  bigWord.style.visibility='';                    // 앞 단어의 글자별 강조가 켜진 채 넘어왔을 때 복구
+  wordEmph.style.display='none'; wordEmph.innerHTML='';
+  videoBox.style.display='none'; videoBox.innerHTML=''; // 다시 하기 시 영상 제거(회색 플레이스홀더 없이 → 블랭크 방지)
+  slots=[]; tiles=[];
+  W.word.split('').forEach(function(ch){
+    var s=document.createElement('div'); s.className='slot';
+    s.innerHTML='<span class="ghost">'+ch+'</span>';
+    slotsEl.appendChild(s);
+    slots.push({el:s,letter:ch,filled:false});
+  });
+  var letters=shuffle(W.word.split('').concat(W.traps));
+  letters.forEach(function(ch,i){
+    var t=document.createElement('div'); t.className='tile'; t.textContent=ch;
+    trayEl.appendChild(t);
+    var tile={el:t,letter:ch,idx:i,placed:false};
+    tiles.push(tile);
+    attachDrag(tile);
+  });
+  tiles.forEach(place);                         // 조각 다 추가된 뒤 배치(n 확정 → 항상 25·50·75%, 깜빡임 방지)
+  /* 레이아웃(트레이 크기)이 완전히 잡힌 다음 정확한 폭으로 다시 배치 → 매번 열어도 똑같이 고르게 */
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    tiles.forEach(function(t){ if(!t.placed) place(t); });
+    showHand();                                 // 위치 확정 후 드래그 안내 손가락 표시
+  }); });
+}
+/* 드래그 안내 손가락: 첫 글자(=슬롯0 글자) 조각 위 → 첫 빈칸 쪽으로 왔다갔다. 실제 드래그 시작 시 hideHand */
+function showHand(){
+  if(!hand) return; hideHand();
+  if(!slots.length||!tiles.length) return;
+  var target=null;
+  for(var i=0;i<tiles.length;i++){ if(tiles[i].letter===slots[0].letter){ target=tiles[i]; break; } }
+  if(!target) return;
+  var st=stage.getBoundingClientRect(),
+      tr=target.el.getBoundingClientRect(),
+      sr=slots[0].el.getBoundingClientRect();
+  var tcx=tr.left-st.left+tr.width/2;                   // 첫 글자 가로 중심
+  var startX=tcx, startY=tr.bottom-st.top+tr.height*0.12; // 글자 살짝 아래(안 가리게)에서 출발
+  var scx=sr.left-st.left+sr.width/2, scy=sr.top-st.top+sr.height/2;   // 첫 빈칸 중심
+  hand.style.left=startX+'px'; hand.style.top=startY+'px';
+  hand.style.setProperty('--hdx',(scx-startX)+'px');
+  hand.style.setProperty('--hdy',(scy-startY)+'px');
+  hand.style.display='block';
+}
+function hideHand(){ if(hand) hand.style.display='none'; }
+function place(tile){ // 바닥(초록) 영역에 가로로 고르게, 세로는 중앙에 배치
+  var r=trayEl.getBoundingClientRect(),bw=tile.el.offsetWidth,bh=tile.el.offsetHeight,
+      n=tiles.length,cx=r.width*(tile.idx+1)/(n+1);   // 3개면 25%·50%·75% 지점
+  tile.el.style.left=(cx-bw/2)+'px';                   // 각 글자 가로 중심
+  tile.el.style.top =((r.height-bh)/2)+'px';           // 세로 중앙
+}
+window.addEventListener('resize',function(){ tiles.forEach(function(t){ if(!t.placed) place(t); }); });
+
+/* ── 드래그 ─────────────────────────────────────────────── */
+function attachDrag(tile){
+  var el=tile.el,sx=0,sy=0,ox=0,oy=0,moved=false;
+  el.addEventListener('pointerdown',function(e){
+    if(locked||tile.placed) return;
+    hideHand();                                 // 아이가 실제로 끌기 시작하면 안내 손가락 사라짐
+    startBGM();                                 // 첫 글자 터치/드래그 순간 BGM 시작(자동재생 정책 대응)
+    e.preventDefault();
+    try{ el.setPointerCapture(e.pointerId); }catch(err){}
+    el.classList.add('drag'); el.classList.remove('back');
+    sx=e.clientX; sy=e.clientY;
+    ox=parseFloat(el.style.left)||0; oy=parseFloat(el.style.top)||0;
+    moved=true;
+    function mv(ev){ if(!moved) return;
+      el.style.left=(ox+ev.clientX-sx)+'px';
+      el.style.top =(oy+ev.clientY-sy)+'px'; }
+    function up(ev){ moved=false;
+      el.removeEventListener('pointermove',mv);
+      el.removeEventListener('pointerup',up);
+      el.removeEventListener('pointercancel',up);
+      el.classList.remove('drag');
+      drop(tile); }
+    el.addEventListener('pointermove',mv);
+    el.addEventListener('pointerup',up);
+    el.addEventListener('pointercancel',up);
+  });
+}
+/* ── 스냅 허용 반경 ─────────────────────────────────────────────
+   3~5세는 소근육이 덜 발달해 빈칸에 정확히 조준하지 못한다. 살짝 빗나갔다고 튕겨나가면 아이가 지쳐 그만둔다.
+   → 기존 퍼즐 3종과 같은 '중심 거리' 방식으로 통일:
+       과일  = min(판*0.34, 100)px   (script.js 주석: "후하게 — 정답 근처에 대충 놔도 착 붙게(키즈 친화)")
+       동물·공룡 = 조각 짧은변 * 0.55
+   기본값 = 조각 크기의 절반.
+   ★ 상한 = '옆 빈칸의 가까운 모서리까지의 거리' — 여기 닿으면 옆칸에 제대로 놓은 조각을 뺏어오게 된다.
+     (칸간격 × 0.6 같은 어림수는 쓰지 않는다. 슬롯이 간격의 80% 보다 넓어지면 그 어림수가 옆칸을 침범한다.
+      실제로 412px 화면이 그런 경우 — 슬롯/간격 = 0.87.)
+   크기는 CSS(vw)라 화면마다 달라지므로 전부 실측한다.
+   실측값: 360px폰 → 반경 47 (옆칸 모서리 49) · 412px폰 → 반경 54 (옆칸 모서리 56) */
+function snapRadius(tr){
+  var r=Math.min(tr.width,tr.height)*0.5;
+  if(slots.length>1){
+    var a=slots[0].el.getBoundingClientRect(), b=slots[1].el.getBoundingClientRect(),
+        pitch=Math.hypot((b.left+b.width/2)-(a.left+a.width/2),(b.top+b.height/2)-(a.top+a.height/2)),
+        edge=pitch-Math.min(a.width,a.height)/2-2;  // 옆칸 모서리 직전(2px 여유)
+    if(edge>0) r=Math.min(r,edge);
+  }
+  return r;
+}
+function drop(tile){
+  var tr=tile.el.getBoundingClientRect(),
+      cx=tr.left+tr.width/2, cy=tr.top+tr.height/2,
+      SNAP=snapRadius(tr);
+  function distTo(s){ var r=s.el.getBoundingClientRect();
+    return Math.hypot(cx-(r.left+r.width/2), cy-(r.top+r.height/2)); }
+  // 받아주는 범위 = 빈칸 '안' 또는 중심에서 SNAP 이내.
+  // 칸 안을 항상 포함시키는 이유: 원만 쓰면 네모 빈칸의 네 모서리가 원 밖으로 삐져나가
+  // "칸 안에 넣었는데 튕기는" 자리가 남는다(모서리는 중심에서 54px, 반경은 47px).
+  function accepts(s){ var r=s.el.getBoundingClientRect();
+    return distTo(s)<SNAP || (cx>=r.left&&cx<=r.right&&cy>=r.top&&cy<=r.bottom); }
+  // ① 이 조각이 들어갈 '자기 빈칸'만 본다 — 옆칸과 경쟁시키지 않는다.
+  //    (예전엔 겹친 허용범위에서 '더 오른쪽 칸'이 이겨서, 정답 칸 안에 넣어도 오른쪽 끝이면 튕겼다)
+  //    같은 글자 칸이 둘 이상인 단어(pip 등) 대비 — 그중 가까운 쪽으로.
+  var hit=null,hitD=Infinity;
+  slots.forEach(function(s){ if(s.filled||s.letter!==tile.letter||!accepts(s)) return;
+    var d=distTo(s); if(d<hitD){ hitD=d; hit=s; } });
+  if(hit){                                      // 정답: 착 붙기
+    var sr=hit.el.getBoundingClientRect(),pr=trayEl.getBoundingClientRect();
+    tile.el.classList.add('placed');
+    tile.el.style.left=(sr.left-pr.left+(sr.width-tile.el.offsetWidth)/2)+'px';
+    tile.el.style.top =(sr.top -pr.top +(sr.height-tile.el.offsetHeight)/2)+'px';
+    hit.filled=true; tile.placed=true;
+    letterName(tile.letter);                    // 스테이지1: 칸에 넣는 순간 글자 이름("에스")
+    setTimeout(function(){                      // 조각을 빈칸 안으로 흡수(레이아웃 밀려도 같이 움직이게)
+      hit.el.classList.add('filled','pulse');
+      tile.el.style.display='none';
+      setTimeout(function(){ hit.el.classList.remove('pulse'); },500);
+    },200);
+    if(slots.every(function(s){return s.filled;})) setTimeout(finish,2000); // 글자이름 끝나고 음가 시작까지 약 2초 쉼
+  }else{                                        // 오답/빈 곳: 제자리로
+    // ② 다른 글자 빈칸에 갖다 놨으면 삑 — "여긴 아니야" 신호는 그대로 유지한다.
+    //    (빈 바닥에 그냥 놓은 경우엔 소리 없음 — 예전과 같음)
+    var near=null,nd=Infinity;
+    slots.forEach(function(s){ if(s.filled||!accepts(s)) return;
+      var d=distTo(s); if(d<nd){ nd=d; near=s; } });
+    if(near&&near.letter!==tile.letter) beep(196,0.25);
+    tile.el.classList.add('back');
+    place(tile);
+  }
+}
+
+/* ── 완성 연출: ②반짝임+음가(스…애…트) → 잠깐 쉬고 → ③단어 통발음("샛!") + 크게 표시 ── */
+function finish(){
+  locked=true;
+  var W=WORDS[CUR],i=0;
+  tiles.forEach(function(t){ if(!t.placed){ // 남은 함정 글자 사라지게(아래 자리 비움 → 단어 들어갈 자리)
+    t.el.style.transition='opacity .3s'; t.el.style.opacity='0';
+    setTimeout(function(){ t.el.style.display='none'; },300);
+  }});
+  function next(){                              // ② 반짝임 + 음가 동기화 (빈칸 하나씩)
+    if(i<W.word.length){
+      var ch=W.word[i],s=slots[i];
+      s.el.classList.add('pulse'); (function(el){setTimeout(function(){el.classList.remove('pulse');},500);})(s.el);
+      phonemeSound(ch); i++;                     // 반짝이는 글자의 음가("스"·"애"·"트")
+      setTimeout(next,850);                       // 음가 사이 간격(여유있게)
+    }else{
+      setTimeout(showWord,750);                 // ② 잠깐 쉬기
+    }
+  }
+  function showWord(){                          // ③ 완성 후: 단어 반짝+발음 → 영상(걷다가 앉기) → 앉는 순간 단어 반짝+발음
+    slotsEl.style.display='none';               // 빈칸 대신 완성 화면으로 전환
+    videoBox.style.display='flex';              // 위쪽: 영상 영역(회색 → 곧 영상)
+    var sp=bigWord.querySelector('span'); sp.textContent=W.word;
+    // ③-1 영상 들어가기 전: 아래쪽 단어 반짝 + 발음 한 번
+    showBigWord(sp); sayWord();
+    // ③-2 잠깐 뒤 위쪽에서 영상 재생 (강아지→고양이→너구리 차례로, 단어는 아래 그대로 유지)
+    setTimeout(function(){ playVideo(W, onSit, onAllDone); },1600);
+    function onSit(){                            // ③-3 각 동물 앉는 순간: 단어 다시 반짝 + 발음 (세 번 반복)
+      showBigWord(sp); sayWord();
+    }
+    function onAllDone(){
+      // 영상 3편이 다 끝남 → 다음 단어가 있으면 자동으로 이어서, 마지막 단어면 🔄 버튼.
+      // (동물 퍼즐 animal.html 과 같은 방식 — 아이가 멈추지 않고 계속 놀 수 있게)
+      if(CUR < WORDS.length-1){
+        CUR++;
+        setTimeout(build, 1200);                 // 마지막 발음 여운 듣고 다음 단어로
+      }else{
+        replayBtn.style.display='block';         // 마지막 단어까지 끝 → 처음부터 다시 하기
+      }
+    }
+  }
+  function showBigWord(sp){                      // 큰 단어 표시 + 반짝임(wordpop) 재시작 — 애니메이션 걸린 span 기준 리셋
+    bigWord.style.display='flex';
+    sp.style.animation='none'; void sp.offsetWidth; sp.style.animation=''; // span 리플로우로 애니메이션 재시작
+    fitWord(sp);
+  }
+  function sayWord(){                            // 단어 통발음(word_sit.mp3, 없으면 임시 연결음)
+    if(SILENT) return;
+    var arped=false;
+    function arp(){ if(arped) return; arped=true; W.word.split('').forEach(function(ch,k){ setTimeout(function(){beep(FREQ[ch]||440,0.18);},k*160); }); }
+    try{ var a=new Audio(SND_BASE+'word_'+W.word+'.mp3'+SND_VER);
+      _lastWordAudio=a;                            // 개발 메뉴에서 점프할 때 끊으려고 붙잡아 둠
+      a.addEventListener('error',function(){ arp(); },{once:true});
+      var p=a.play(); if(p&&p.catch) p.catch(function(){ arp(); });
+    }catch(e){ arp(); }
+  }
+  next();
+}
+/* 완성 영상: 동물 영상을 정해진 순서(강아지→고양이→너구리)로 차례차례 재생.
+   각 영상이 끝날 때(동물이 앉는 순간)마다 onSit, 마지막 영상까지 끝나면 onAllDone.
+   없는 영상은 앉음 취급 없이 건너뜀. 전부 없으면 바로 onAllDone */
+function playVideo(W, onSit, onAllDone){
+  var list=W.videos||[];
+  var myBuild=BUILD_ID;                            // 이 재생이 속한 화면 세대
+  function stale(){ return myBuild!==BUILD_ID; }   // 그 사이 다음 단어로 넘어갔으면 true
+  if(!list.length){ if(onAllDone)onAllDone(); return; }
+  var GAP=1600;                                  // 앉은 뒤 단어 발음 들려주고 다음 동물 입장까지 쉼
+  /* 둘째·셋째 동물: 영상이 재생 시작된 뒤 그 위에서 스·애·트 강조. 아래 단어를 글자별로 나눠(오버레이)
+     소리에 맞춰 한 글자씩 확대(노래방 자막식). 소리(phonemeSound)·간격(850)·볼륨은 완성연출과 동일.
+     완성연출용 통글자(#bigWord span)은 그대로 두고 잠깐만 숨겨 겹침 방지 */
+  function phonemeIntro(){
+    if(stale()) return;                            // 이미 다음 단어로 넘어갔으면 시작하지 않음
+    var real=bigWord.querySelector('span');
+    wordEmph.style.fontSize=getComputedStyle(real).fontSize; // 진짜 단어와 같은 크기·자리
+    wordEmph.innerHTML=''; var spans=[];
+    W.word.split('').forEach(function(ch){ var s=document.createElement('span'); s.textContent=ch; wordEmph.appendChild(s); spans.push(s); });
+    wordEmph.style.display='flex'; bigWord.style.visibility='hidden';
+    var j=0;
+    (function step(){
+      if(stale()){ wordEmph.style.display='none'; bigWord.style.visibility=''; return; }  // 넘어갔으면 즉시 정리
+      if(j<W.word.length){
+        var el=spans[j];
+        el.style.animation='none'; void el.offsetWidth; el.style.animation='pulse .45s ease'; // 그 글자만 확대
+        phonemeSound(W.word[j]); j++;             // 음가("스"·"애"·"트")
+        setTimeout(step,850);
+      }else{ wordEmph.style.display='none'; bigWord.style.visibility=''; } // 끝: 오버레이 치우고 통글자 복원
+    })();
+  }
+  function startVideo(k){                         // (영상 재생 로직 — 흐름·앉을때 발음·GAP 미변경)
+    var isLast=(k===list.length-1),done=false;
+    try{
+      var v=document.createElement('video');
+      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4'+VID_VER;   // 예: sit_dog.mp4?v=20260807
+      v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
+      v.setAttribute('playsinline',''); v.setAttribute('muted','');
+      var fx=VIDFX[W.word+'_'+list[k]] || VIDFX[list[k]];   // 그 영상 전용 값 우선, 없으면 동물 공통값
+      if(fx){ if(fx.pos) v.style.objectPosition=fx.pos; if(fx.scale) v.style.transform='scale('+fx.scale+')'; }
+      var shown=false;                             // animal.html 방식: 첫 프레임 실제로 나오면 페이드인(회색 블랭크 안 스침)
+      function reveal(){ if(shown)return; shown=true; v.style.opacity='1'; }
+      function chkShow(){ if(v.currentTime>0 && !v.paused) reveal(); }
+      v.addEventListener('timeupdate',chkShow); v.addEventListener('playing',chkShow);
+      setTimeout(reveal,1500);                     // 안전장치: 못 잡아도 1.5초 뒤 표시
+      function afterSit(){                         // 이 동물이 앉음: 단어 반짝+발음 → 잠깐 뒤 다음 동물
+        if(done) return; done=true;
+        _devSkipVideo=null;                        // (개발 메뉴) 이 영상은 끝 — 넘기기 대상에서 뺀다
+        if(stale()) return;                        // 그 사이 다음 단어로 넘어갔으면 아무것도 하지 않음
+        if(onSit)onSit();
+        if(isLast){ if(onAllDone)onAllDone(); }
+        else setTimeout(function(){ playAt(k+1); }, GAP);
+      }
+      /* (개발 메뉴 전용) ≫ 넘기기 = "지금 영상이 끝난 것으로 친다".
+         정상 종료와 같은 길(afterSit)로 보내므로 단어 반짝·발음·다음 영상 흐름이 그대로 이어진다. */
+      _devSkipVideo=function(){ try{ v.pause(); }catch(e){} afterSit(); };
+      v.addEventListener('error',function(){ if(done)return; done=true; if(stale())return; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
+      v.addEventListener('loadeddata',function(){
+        if(stale()) return;                        // 넘어간 뒤 늦게 도착한 영상은 붙이지 않음
+        videoBox.textContent=''; videoBox.appendChild(v);  // 앞 영상 치우고 새 영상 넣기
+        var p=v.play(); if(p&&p.catch) p.catch(function(){});
+        if(k>=1) setTimeout(phonemeIntro,800);     // 영상 뜬 뒤 한 박자(800ms) 쉬고 스·애·트(둘째·셋째만) — 동물 잠깐 보고 여유
+      },{once:true});
+      v.addEventListener('ended',afterSit,{once:true}); // 앉는 순간
+      v.addEventListener('loadedmetadata',function(){ // 안전장치: ended 미발생 시 길이+여유 뒤 앉음 처리
+        var ms=((isFinite(v.duration)&&v.duration>0)? v.duration*1000 : 6000)+1500;
+        setTimeout(afterSit, ms);
+      },{once:true});
+    }catch(e){ if(!done){ done=true; playAt(k+1); } }
+  }
+  function playAt(k){
+    if(stale()) return;                                     // 다음 단어로 넘어갔으면 재생 중단
+    if(k>=list.length){ if(onAllDone)onAllDone(); return; } // 마지막까지 끝 → 종료
+    startVideo(k);                                          // 영상 먼저 (첫 영상=강조X, 둘째·셋째는 영상 뜬 뒤 강조)
+  }
+  playAt(0);
+}
+/* 실측 글자 맞춤(fitWord 패턴): 공식 대신 실제 폭을 재서 줄임 */
+function fitWord(sp){
+  sp.style.fontSize='30vw';
+  var max=stage.getBoundingClientRect().width*0.86;
+  for(var g=0;g<12&&sp.offsetWidth>max;g++){ // offsetWidth: 팝 애니메이션(scale) 영향 없는 실측 폭
+    sp.style.fontSize=(parseFloat(getComputedStyle(sp).fontSize)*0.92)+'px';
+  }
+}
+// 🔄 다시 하기 = 첫 단어(sit)부터 다시 (마지막 단어까지 끝낸 상태에서만 이 버튼이 보인다)
+replayBtn.addEventListener('click',function(){ CUR=0; build(); });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   테스트 전용 개발 메뉴 — 원하는 단어만 골라 보고, 지루한 구간은 건너뛴다.
+
+   ★ 라이브 유출 방지: 플래그를 사람이 끄는 걸 잊는 사고를 막으려고 **주소로 판별**한다.
+     이 파일이 라이브(루트)로 복사되면 경로에 /test/ 가 없어져 메뉴가 저절로 사라진다.
+     (강제로 켜서 볼 일이 있으면 주소 뒤에 ?dev=1)
+   ★ 여기서 아래로는 전부 개발용 — 라이브로 옮길 때 이 블록만 통째로 지우면 된다.
+   ══════════════════════════════════════════════════════════════════════════ */
+var DEVMENU = /\/test\//.test(location.pathname) || /[?&]dev=1/.test(location.search);
+if(DEVMENU){ (function(){
+  var devBar=document.getElementById('dev'), devPanel=document.getElementById('devPanel'),
+      devWords=document.getElementById('devWords');
+  devBar.style.display='flex';
+
+  /* 점프하면 앞 단어의 소리가 다음 화면에 얹혀 들린다.
+     화면(영상·자막)은 BUILD_ID 가 막아주지만 소리는 DOM 밖의 Audio 라 따로 끊어야 한다.
+     끊을 대상 3종: ①글자이름·음가(sndCache) ②단어 통발음(_lastWordAudio) ③재생 중인 영상 */
+  function devStopSound(){
+    try{ Object.keys(sndCache).forEach(function(k){
+      var a=sndCache[k].au; if(a){ try{ a.pause(); a.currentTime=0; }catch(e){} } }); }catch(e){}
+    try{ if(_lastWordAudio){ _lastWordAudio.pause(); _lastWordAudio=null; } }catch(e){}
+    try{ document.querySelectorAll('#videoBox video').forEach(function(v){ try{v.pause();}catch(e){} }); }catch(e){}
+  }
+  function devGoto(i){
+    devStopSound();
+    _devSkipVideo=null;
+    CUR=i; build();                 // build() 가 BUILD_ID 를 올려 앞 단어의 예약된 일들을 무효화한다
+    devPanel.style.display='none';
+  }
+
+  /* ≫ 넘기기 — 지금 상태에 따라 알아서 */
+  document.getElementById('devSkip').addEventListener('click',function(){
+    if(_devSkipVideo){ _devSkipVideo(); return; }                     // ① 영상 중 → 다음 영상으로
+    if(replayBtn.style.display==='block'){ devGoto(0); return; }      // ③ 마지막까지 끝 → 처음 단어로
+    if(locked) return;                                                // 완성 연출(음가 읽는 중)은 건드리지 않는다
+    // ② 조각 맞추는 중 → 남은 조각을 즉시 다 끼워 완성 연출로 보낸다
+    slots.forEach(function(s){
+      if(s.filled) return;
+      var t=null;
+      tiles.forEach(function(x){ if(!t&&!x.placed&&x.letter===s.letter) t=x; });
+      if(t){ t.placed=true; s.filled=true; t.el.style.display='none'; s.el.classList.add('filled'); }
+    });
+    hand.style.display='none';
+    finish();
+  });
+
+  /* ☰ 단어 목록 */
+  document.getElementById('devList').addEventListener('click',function(){
+    devWords.innerHTML='';
+    WORDS.forEach(function(W,i){
+      var b=document.createElement('button');
+      b.textContent=W.word;
+      if(i===CUR) b.className='now';
+      if(!(W.videos&&W.videos.length)) b.className+=' noassets';   // 영상 없는 단어는 흐리게
+      b.addEventListener('click',function(){ devGoto(i); });
+      devWords.appendChild(b);
+    });
+    devPanel.style.display='flex';
+  });
+  document.getElementById('devClose').addEventListener('click',function(){ devPanel.style.display='none'; });
+})(); }
+
+build();
+</script>
+</body>
+</html>

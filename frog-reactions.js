@@ -328,7 +328,7 @@
         var el=document.getElementById(ids[i]);
         if(el && getComputedStyle(el).display!=='none') return true;
       }
-      if(document.querySelector('iframe[src*="animal.html"],iframe[src*="dino.html"]')) return true;
+      if(document.querySelector('iframe[src*="animal.html"],iframe[src*="dino.html"],iframe[src*="phonics/"]')) return true;
       return false;
     }catch(e){ return false; }
   }
@@ -370,7 +370,7 @@
 
   // ---- 화면 전환 시 인트로 손흔들기(및 어떤 반응이든) 확실히 정지·제거 ----
   // 시작화면을 벗어나는 버튼들을 감싸서, 넘어가기 전에 반응 정리 + 인사 예약 취소.
-  ['goModeSelect','goWordCat','goMode','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle'].forEach(function(fn){
+  ['goModeSelect','goWordCat','goMode','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle','goPhonics'].forEach(function(fn){
     if(typeof window[fn]==='function'){
       var orig=window[fn];
       window[fn]=function(){ try{ cancelGreeting(); }catch(e){} return orig.apply(this,arguments); };
