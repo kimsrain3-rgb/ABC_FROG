@@ -1725,3 +1725,7 @@ var DEVMENU = /\/test\//.test(location.pathname) || /[?&]dev=1/.test(location.se
 
 **테스트 주소**: https://kimsrain3-rgb.github.io/ABC_FROG/test/ (고정 주소 그대로. `test/current.html` 이 새 페이지를 가리키도록 갱신)
 ※ 게임은 **라이브 `phonics/index.html`** 을 연다(`test/phonics/` 아님). 이번엔 파닉스 내용은 안 건드리고 메뉴만 바꾸는 작업이라 실제와 같은 것을 여는 게 맞다.
+
+**폰 확인 후 수정 (커밋 `ba5d4c2`)** — 사장님이 테스트 앱에서 보시고 "좋다" 판정. 한 가지만 고쳤다:
+- **제목의 🗣️ 이모지 제거** (`Pick a set! 🗣️` → `Pick a set!`). 🗣️ 는 검은 실루엣이라 초록 배경에서 얼룩처럼 보였다. 퍼즐메뉴의 `Pick a puzzle! 🧩` 는 🧩 가 색이 있어 괜찮으므로 **그대로 둔다.**
+- 카드 아이콘(흰색 SVG)은 **그대로 확정** — 이모지로 되돌리지 않기로 정리됨.
