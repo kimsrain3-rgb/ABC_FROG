@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- ★ 테스트 빌드 — 파닉스 "세트 선택 메뉴" (2026-08-13)
+     흐름: 시작화면 Phonics 버튼 → [세트 메뉴 4장] → Phonics 1 누르면 기존 satpin 게임.
+     라이브 루트(index.html/script.js/style.css)는 한 글자도 안 건드린다.
+     assets·style.css·script.js·frog-reactions.js 전부 라이브 공유, 변경은 이 파일 안에만 있다.
+     GA4·에러추적은 뺐음(테스트 플레이가 실유저 통계에 안 섞이게).
+     바탕: 라이브 index.html(2026-08-13 시점) 그대로 + 아래 두 덩어리 추가
+       ① <style id="psCSS">      — 세트 메뉴 전용 CSS (라이브 갈 때 style.css 로 옮길 것)
+       ② <div class="ps" id="ps"> — 세트 메뉴 화면 (라이브 갈 때 index.html 로)
+       ③ body 끝 <script>        — goPhonics 갈아끼우기 (라이브 갈 때 script.js 로) -->
+<base href="../">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ABC Frog (TEST 파닉스 세트 메뉴)</title>
+<link rel="manifest" href="test/manifest.json">
+<meta name="theme-color" content="#4CAF50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABC Frog">
+<link rel="apple-touch-icon" href="assets/ui/icons/icon-192x192.png">
+<meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기(버전번호 수동관리 불필요) -->
+<script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>
+<!-- 테스트 빌드라 GA4·에러추적 없음. script.js 가 gtag 를 부르므로 빈 함수만 세워둔다. -->
+<script>window.gtag=window.gtag||function(){};</script>
+
+<!-- ①★ 파닉스 세트 메뉴 CSS — 라이브 반영 때 이 블록을 style.css 의 .wc 규칙들 바로 아래로 옮길 것.
+     (style.css 뒤에 와야 덮어쓸 수 있으므로 여기 head 에 둔다)
+     핵심: 화면 틀·카드·잠금·토스트는 전부 퍼즐메뉴(.wc)의 클래스를 그대로 재사용한다.
+           새로 필요한 건 ①.ps 화면 껍데기 ②카드 안 '두 줄 글씨' 배치뿐이다.
+     ※ 짧은 화면 축소(@media max-height:800px/680px)는 .wc-frog/.wc-cards/.wc-card/.wc-title 를
+       그대로 쓰기 때문에 자동으로 함께 적용된다 — 별도 미디어쿼리 불필요. -->
+<style id="psCSS">
+  /* 화면 껍데기 — .wc(퍼즐메뉴)와 완전히 동일. z-index 도 118 로 맞춘다(토스트 190 이 위에 오도록). */
+  .ps{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;
+      flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:118;overflow:hidden}
+  .ps.show{display:flex}
+
+  /* 카드 안 글씨를 두 줄로 — 위: 세트 이름, 아래: 그 세트의 글자들.
+     .wc-card 는 아이콘+글자를 가로로 놓는데, 여기선 '아이콘 + (이름/글자들 세로묶음)' 이 된다. */
+  .ps-text{display:flex;flex-direction:column;align-items:flex-start;gap:3px;line-height:1}
+  .ps-sub{font-family:'Fredoka',cursive;font-size:15px;letter-spacing:2px;line-height:1;
+          color:rgba(255,255,255,.9);text-shadow:1px 1px 0 rgba(0,0,0,.18);white-space:nowrap}
+  /* 잠긴 카드의 아랫줄도 이름과 같은 정도로 흐리게(.wc-locked .card-label 과 동일한 처리) */
+  .wc-locked .ps-sub{opacity:.7;filter:grayscale(.4)}
+  /* 두 줄이라 카드가 조금 높아진다 → 위아래 여백을 살짝 줄여 4장이 편하게 들어가게 */
+  .ps-card{padding-top:12px;padding-bottom:12px}
+
+  /* 아이콘 = 시작화면 Phonics 버튼과 '같은 그림'(인라인 SVG).
+     ⚠️ 공용 규칙 `.game-card .card-icon svg{width:66px;height:66px}` 이 먼저 잡혀 있어서
+        그냥 두면 아이콘이 카드를 밀어낸다 → 시작화면(.mode-buttons)과 같은 34px 로 고정한다.
+     ※ 잠긴 카드는 기존 `.wc-locked .card-icon{filter:brightness(0) invert(.28)}` 가
+        이 SVG 도 그대로 회색 실루엣으로 만든다(채소·곤충과 동일) — 추가 규칙 불필요. */
+  /* 아이콘 30px + 간격 6px — 시작화면(34/8)보다 살짝 작다. 카드 가로가 244px 로 고정인데
+     자물쇠가 한 칸을 더 쓰기 때문에, 글자확대 때 줄이 카드 밖으로 나가지 않도록 미리 벌어둔 여유다.
+     (아이콘·간격은 글자확대의 영향을 안 받으므로, 여기서 번 자리는 어느 배율에서나 그대로 남는다) */
+  .ps-card{gap:6px}
+  .ps-card .card-icon{width:30px;height:30px;flex:0 0 auto}
+  .ps-card .card-icon svg{width:100%;height:100%;display:block}
+
+  /* ⚠️ 짧은 화면 축소를 .ps-card 도 따라가게 하는 규칙 — 없으면 안 된다.
+     style.css 의 @media(max-height:800/680px){.wc-card{padding:12px/10px 16px}} 는 .wc-card 를 줄이는데,
+     위 `.ps-card{padding:12px}` 가 나중에 선언돼 그 축소를 덮어버린다(같은 굵기 규칙은 뒤가 이김).
+     그대로 두면 360×640 + 글자확대 150% 에서 마지막 카드가 3px 잘렸다(2026-08-13 실측).
+     → 같은 구간에서 .ps-card 도 함께 줄인다. */
+  @media (max-height:800px){ .ps-card{padding-top:10px;padding-bottom:10px} }
+  @media (max-height:680px){ .ps-card{padding-top:8px;padding-bottom:8px} .ps-sub{font-size:14px} }
+
+  /* ⚠️ 자물쇠를 '떠 있는 배지'가 아니라 '글자 옆 한 칸'으로 바꾼다 — 겹침 방지.
+     [문제] 공용 `.wc-lock{position:absolute;right:7px}` 은 카드 위에 떠 있어서, 글자가 커지면
+       글자가 그 밑으로 파고든다. 실측(360px 폭): 110% 에서 6px, 130% 18px, 150% 30px 겹침 →
+       하필 가려지는 글자가 **세트 번호(2·3·4)** 라 카드 구실을 못 하게 된다.
+       (같은 현상이 라이브 퍼즐메뉴 'Vegetable' 에도 있다 — 거기선 단어 꼬리라 덜 눈에 띌 뿐,
+        원인은 같다. 이 카드들은 번호가 핵심이라 여기서는 반드시 막는다.)
+     [해결] .ps-card 안에서만 자물쇠를 제자리 요소(position:static)로 돌려 아이콘·글자와 나란히 놓는다.
+       가로줄에 자리를 차지하므로 글자가 아무리 커져도 **겹칠 수가 없다**(숫자 조정이 아니라 구조로 막음).
+       공용 규칙은 그대로 두므로 퍼즐메뉴(채소·곤충)는 지금 모습 그대로다. */
+  .ps-card .wc-lock{position:static;right:auto;top:auto;font-size:20px;flex:0 0 auto;margin-left:2px}
+  .ps-card.wc-locked{padding-right:16px}   /* 배지 자리로 비워뒀던 오른쪽 여백 원복 */
+</style>
+<!-- ★ 부팅 가드 — script.js 가 도착하기 전에 눌린 버튼을 기억했다가, 도착 즉시 자동 실행한다.
+     [문제] 시작화면 버튼은 HTML 만으로 즉시 보이고 눌린다. 그런데 그 버튼을 처리하는 함수
+       (goModeSelect 등 11개)는 body 맨 끝의 script.js 가 다 받아진 뒤에야 생긴다.
+       느린 네트워크에서 그 틈에 아이가 누르면 "Uncaught ReferenceError: goModeSelect is not defined"
+       가 나고, script.js 의 window.onerror 가 이를 삼켜서 화면은 그냥 무반응이 됐다.
+       (2026-08-05 GA4 game_error 실측: error_where=init 12건, 멕시코·필리핀·네팔에 집중)
+     [원리] 진짜 함수가 오기 전까지 같은 이름의 '대기표' 함수를 미리 만들어 둔다.
+       대기표가 불리면 무엇을 눌렀는지 기억만 해 두고, script.js 가 실행되면서 진짜 함수가
+       대기표를 덮어쓴다(script.js 의 함수는 전부 function 선언이라 자동으로 덮어씀).
+       그 직후 body 끝의 __bootFlush() 가 기억해 둔 것을 한 번 실행한다.
+     [안전] 진짜 함수가 끝내 안 오면(로드 실패) 아무것도 실행하지 않는다 — 지금과 같은 상태로 남을 뿐,
+       더 나빠지지 않는다. 전체가 try-catch 라 가드가 고장나도 게임은 그대로 돈다. -->
+<script>
+(function () {
+  'use strict';
+  try {
+    var NAMES = ['goModeSelect','goWordCat','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle',
+                 'goMode','wcBack','wcLocked','msBack','wpBack','gcBack','goPhonics',
+                 // ↓ 세트 메뉴가 새로 쓰는 이름 2개. 메뉴 자체는 goPhonics 를 눌러야 열리므로
+                 //   이 둘이 대기표 없이 눌릴 일은 사실상 없지만, 명단에 넣어두는 게 규칙이라 함께 넣는다.
+                 'goPhonicsSet','psBack'];
+    var stubs = {}, pending = null, dotsEl = null, ready = false;
+
+    // 기다리는 중 표시(개구리 인사말 아래 점점점). style.css 가 아직 안 왔어도 보이게 인라인 스타일만 사용.
+    function showDots() {
+      try {
+        if (dotsEl || ready) return;
+        var host = document.querySelector('.ss .sub') || document.querySelector('.ss');
+        if (!host) return;
+        var st = document.createElement('style');
+        st.textContent = '@keyframes bootBlink{0%,100%{opacity:.25}50%{opacity:.95}}';
+        (document.head || document.documentElement).appendChild(st);
+        dotsEl = document.createElement('div');
+        dotsEl.id = 'bootWait';
+        dotsEl.textContent = '• • •';
+        dotsEl.style.cssText = 'font:700 22px/1 system-ui,sans-serif;color:#fff;text-align:center;' +
+          'margin-top:8px;letter-spacing:3px;animation:bootBlink 1s infinite;' +
+          'text-shadow:0 1px 3px rgba(0,0,0,.35);pointer-events:none';
+        if (host.parentNode) host.parentNode.insertBefore(dotsEl, host.nextSibling);
+      } catch (e) {}
+    }
+    function hideDots() {
+      try { if (dotsEl && dotsEl.parentNode) dotsEl.parentNode.removeChild(dotsEl); } catch (e) {}
+      dotsEl = null;
+    }
+
+    // 대기표 함수 등록 — 마지막에 누른 것 하나만 기억(연타해도 한 번만 실행)
+    for (var i = 0; i < NAMES.length; i++) {
+      (function (n) {
+        if (typeof window[n] === 'function') return;   // 이미 진짜가 있으면 절대 건드리지 않음
+        stubs[n] = function () { pending = { n: n, a: [].slice.call(arguments) }; showDots(); };
+        window[n] = stubs[n];
+      })(NAMES[i]);
+    }
+
+    // 눌렀다는 느낌은 줘야 하므로 살짝 눌린 표시(로딩 중일 때만)
+    document.addEventListener('click', function (ev) {
+      try {
+        if (ready) return;
+        var t = ev && ev.target;
+        var b = (t && t.closest) ? t.closest('.game-card,.gbk,.mbtn') : null;
+        if (!b) return;
+        b.style.transform = 'scale(.94)'; b.style.opacity = '.75';
+        setTimeout(function () { try { b.style.transform = ''; b.style.opacity = ''; } catch (e) {} }, 200);
+      } catch (e) {}
+    }, true);
+
+    // script.js(+frog-reactions.js) 실행 직후 호출 — 기억해 둔 버튼을 실행한다.
+    // document.write 로 넣은 스크립트는 파서를 멈추고 동기 실행되므로, 이 함수가 불릴 시점엔 이미 로드가 끝나 있다.
+    window.__bootFlush = function () {
+      try {
+        ready = true;
+        hideDots();
+        if (!pending) return;
+        var p = pending; pending = null;
+        var f = window[p.n];
+        if (typeof f === 'function' && f !== stubs[p.n]) f.apply(null, p.a);   // 대기표가 아직 그대로면 실행 안 함
+      } catch (e) {}
+    };
+    window.__bootState = function () { return { ready: ready, pending: pending && pending.n }; };  // 테스트 확인용
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="gc">
+  <div class="ss" id="ss">
+    <img class="sf" src="assets/frog/images/frog_4a.png" alt="ABC Frog">
+    <h1>ABC Frog</h1>
+    <div class="sub">I'm hungry~</div>
+    <div class="mode-buttons">
+      <button class="game-card wc-card card-abc" onclick="goModeSelect()">
+        <span class="card-icon"><img src="assets/bugs/images/fly_front.png" alt="catch"></span>
+        <span class="card-label">ABC</span>
+      </button>
+      <button class="game-card wc-card card-word" onclick="goWordCat()">
+        <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
+        <span class="card-label">Word</span>
+      </button>
+      <!-- 파닉스(satpin) — 2026-08-12 잠금 해제. wc-locked·🔒 배지를 떼면 아이콘이 제 색으로 나오고
+           .card-phonics 보라색이 적용된다. 누르면 phonics/index.html 이 전체화면 오버레이로 열림.
+           아이콘: 🗣️ 이모지 → 인라인 SVG(입 벌린 옆얼굴 + 소리 물결 2줄).
+           ⚠️ 눈동자 #7F5BC2 = 카드 그라데이션(#9575CD→#5E35B1)의 '눈 높이' 지점 색 실측값.
+              카드 색이나 아이콘 위치를 바꾸면 이 값도 다시 재야 한다. -->
+      <button class="game-card wc-card card-phonics" onclick="goPhonics()">
+        <span class="card-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">
+            <path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/>
+            <circle cx="32" cy="30" r="10" fill="#fff"/>
+            <circle cx="32" cy="28" r="4" fill="#7F5BC2"/>
+            <path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="card-label">Phonics</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 단어 퍼즐 카테고리 선택 (과일 / 동물 / 채소) -->
+  <div class="wc" id="wc">
+    <button class="wc-back gbk" onclick="wcBack()" aria-label="back"></button>
+    <img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="wc-title">Pick a puzzle! 🧩</h2>
+    <div class="wc-cards">
+      <button class="game-card wc-card wc-fruit" onclick="goWordPuzzle()">
+        <span class="card-icon">🍎</span>
+        <span class="card-label">Fruit</span>
+      </button>
+      <button class="game-card wc-card wc-animal" onclick="goAnimalPuzzle()">
+        <span class="card-icon"><span class="ic-mask" role="img" aria-label="animal"></span></span>
+        <span class="card-label">Animal</span>
+      </button>
+      <button class="game-card wc-card wc-dino" onclick="goDinoPuzzle()">
+        <span class="card-icon"><span class="dino-sil-ic" role="img" aria-label="dino"></span></span>
+        <span class="card-label">Dino</span>
+      </button>
+      <button class="game-card wc-card wc-locked" onclick="wcLocked(this)">
+        <span class="card-icon">🥕</span>
+        <span class="card-label">Vegetable</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked wc-insect" onclick="wcLocked(this)">
+        <span class="card-icon"><img class="insect-sil-ic" src="assets/ui/icons/insect_silhouette.svg" alt="insect"></span>
+        <span class="card-label">Insect</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ★★ 파닉스 세트 선택 (2026-08-13 신규) — 구조는 위 퍼즐메뉴(.wc)와 똑같다.
+       .ps 는 .ss(시작화면)를 '덮기만' 하고 display:none 으로 만들지 않는다 → 화면 판정은
+       .ss 의 display 가 아니라 이 요소의 .show 로 해야 한다(CLAUDE.md 화면 전환 판정 규칙).
+       잠긴 카드는 Vegetable·Insect 와 완전히 같은 방식: wc-locked + 🔒 + onclick="wcLocked(this)".
+       → 흔들림·"곧 나와요" 토스트가 기존 함수 그대로 재사용된다(새 함수 0개). -->
+  <div class="ps" id="ps">
+    <button class="wc-back gbk" onclick="psBack()" aria-label="back"></button>
+    <img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="wc-title">Pick a set! 🗣️</h2>
+    <div class="wc-cards">
+      <button class="game-card wc-card card-phonics ps-card" onclick="goPhonicsSet(1)">
+        <span class="card-icon"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics"><path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/><circle cx="32" cy="30" r="10" fill="#fff"/><circle cx="32" cy="28" r="4" fill="#7F5BC2"/><path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg></span>
+        <span class="ps-text">
+          <span class="card-label">Phonics 1</span>
+          <span class="ps-sub">s a t p i n</span>
+        </span>
+      </button>
+      <button class="game-card wc-card wc-locked ps-card" onclick="wcLocked(this)">
+        <span class="card-icon"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics"><path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/><circle cx="32" cy="30" r="10" fill="#fff"/><circle cx="32" cy="28" r="4" fill="#7F5BC2"/><path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg></span>
+        <span class="ps-text">
+          <span class="card-label">Phonics 2</span>
+          <span class="ps-sub">m d g o c k</span>
+        </span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked ps-card" onclick="wcLocked(this)">
+        <span class="card-icon"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics"><path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/><circle cx="32" cy="30" r="10" fill="#fff"/><circle cx="32" cy="28" r="4" fill="#7F5BC2"/><path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg></span>
+        <span class="ps-text">
+          <span class="card-label">Phonics 3</span>
+          <span class="ps-sub">ck e u r h b</span>
+        </span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked ps-card" onclick="wcLocked(this)">
+        <span class="card-icon"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics"><path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/><circle cx="32" cy="30" r="10" fill="#fff"/><circle cx="32" cy="28" r="4" fill="#7F5BC2"/><path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg></span>
+        <span class="ps-text">
+          <span class="card-label">Phonics 4</span>
+          <span class="ps-sub">f l s j v …</span>
+        </span>
+        <span class="wc-lock">🔒</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
+  <div class="wp" id="wp">
+    <button class="wp-back gbk gbk-dim" onclick="wpBack()" aria-label="back"></button>
+    <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
+    <div class="wp-stage" id="wpStage"></div>
+  </div>
+
+  <!-- ABC 모드 선택 화면 (파리 잡기 글자 모드 고르기) -->
+  <div class="ms" id="ms">
+    <button class="ms-back gbk" onclick="msBack()" aria-label="back"></button>
+    <img class="ms-frog" src="assets/frog/images/frog_4a.png" alt="frog">
+    <h2 class="ms-title">Which letter?</h2>
+    <div class="ms-buttons">
+      <button class="mbtn mbtn-abc" onclick="goMode('ABC')"><span class="mbtn-label">ABC</span></button>
+      <button class="mbtn mbtn-lower" onclick="goMode('abc')"><span class="mbtn-label">abc</span></button>
+      <button class="mbtn mbtn-mix" onclick="goMode('ABc')"><span class="mbtn-label">ABc</span></button>
+    </div>
+  </div>
+  <!-- 알파벳 게임 화면 뒤로 버튼 (기존엔 없어서 물리 뒤로 버튼밖에 못 나갔음) -->
+  <button class="gbk gbk-dim gc-back" id="gcBack" onclick="gcBack()" aria-label="back" style="z-index:150"></button>
+  <div class="sc" id="sc">🌟 0</div>
+  <div class="cb" id="cb"></div>
+  <div class="bubble" id="bbl"></div>
+  <!-- 잠긴 카드 안내 토스트 — 시작화면·퍼즐메뉴 양쪽에서 쓰려고 #gc 직속으로 둔다.
+       .wc 안에 두면 그 화면이 display:none 이라 시작화면에서 눌러도 토스트가 부모째 숨겨져 안 보인다.
+       .wc 가 #gc 와 같은 박스(position:absolute;inset:0)라 옮겨도 화면상 위치는 그대로. -->
+  <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
+
+  <div class="lilypad"><img src="assets/ui/images/lilypad.png" alt="lilypad"></div>
+  <div class="stump"><img src="assets/ui/images/bg_5-1.png" alt="stump"></div>
+
+  <div class="frog" id="frog">
+    <!-- 5단계 개구리 (각 단계: a=숨쉬기A, b=숨쉬기B, open=입벌림) -->
+    <!-- 1단계 (홀쭉) -->
+    <img id="fs1a" class="frog-img active" src="assets/frog/images/frog_1a.png" alt="frog1a" data-stage="1" data-pose="a">
+    <img id="fs1b" class="frog-img" src="assets/frog/images/frog_1b.png" alt="frog1b" data-stage="1" data-pose="b">
+    <img id="fs1o" class="frog-img" src="assets/frog/images/frog_1_open.png" alt="frog1open" data-stage="1" data-pose="open">
+    <img id="fs1y" class="frog-img" src="assets/frog/images/frog_1_yuck.png" alt="frog1yuck" data-stage="1" data-pose="yuck">
+    <!-- 2단계 (조금) -->
+    <img id="fs2a" class="frog-img" src="assets/frog/images/frog_2a.png" alt="frog2a" data-stage="2" data-pose="a">
+    <img id="fs2b" class="frog-img" src="assets/frog/images/frog_2b.png" alt="frog2b" data-stage="2" data-pose="b">
+    <img id="fs2o" class="frog-img" src="assets/frog/images/frog_2b_open.png" alt="frog2open" data-stage="2" data-pose="open">
+    <img id="fs2y" class="frog-img" src="assets/frog/images/frog_2_yuck.png" alt="frog2yuck" data-stage="2" data-pose="yuck">
+    <!-- 3단계 (통통) -->
+    <img id="fs3a" class="frog-img" src="assets/frog/images/frog_3a.png" alt="frog3a" data-stage="3" data-pose="a">
+    <img id="fs3b" class="frog-img" src="assets/frog/images/frog_3b.png" alt="frog3b" data-stage="3" data-pose="b">
+    <img id="fs3o" class="frog-img" src="assets/frog/images/frog_3_open.png" alt="frog3open" data-stage="3" data-pose="open">
+    <img id="fs3y" class="frog-img" src="assets/frog/images/frog_3_yuck.png" alt="frog3yuck" data-stage="3" data-pose="yuck">
+    <!-- 4단계 (뚜뚜) -->
+    <img id="fs4a" class="frog-img" src="assets/frog/images/frog_4a.png" alt="frog4a" data-stage="4" data-pose="a">
+    <img id="fs4b" class="frog-img" src="assets/frog/images/frog_4b.png" alt="frog4b" data-stage="4" data-pose="b">
+    <img id="fs4o" class="frog-img" src="assets/frog/images/frog_4_open.png" alt="frog4open" data-stage="4" data-pose="open">
+    <img id="fs4y" class="frog-img" src="assets/frog/images/frog_4_yuck.png" alt="frog4yuck" data-stage="4" data-pose="yuck">
+    <!-- 5단계 (만삭) -->
+    <img id="fs5a" class="frog-img" src="assets/frog/images/frog_5a.png" alt="frog5a" data-stage="5" data-pose="a">
+    <img id="fs5b" class="frog-img" src="assets/frog/images/frog_5b.png" alt="frog5b" data-stage="5" data-pose="b">
+    <img id="fs5o" class="frog-img" src="assets/frog/images/frog_5_open.png" alt="frog5open" data-stage="5" data-pose="open">
+    <img id="fs5y" class="frog-img" src="assets/frog/images/frog_5_yuck.png" alt="frog5yuck" data-stage="5" data-pose="yuck">
+  </div>
+
+  <div class="tongue" id="tng"></div>
+  <div id="fc"></div>
+  <div class="cbar" id="cb2"></div>
+</div>
+
+<div id="rotate-warn">
+  <div class="rw-icon">📱</div>
+  <div class="rw-t1">Turn your phone upright!</div>
+  <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
+</div>
+
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
+<script>document.write('<scr' + 'ipt src="script.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). test/에서 검증 후 이식, script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드. -->
+<script>document.write('<scr' + 'ipt src="frog-reactions.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- ③★★ 파닉스 세트 메뉴 동작 — 라이브 반영 때 이 블록을 script.js 의 goPhonics 자리로 옮길 것.
+     ※ script.js 뒤에서 실행돼야 진짜 goPhonics 를 손에 쥘 수 있으므로 여기 위치가 중요하다.
+
+     [설계] 이름을 새로 만들지 않고 goPhonics 의 '속만' 바꾼다.
+       goPhonics()      = (전) 게임 열기        → (후) 세트 메뉴 열기
+       goPhonicsSet(n)  = 세트 n 시작 (1번만 열림, 2·3·4는 HTML 에서 wcLocked 로 직행)
+       psBack()         = 세트 메뉴 닫고 시작화면으로
+     이렇게 하면 아래 3곳을 안 건드려도 된다 — 이게 이 방식을 고른 이유다:
+       ① index.html 의 onclick="goPhonics()"      ② 부팅가드 NAMES 의 'goPhonics'
+       ③ frog-reactions.js 가 goPhonics 를 감싸 개구리 인사를 정리하는 부분
+     [잠금카드] 2·3·4 는 새 함수 없이 기존 wcLocked(this) 를 그대로 쓴다 → 흔들림+토스트 공짜. -->
+<script>
+(function(){
+  'use strict';
+
+  var origGoPhonics  = window.goPhonics;     // script.js 의 '진짜 파닉스 게임 열기'
+  var origClosePhon  = window.closePhonics;  // script.js 의 '파닉스 게임 닫기'
+  if(typeof origGoPhonics!=='function') return;   // script.js 가 안 왔으면 아무것도 바꾸지 않는다
+
+  function psEl(){ return document.getElementById('ps'); }
+  function psOpen(){ var e=psEl(); return !!(e && e.classList.contains('show')); }
+
+  // ── Phonics 버튼 → 이제 '세트 메뉴'가 먼저 열린다 ──────────────────────────
+  window.goPhonics = function(){
+    try{
+      var e=psEl(); if(!e) { origGoPhonics(); return; }   // 메뉴가 없으면 예전대로 바로 게임(안전망)
+      e.classList.add('show');
+      // 개구리 인사/반응 정리 — 원래 goPhonics 가 하던 일. 메뉴 단계에서 미리 해둔다.
+      // ※ 테스트에선 frog-reactions.js 의 래퍼(cancelGreeting)가 우리 교체로 한 단계 비켜난다.
+      //   지금은 인사가 꺼져 있어(GREET_ON=false) 영향이 없고, 재생 중 반응 정리는 stop() 이 한다.
+      //   라이브(script.js 안에서 goPhonics 를 고치는 방식)에선 frog-reactions.js 가 script.js
+      //   뒤에 로드되므로 바뀐 goPhonics 를 자동으로 감싼다 → 이 문제 자체가 없다.
+      try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(_){}
+      try{ if(window.syncBackGuard) window.syncBackGuard(); }catch(_){}   // 뒤로가기 보호 켜기
+      try{ gtag('event','phonics_menu_open',{}); }catch(_){}
+    }catch(e){}
+  };
+
+  // ── 세트 카드 누름 ────────────────────────────────────────────────────────
+  // 메뉴는 '켜둔 채로' 게임을 연다(게임 오버레이가 화면을 꽉 덮어 어차피 안 보인다).
+  // 이렇게 해야 게임에서 뒤로 나왔을 때 메뉴가 그 자리에 그대로 있다 — 따로 복원할 게 없다.
+  window.goPhonicsSet = function(n){
+    try{ if(n===1) origGoPhonics(); }catch(e){}
+  };
+
+  // ── 세트 메뉴 뒤로가기 → 시작화면 ─────────────────────────────────────────
+  window.psBack = function(){
+    try{ var e=psEl(); if(e) e.classList.remove('show'); }catch(_){}
+    try{ if(window.syncBackGuard) window.syncBackGuard(); }catch(_){}    // 보호칸 반납(다음 뒤로가기에 앱 종료)
+  };
+
+  // ── 물리 뒤로가기 ─────────────────────────────────────────────────────────
+  // script.js 의 inPlayScreen() 은 'ps' 를 모른다. 그대로 두면 세트 메뉴를 '시작화면'으로 보고
+  // 보호칸을 반납해 버려서, 뒤로가기 한 번에 앱이 그냥 꺼진다.
+  try{
+    var origInPlay = window.inPlayScreen;
+    if(typeof origInPlay==='function'){
+      window.inPlayScreen = function(){
+        if(psOpen()) return true;                       // 세트 메뉴 = 보호할 화면
+        return origInPlay.apply(this, arguments);
+      };
+    }
+  }catch(e){}
+
+  // 파닉스 게임을 닫는 순간을 표시해 둔다.
+  // [왜 필요한가] 게임 중 물리 뒤로가기를 누르면 script.js 의 popstate 가 먼저 돌아 게임을 닫는다.
+  //   그 다음 아래 우리 popstate 가 도는데, 그때 메뉴는 아직 열려 있으므로 '메뉴도 닫아라'로 오해해
+  //   한 번 누른 뒤로가기에 게임과 메뉴가 같이 닫혀 버린다. 그래서 방금 게임을 닫은 회차는 건너뛴다.
+  //   (setTimeout 0 = 같은 회차의 popstate 리스너들이 다 돈 직후에 표시를 지운다)
+  // ※ 라이브(script.js)로 옮길 땐 이 표시가 필요 없다 — 그쪽은 popstate 안에서
+  //   `if(_phOverlay){ closePhonics(); return; }` 다음 줄에 ps 분기를 넣으면 return 으로 자연히 갈린다.
+  var justClosedGame = false;
+  if(typeof origClosePhon==='function'){
+    window.closePhonics = function(){
+      justClosedGame = true;
+      setTimeout(function(){ justClosedGame = false; }, 0);
+      return origClosePhon.apply(this, arguments);
+    };
+  }
+
+  window.addEventListener('popstate', function(){
+    try{
+      if(justClosedGame) return;        // 방금 게임을 닫은 뒤로가기 → 메뉴는 그대로 둔다(게임 → 메뉴)
+      if(psOpen()) psBack();            // 메뉴에서 뒤로가기 → 시작화면
+    }catch(e){}
+  });
+
+  window.__psState = function(){        // 검증 확인용
+    return { menuOpen: psOpen(), gameOpen: !!(window.__phState && window.__phState().open) };
+  };
+})();
+</script>
+
+<!-- ★ 부팅 가드 마무리 — 위 두 스크립트가 동기 로드라 여기 오면 진짜 함수가 이미 준비됐다.
+     로딩 중에 눌러 둔 버튼이 있으면 지금 한 번 실행한다(없으면 아무 일도 안 함). -->
+<script>try{ if(window.__bootFlush) window.__bootFlush(); }catch(e){}</script>
+<script>
+// 캐시 도우미(서비스워커) 사용 안 함 — 앱은 항상 서버 최신을 직접 로드(푸시 즉시 반영).
+// 과거에 등록된 서비스워커/캐시가 있으면 깨끗이 정리(자가 복구). 새로 등록은 하지 않음.
+try {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(reg){ try { reg.unregister(); } catch (e) {} });
+    }).catch(function(){});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function(keys){
+      keys.forEach(function(k){ try { caches.delete(k); } catch (e) {} });
+    }).catch(function(){});
+  }
+} catch (e) {}
+</script>
+</body>
+</html>
