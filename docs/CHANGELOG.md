@@ -1729,3 +1729,40 @@ var DEVMENU = /\/test\//.test(location.pathname) || /[?&]dev=1/.test(location.se
 **폰 확인 후 수정 (커밋 `ba5d4c2`)** — 사장님이 테스트 앱에서 보시고 "좋다" 판정. 한 가지만 고쳤다:
 - **제목의 🗣️ 이모지 제거** (`Pick a set! 🗣️` → `Pick a set!`). 🗣️ 는 검은 실루엣이라 초록 배경에서 얼룩처럼 보였다. 퍼즐메뉴의 `Pick a puzzle! 🧩` 는 🧩 가 색이 있어 괜찮으므로 **그대로 둔다.**
 - 카드 아이콘(흰색 SVG)은 **그대로 확정** — 이모지로 되돌리지 않기로 정리됨.
+
+---
+
+### 2026-08-13 (이어서) — 🚀 **파닉스 세트 메뉴 라이브 반영 완료** (커밋 `37b3019`, 백업태그 `backup-before-phonicsmenu-20260813`)
+
+사장님 "됐다, 라이브에 푸시해줘" → 실유저 전원에게 반영됐다.
+
+**바뀐 파일 3개 — `index.html` 은 한 글자도 안 건드렸다**
+
+| 파일 | 무엇 |
+|---|---|
+| `script.js` | `goPhonics` 를 '메뉴 열기'로 교체, 기존 게임 열기는 **`openPhonicsGame()` 으로 분리**. `goPhonicsSet`/`psBack`/`psMenuOpen`/`_buildPhonicsMenu` 추가. `inPlayScreen()` ids 에 `ps`, popstate 에 `ps` 분기 |
+| `style.css` | `.ps` 화면 + 카드 두 줄 글씨 + 자물쇠 자리 — **파일 맨 끝**에 넣었다(뒤에 있어야 `@media` 의 `.wc-card` 여백에 안 진다) |
+| `frog-reactions.js` | `otherScreenOpen()` ids 에 `'ps'` |
+
+**★ 테스트판과 일부러 다르게 간 것 — 메뉴 화면을 `index.html` 이 아니라 `script.js` 가 만든다**
+- 테스트판에선 `<div class="ps">` 를 HTML 에 직접 넣었지만, 라이브에선 `_buildPhonicsMenu()` 가 **처음 열 때 만들어 `#gc` 에 붙인다.**
+- 이유: **`index.html` 은 캐시버스터(`?b=`)가 안 붙는 유일한 진입점**이라 폰에 옛 판이 며칠 남는다. 거기에 메뉴를 넣으면 옛 `index.html` 을 쓰는 폰은 **메뉴 없이 예전 동작을 계속**한다. **2026-08-12 파닉스가 폰에서 계속 잠겨 보이던 것과 똑같은 함정**이다. `script.js` 는 항상 최신이므로 여기서 만들면 즉시 전 폰 반영. (`_unlockPhonicsCard` 와 같은 이유·같은 방식)
+- 부수 효과로 **`index.html` 변경 0줄** → 부팅가드 `NAMES` 도 안 건드렸다(메뉴는 `script.js` 도착 후에만 존재하므로 대기표가 필요 없다).
+- `_buildPhonicsMenu()` 는 **`#ps` 가 이미 있으면 그대로 쓴다** → 테스트판(정적 `#ps`)도 그대로 동작한다.
+
+**popstate 순서** — `if(_phOverlay){ closePhonics(); return; }` **다음 줄**에 `if(psMenuOpen()){ psBack(); return; }` 를 뒀다. 앞에서 `return` 하므로 **뒤로가기 한 번에 게임과 메뉴가 같이 닫히는 일이 없다**(테스트판에서 필요했던 '방금 닫음' 표시가 라이브에선 불필요해진 이유).
+
+**검증** (라이브 `index.html` 로컬 + **실제 배포 주소** 양쪽)
+
+| 항목 | 결과 |
+|---|---|
+| 화면 전환 8단계 | ✅ 통과 (버튼→메뉴→게임→뒤로→메뉴→뒤로→시작화면) |
+| 회귀 | ✅ **15항목** — Word 메뉴 5장·과일퍼즐·ABC 모드선택 정상, **채소·곤충 자물쇠는 기존 '떠 있는 배지' 그대로**(공용 규칙 안 건드림 확인) |
+| 글자확대 100·110·130·150% | ✅ 겹침 0, 130%까지 카드 안에 완전히 들어옴(150%는 자물쇠 3px 밖 — vc11 `setTextZoom(100)` 나가면 앱에선 발생 안 함) |
+| 중복 열기 | ✅ 두 번 눌러도 `#ps` 1개 |
+| JS 에러 | ✅ 0건 (favicon 404 하나 — 원래 있던 것) |
+| 실제 배포 주소 | ✅ 카드 4장·제목·글자·게임 진입·뒤로가기 2단계 모두 확인 |
+
+**되돌리는 법**: `git revert 37b3019` 또는 `git checkout backup-before-phonicsmenu-20260813 -- script.js style.css frog-reactions.js` 후 푸시.
+
+**남은 별건** — 퍼즐메뉴 `Vegetable` 카드도 자물쇠가 글자를 덮는다(100% 6px / 130% 25px). 이번엔 공용 규칙을 안 건드리려고 손대지 않았다. 정리하려면 `.wc-card .wc-lock` 도 같은 방식(제자리 요소)으로 바꾸면 된다.
