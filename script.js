@@ -1474,7 +1474,89 @@ window.addEventListener('message',function(ev){
 // 2026-08-12 라이브 반영. 기존 게임 코드와 완전 분리(iframe) → 충돌/크래시 위험 0.
 // HTML은 ?b=로 항상 최신, 내부 소리는 페이지가 매번 새로 받고, 영상은 그 안의 VID_VER 날짜로 관리한다.
 var _phOverlay=null;
-function goPhonics(){
+
+// ── 세트 선택 메뉴 (2026-08-13) ─────────────────────────────────────────────
+// Phonics 버튼 → 이 메뉴(카드 4장) → Phonics 1 = satpin 게임.
+// ★ 화면(#ps)을 index.html 이 아니라 여기서 만드는 이유:
+//   index.html 은 캐시버스터(?b=)가 안 붙는 유일한 진입점이라 폰에 옛 판이 며칠 남는다.
+//   거기에 메뉴를 넣으면 옛 index.html 을 쓰는 폰은 메뉴 없이 예전 동작을 계속한다.
+//   script.js 는 항상 최신으로 받으므로 여기서 만들면 모든 폰에 즉시 반영된다.
+//   (Phonics 카드 잠금해제 _unlockPhonicsCard 와 같은 이유·같은 방식)
+var PH_SETS=[
+  {n:1, label:'Phonics 1', letters:'s a t p i n',  open:true },
+  {n:2, label:'Phonics 2', letters:'m d g o c k',  open:false},
+  {n:3, label:'Phonics 3', letters:'ck e u r h b', open:false},
+  {n:4, label:'Phonics 4', letters:'f l s j v …',  open:false}
+];
+// 아이콘 = 시작화면 Phonics 버튼과 같은 그림(입 벌린 옆얼굴 + 소리 물결 2줄).
+// 잠긴 카드는 기존 `.wc-locked .card-icon` 회색 필터가 그대로 걸려 채소·곤충과 같은 실루엣이 된다.
+function _phIconHTML(){
+  return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">'+
+    '<path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/>'+
+    '<circle cx="32" cy="30" r="10" fill="#fff"/>'+
+    '<circle cx="32" cy="28" r="4" fill="#7F5BC2"/>'+
+    '<path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+    '<path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>';
+}
+function _buildPhonicsMenu(){
+  try{
+    var ex=document.getElementById('ps'); if(ex) return ex;      // 이미 있으면 그대로 씀(중복 생성 방지)
+    var host=document.getElementById('gc'); if(!host) return null;
+    var d=document.createElement('div');
+    d.className='ps'; d.id='ps';
+    var h='<button class="wc-back gbk" onclick="psBack()" aria-label="back"></button>'+
+          '<img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">'+
+          '<h2 class="wc-title">Pick a set!</h2>'+
+          '<div class="wc-cards">';
+    for(var i=0;i<PH_SETS.length;i++){
+      var s=PH_SETS[i];
+      // 잠긴 카드는 채소·곤충과 완전히 같은 방식 — wc-locked + 🔒 + wcLocked(this).
+      // 흔들림과 "곧 나와요" 토스트가 기존 함수 그대로 재사용된다(새 함수 0개).
+      h+='<button class="game-card wc-card ps-card '+(s.open?'card-phonics':'wc-locked')+'" '+
+           (s.open ? 'onclick="goPhonicsSet('+s.n+')"' : 'onclick="wcLocked(this)"')+'>'+
+           '<span class="card-icon">'+_phIconHTML()+'</span>'+
+           '<span class="ps-text">'+
+             '<span class="card-label">'+s.label+'</span>'+
+             '<span class="ps-sub">'+s.letters+'</span>'+
+           '</span>'+
+           (s.open?'':'<span class="wc-lock">🔒</span>')+
+         '</button>';
+    }
+    h+='</div>';
+    d.innerHTML=h;
+    host.appendChild(d);
+    return d;
+  }catch(e){ return null; }
+}
+function goPhonics(){                              // Phonics 버튼 → 세트 메뉴
+  try{
+    if(_phOverlay) return;                         // 이미 게임 중이면 무시
+    var m=_buildPhonicsMenu();
+    if(!m){ openPhonicsGame(1); return; }           // 메뉴를 못 만들면 예전처럼 바로 게임(안전망)
+    m.classList.add('show');
+    // 개구리 인사/반응이 돌고 있으면 정리 — 메뉴 위로 소리가 겹치지 않게.
+    // (frog-reactions.js 가 goPhonics 를 감싸 cancelGreeting 도 부르지만, 그 파일이 로드 실패해도
+    //  안전하도록 여기서도 한 번 세워둔다. 두 번 불려도 문제 없는 함수다.)
+    try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(e){}
+    syncBackGuard();                                // 세트 메뉴 진입 → 뒤로가기 보호 켜기
+    try{gtag('event','phonics_menu_open',{});}catch(e){}
+  }catch(e){}
+}
+function goPhonicsSet(n){                           // 세트 카드 누름 (지금은 1번만 열림)
+  try{ if(n===1) openPhonicsGame(1); }catch(e){}
+}
+function psBack(){                                  // 세트 메뉴 → 시작화면
+  try{ var m=document.getElementById('ps'); if(m) m.classList.remove('show'); }catch(e){}
+  syncBackGuard();                                  // 보호칸 반납(다음 뒤로가기에 앱 종료 — 다른 화면과 동일)
+}
+function psMenuOpen(){                              // 세트 메뉴가 떠 있는가
+  try{ var m=document.getElementById('ps'); return !!(m && m.classList.contains('show')); }catch(e){ return false; }
+}
+window.__psState=function(){ return { menuOpen: psMenuOpen(), gameOpen: !!_phOverlay }; };   // 검증 확인용
+
+// ★ 게임을 열 때 세트 메뉴는 '켜둔 채로' 둔다 — 게임 오버레이가 화면을 꽉 덮어 어차피 안 보이고,
+//   게임에서 나오면 메뉴가 그 자리에 그대로 있어 따로 복원할 코드가 필요 없다.
+function openPhonicsGame(setNo){
   try{
     if(_phOverlay) return;                       // 중복 열기 방지
     // 개구리 인사/반응이 돌고 있으면 먼저 정리 — 파닉스 위로 소리가 겹치지 않게.
@@ -2427,7 +2509,7 @@ var _backSkip=false;    // 우리가 직접 칸을 반납할 때 생기는 popst
 function inPlayScreen(){
   try{
     if(_apOverlay||_dpOverlay||_phOverlay) return true;            // 동물·공룡 퍼즐 · 파닉스(오버레이)
-    var ids=['wp','wc','ms'];                                      // 과일퍼즐 · 퍼즐메뉴 · 모드선택
+    var ids=['wp','wc','ms','ps'];                                 // 과일퍼즐 · 퍼즐메뉴 · 모드선택 · 파닉스 세트메뉴
     for(var i=0;i<ids.length;i++){
       var el=document.getElementById(ids[i]);
       if(el&&el.classList.contains('show')) return true;
@@ -2456,7 +2538,11 @@ window.addEventListener('popstate',function(e){
   //   2026-08-12 사장님 판단 — 폰 테스트에서 확인한 동작 그대로.)
   // ※ 여기서 _backArmed 는 이미 false 다 → closePhonics 의 syncBackGuard 는 칸을 반납하지 않고,
   //   시작화면에서 뒤로 한 번 더 누르면 정상적으로 앱이 꺼진다.
+  // ※ 세트 메뉴를 거쳐 들어왔으면 메뉴는 켜둔 채이므로, 게임만 닫히고 자연히 '메뉴로 복귀'가 된다.
+  //   여기서 return 하므로 아래 ps 분기까지 내려가지 않는다 → 한 번 눌러 둘 다 닫히는 일이 없다.
   if(_phOverlay){ closePhonics(); return; }
+  // 파닉스 세트 메뉴가 떠 있으면 → 닫고 시작화면으로 (퍼즐메뉴 wc 와 같은 취급)
+  if(psMenuOpen()){ psBack(); return; }
   // 동물·공룡 퍼즐이 떠 있으면 → 아무것도 안 함(퍼즐 유지). 아래 wc 분기가 뒤 화면을 닫는 것도 막는다.
   if(_apOverlay||_dpOverlay){ syncBackGuard(); return; }
   // 단어 퍼즐 화면이 열려 있으면 → 닫기만 (시작화면으로 복귀)

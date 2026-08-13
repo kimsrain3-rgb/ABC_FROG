@@ -323,7 +323,7 @@
   //   동물·공룡 퍼즐은 iframe 오버레이라 iframe 존재로 판정.
   function otherScreenOpen(){
     try{
-      var ids=['ms','wc','wp'];
+      var ids=['ms','wc','wp','ps'];        // ps = 파닉스 세트 메뉴(2026-08-13). 없는 폰이면 getElementById 가 null 이라 그냥 건너뜀
       for(var i=0;i<ids.length;i++){
         var el=document.getElementById(ids[i]);
         if(el && getComputedStyle(el).display!=='none') return true;

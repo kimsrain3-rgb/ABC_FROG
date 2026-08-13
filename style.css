@@ -306,3 +306,43 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
   .wc-cards{gap:10px}
   .wc-card{padding:10px 16px}
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   파닉스 세트 선택 메뉴 (.ps) — 2026-08-13
+   흐름: 시작화면 Phonics 버튼 → 이 메뉴(카드 4장) → Phonics 1 = satpin 게임
+   화면 틀·카드·잠금·토스트는 전부 퍼즐메뉴(.wc)의 클래스를 그대로 재사용한다.
+   새로 필요한 건 ①.ps 화면 껍데기 ②카드 안 '두 줄 글씨' ③자물쇠 자리뿐이다.
+   ⚠️ 이 블록은 반드시 위 @media 들보다 **뒤**에 있어야 한다 — .ps-card 의 여백이
+      @media 의 .wc-card 여백에 지지 않으려면 나중에 선언돼야 하기 때문.
+   ※ 화면(#ps)은 index.html 이 아니라 script.js 가 만든다(_buildPhonicsMenu).
+      index.html 은 캐시버스터가 안 붙는 유일한 진입점이라 폰에 옛 판이 며칠 남는다.
+   ───────────────────────────────────────────────────────────────────────── */
+.ps{position:absolute;inset:0;background:linear-gradient(180deg,#4CAF50,#2E7D32);display:none;
+    flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:118;overflow:hidden}
+.ps.show{display:flex}
+
+/* 카드 안 글씨 두 줄 — 위: 세트 이름, 아래: 그 세트의 글자들 */
+.ps-text{display:flex;flex-direction:column;align-items:flex-start;gap:3px;line-height:1}
+.ps-sub{font-family:'Fredoka',cursive;font-size:15px;letter-spacing:2px;line-height:1;
+        color:rgba(255,255,255,.9);text-shadow:1px 1px 0 rgba(0,0,0,.18);white-space:nowrap}
+.wc-locked .ps-sub{opacity:.7;filter:grayscale(.4)}      /* 잠긴 카드 아랫줄도 이름과 같이 흐리게 */
+
+/* 아이콘 30px + 간격 6px — 시작화면(34/8)보다 살짝 작다. 카드 가로가 244px 고정인데 자물쇠가
+   한 칸을 더 쓰므로, 글자확대 때 줄이 카드 밖으로 나가지 않도록 미리 벌어둔 여유다.
+   (아이콘·간격은 글자확대의 영향을 안 받아 여기서 번 자리는 어느 배율에서나 그대로 남는다) */
+.ps-card{gap:6px;padding-top:12px;padding-bottom:12px}
+.ps-card .card-icon{width:30px;height:30px;flex:0 0 auto}
+.ps-card .card-icon svg{width:100%;height:100%;display:block}
+
+/* ⚠️ 자물쇠를 '떠 있는 배지'가 아니라 '글자 옆 한 칸'으로 — 겹침을 구조로 차단.
+   공용 .wc-lock 은 카드 위에 떠 있어서 글자가 커지면 그 밑으로 파고든다.
+   실측(360px 폭): 110% 6px / 130% 18px / 150% 30px 겹침 → 하필 가려지는 게 세트 번호(2·3·4)라
+   카드 구실을 못 한다. 제자리 요소로 돌리면 가로줄에 자리를 차지하므로 겹칠 수가 없다.
+   ※ 같은 현상이 퍼즐메뉴 'Vegetable' 에도 있으나(단어 꼬리가 가려짐) 공용 규칙은 그대로 둬서
+     채소·곤충 카드는 지금 모습 그대로다. 그건 별건으로 남겨둔다. */
+.ps-card .wc-lock{position:static;right:auto;top:auto;font-size:20px;flex:0 0 auto;margin-left:2px}
+.ps-card.wc-locked{padding-right:16px}
+
+/* 짧은 화면에서 .ps-card 도 함께 줄인다 — 없으면 360×640 + 글자확대 150% 에서 마지막 카드가 잘린다 */
+@media (max-height:800px){ .ps-card{padding-top:10px;padding-bottom:10px} }
+@media (max-height:680px){ .ps-card{padding-top:8px;padding-bottom:8px} .ps-sub{font-size:14px} }
