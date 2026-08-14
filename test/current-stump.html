@@ -466,7 +466,8 @@
     { up:'2%',   note:'많이' },
     { up:'2.5%', note:'최대(한계)' }
   ];
-  var i = 0;
+  // ★ 2026-08-14 사장님이 7%(5단계) 선택 → 기본값을 거기로. 조절바로 앞뒤 비교는 계속 가능.
+  var i = 4;
   var bar = document.getElementById('stumpTune');
   var valEl = document.getElementById('stVal');
   var stepEl = document.getElementById('stStep');
