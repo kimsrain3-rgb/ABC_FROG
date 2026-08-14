@@ -9,22 +9,23 @@
 <body>
 <div>로딩중… 🐸</div>
 <!--
-  ★ 현재 테스트 콘텐츠 = 파닉스 **세트 선택 메뉴** = test/current-phonics-menu.html (2026-08-13)
-  - 흐름: 시작화면 Phonics 버튼 → **[세트 메뉴 카드 4장]** → Phonics 1 누르면 기존 satpin 게임.
-  - 카드: Phonics 1(열림, s a t p i n) / 2(잠금, m d g o c k) / 3(잠금, ck e u r h b) / 4(잠금, f l s j v …)
-    잠긴 카드는 퍼즐메뉴의 채소·곤충과 **완전히 같은 방식** — `wc-locked` + 🔒 + `onclick="wcLocked(this)"`
-    → 흔들림 + "곧 나와요" 토스트를 기존 함수 그대로 재사용(새 함수 0개).
-  - 뒤로가기: 게임에서 뒤로 → **세트 메뉴**, 세트 메뉴에서 뒤로 → **시작화면**. ←버튼·물리 뒤로가기 둘 다.
-  - ⚠️ 라이브 공용 파일을 안 건드리려고 이 파일 안에서 **우회**하는 것들. 라이브 갈 땐 정식 반영 필요:
-    ① `style.css` ← `<style id="psCSS">` 블록 (.ps 화면 + 카드 두 줄 글씨)
-    ② `index.html` ← `<div class="ps" id="ps">` 세트 메뉴 화면 + 부팅가드 NAMES 에 goPhonicsSet·psBack
-    ③ `script.js` ← goPhonics 를 '메뉴 열기'로 바꾸고 goPhonicsSet/psBack 추가,
-       `inPlayScreen()` 에 ps 추가, popstate 에 ps 분기(파닉스 분기 **다음** 줄에)
-    ④ `frog-reactions.js` ← `otherScreenOpen()` 의 ids 에 `'ps'` 추가
-       (지금은 인사가 꺼져 있어 영향 없지만, 나중에 인사를 되살리면 필요해진다)
-  - 파닉스 내용물: 단어 6개(sit·pat·nap·pan·sip·tap) · 음가 satpin 6종 · 단어별 통발음 word_*.mp3 · 완성영상 3편씩
+  ★ 현재 테스트 콘텐츠 = **첫 화면 로딩 다이어트** = test/current-lazyimg.html (2026-08-14)
+  - 문제: 오래만에 앱 켜면 녹색 화면이 5초씩. 첫 화면이 안 쓰는 그림을 2.8MB나 받고 있었다.
+  - 고친 것 2가지:
+    ① Word 버튼 아이콘 — 34x34px 로 보이는 버튼에 974KB(1019x1200) 원본을 쓰고 있었다.
+       → 버튼 전용 `fruit_apple_icon.png`(194x228, 7KB) 새로 만들어 교체. **퍼즐용 원본은 그대로.**
+    ② 개구리 20장 — 시작화면에서 **한 장도 안 보이는데**(.frog 가 .ss 에 완전히 가려짐) 전부 받고 있었다.
+       → 19장을 `src` → `data-src` 로 바꿔 안 받게 하고, ABC 버튼 누를 때부터 순서대로 받는다.
+       ※ fs4a 만 src 유지 — frog_4a.png 는 시작화면 .sf 가 어차피 받으므로 공짜이고,
+         frog-reactions.js:146 이 로딩된 개구리 PNG 로 발 위치를 재기 때문에 한 장은 있어야 한다.
+  - 확인할 것(폰): ①첫 화면 개구리 숨쉬기 정상 ②파리잡기 개구리 5단계 커짐 ③입벌림·뱉기 ④로딩 가벼워짐
+  - ⚠️ 라이브 공용 파일을 안 건드리려고 이 파일 안에서 **우회**하는 것. 라이브 갈 땐 정식 반영 필요:
+    ① `index.html` ← Word 버튼 아이콘 경로 + 개구리 19장 `src`→`data-src`
+    ② `script.js`  ← body 끝 지연로딩 엔진. **라이브에선 `setFrame()` 원본을 직접 고치면 되므로**
+       테스트판의 '감싸기(wrapper)' 코드는 그대로 옮기지 말 것 — 훨씬 짧아진다.
   - script.js·style.css·assets는 라이브 그대로 공유(사본 없음). 이 HTML 한 장에만 변경이 들어있음.
-  - 보관: 파닉스 열기(메뉴 없이 바로 게임)=current-phonics-open.html (2026-08-12 라이브 반영 완료),
+  - 보관: 파닉스 세트 메뉴=current-phonics-menu.html (2026-08-13 라이브 반영 완료),
+          파닉스 열기(메뉴 없이 바로 게임)=current-phonics-open.html (2026-08-12 라이브 반영 완료),
           Phonics 버튼(잠긴 상태)=current-phonicsbtn.html (2026-08-05 라이브 반영 완료),
           부팅 가드=current-bootguard.html (2026-08-05 라이브 반영 완료),
           물리 뒤로가기=current-backexit.html (2026-07-30 라이브 반영 완료),
@@ -36,7 +37,7 @@
           시작화면 인사 끄기=current-nogreet.html (2026-08-10 라이브 반영 완료)
 -->
 <script>
-location.replace('current-phonics-menu.html?b=' + Date.now());
+location.replace('current-lazyimg.html?b=' + Date.now());
 </script>
 </body>
 </html>
