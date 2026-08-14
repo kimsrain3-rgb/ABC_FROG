@@ -675,16 +675,86 @@ frogStage=4;
 const initFrog=document.getElementById('fs4a');
 if(initFrog){initFrog.style.display='block';initFrog.classList.add('active');}
 let currentFrogEl=initFrog||null;
+
+// === 개구리 스프라이트 지연 로딩 (2026-08-14) ===
+// index.html 의 #frog 18장은 src 대신 data-src 를 갖고 있다(첫 화면에서 1,962KB → 376KB).
+// 게임에 들어갈 때 여기서 순서대로 받는다. 자세한 이유는 index.html 의 #frog 주석 참고.
+// fs1a(게임 시작 단계)·fs4a(.sf 가 어차피 받음)는 src 가 있어 목록에 없다.
+const FROG_LAZY_ORDER=['fs1b','fs1o','fs1y',
+                       'fs2a','fs2b','fs2o','fs2y',
+                       'fs3a','fs3b','fs3o','fs3y',
+                       'fs4b','fs4o','fs4y',
+                       'fs5a','fs5b','fs5o','fs5y'];
+// 한 번에 2장씩만 받는다. 18장을 동시에 부르면 대역폭을 18등분해서 정작 게임 시작에 필요한
+// 1단계 그림이 제일 늦게 온다(느린 네트워크에서 결정적). 2단계는 글자 6개를 모아야 나오므로 여유가 있다.
+const FROG_MAX_PARALLEL=2;
+let _frogQueue=null, _frogInflight=0;
+function _frogHydrate(el){
+  if(!el) return el;
+  const ds=el.getAttribute('data-src');
+  if(ds){ el.removeAttribute('data-src'); el.src=ds; }
+  return el;
+}
+function _frogReady(el){ return !!(el && el.complete && el.naturalWidth>0); }
+function _frogPump(){
+  while(_frogQueue && _frogInflight<FROG_MAX_PARALLEL && _frogQueue.length){
+    const el=document.getElementById(_frogQueue.shift());
+    if(!el || !el.getAttribute('data-src')) continue;   // 없거나 이미 받은 건 건너뜀
+    _frogInflight++;
+    const next=()=>{ _frogInflight--; _frogPump(); };
+    el.addEventListener('load',next,{once:true});
+    el.addEventListener('error',next,{once:true});      // 실패해도 줄이 멈추면 안 됨
+    _frogHydrate(el);
+  }
+}
+function preloadFrogImgs(){
+  if(_frogQueue) return;                                 // 이미 시작함
+  _frogQueue=FROG_LAZY_ORDER.slice();
+  _frogPump();
+}
+
+function showOnlyFrog(el){
+  const all=document.querySelectorAll('#frog .frog-img');
+  for(let i=0;i<all.length;i++){
+    if(all[i]===el) continue;
+    all[i].style.display='none'; all[i].classList.remove('active');
+  }
+  el.style.display='block'; el.classList.add('active');
+  currentFrogEl=el;
+}
+// 원하는 그림이 아직 안 받아졌을 때 대신 보여줄 것 고르기.
+// ★ 포즈(입벌림/뱉기)보다 단계(개구리 크기)가 훨씬 눈에 띈다 → 같은 단계의 다른 포즈를 먼저 쓴다.
+function bestFrogFor(want){
+  if(_frogReady(want)) return want;
+  const st=want.getAttribute('data-stage');
+  const sibs=document.querySelectorAll('#frog .frog-img[data-stage="'+st+'"]');
+  for(let i=0;i<sibs.length;i++){ if(_frogReady(sibs[i])) return sibs[i]; }
+  return null;                                           // 이 단계 그림이 하나도 없다 → 지금 것 유지
+}
+let wantFrogEl=null;
+function applyFrogFrame(){
+  if(!wantFrogEl) return;
+  const el=bestFrogFor(wantFrogEl);
+  if(el) showOnlyFrog(el);
+}
+// ★ 그림이 하나 도착할 때마다 다시 판단한다.
+// 숨쉬기가 a↔b 를 1초마다 바꾸는데 느린 네트워크에선 그림이 몇 초씩 걸린다. "이 그림이 도착하면
+// 그때 보여주자" 식으로 한 장만 노리면 도착할 때마다 이미 다른 포즈를 원하고 있어 서로 엇갈리고,
+// 개구리가 옛 그림에 멈춘다(2026-08-14 저속 재현으로 실측 확인).
+try{
+  const _fimgs=document.querySelectorAll('#frog .frog-img');
+  for(let i=0;i<_fimgs.length;i++) _fimgs[i].addEventListener('load',applyFrogFrame);
+}catch(e){}
+
 function setFrame(pose){
   // pose: 'a', 'b', 'open', 'yuck'
   const suffix = pose==='open' ? 'o' : pose==='yuck' ? 'y' : pose;
   const targetId = 'fs'+frogStage+suffix;
   const el=document.getElementById(targetId);
   if(!el) return;
-  const prev=currentFrogEl;
-  el.style.display='block';el.classList.add('active');
-  currentFrogEl=el;
-  if(prev && prev!==el){prev.style.display='none';prev.classList.remove('active');}
+  wantFrogEl=el;
+  _frogHydrate(el);          // 급하니 줄을 서지 않고 바로 받는다
+  applyFrogFrame();          // 아직 없으면 같은 단계의 다른 포즈로 버틴다(빈 개구리 방지)
 }
 
 // === 숨쉬기 애니메이션 (1초 주기) ===
@@ -1149,6 +1219,7 @@ function tut(){
 
 function gl(){try{uf();}catch(e){console.warn('Game loop error:',e);}requestAnimationFrame(gl)}
 function go(mode){
+  try{preloadFrogImgs();}catch(e){}   // 보장용 — 모드선택을 건너뛰고 들어오는 길(뒤로가기 복귀 등) 대비
   gameMode=mode||'ABC';
   try{gtag('event','game_start',{game_mode:gameMode});}catch(e){}
   // 모드별 배경 + 색감 전환
@@ -1713,7 +1784,9 @@ try{ _ensureInsectCard(); }catch(e){}
 try{ document.addEventListener('DOMContentLoaded',_ensureInsectCard); }catch(e){}
 
 // === ABC 모드 선택 화면 ===
-function goModeSelect(){ try{document.getElementById('ms').classList.add('show');}catch(e){} syncBackGuard(); }
+// 개구리 그림 미리 받기를 여기서 시작한다 — 모드 선택은 실제 게임 시작보다 한 탭 앞이라
+// 아이가 ABC/abc/ABc 를 고르는 동안 1단계 그림이 도착할 여유가 생긴다.
+function goModeSelect(){ try{preloadFrogImgs();}catch(e){} try{document.getElementById('ms').classList.add('show');}catch(e){} syncBackGuard(); }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} syncBackGuard(); }
 // ※ 여기선 syncBackGuard()를 부르지 않는다: 모드선택을 닫은 뒤 실제 게임 화면이 뜨기까지 0.5초 걸리는데,
 //    그 사이엔 '시작 화면'으로 판정돼 보호가 잠깐 풀린다. 모드선택에서 켠 보호를 그대로 게임까지 이어간다.

@@ -121,7 +121,10 @@ gtag('config','G-VEN3PCFXXL',{
         <span class="card-label">ABC</span>
       </button>
       <button class="game-card wc-card card-word" onclick="goWordCat()">
-        <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_image.png?v=1" alt="Word"></span>
+        <!-- 버튼 전용 작은 아이콘(127x150, 21KB). 2026-08-14 이전엔 퍼즐용 원본
+             fruit_apple_image.png(1019x1200, 974KB)를 그대로 썼는데 버튼은 34x34px 로 보인다(style.css:279).
+             ⚠️ 퍼즐용 원본은 그대로 둘 것 — script.js 의 WP_WORDS.apple.img 가 퍼즐 그림으로 쓴다. -->
+        <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_icon.png?v=1" alt="Word"></span>
         <span class="card-label">Word</span>
       </button>
       <!-- 파닉스(satpin) — 2026-08-12 잠금 해제. wc-locked·🔒 배지를 떼면 아이콘이 제 색으로 나오고
@@ -206,33 +209,44 @@ gtag('config','G-VEN3PCFXXL',{
   <div class="lilypad"><img src="assets/ui/images/lilypad.png" alt="lilypad"></div>
   <div class="stump"><img src="assets/ui/images/bg_5-1.png" alt="stump"></div>
 
+  <!-- ★ 개구리 지연 로딩 (2026-08-14) — 18장은 `src` 가 아니라 `data-src` 다.
+       [왜] 이 20장은 시작화면에서 한 장도 안 보인다(.frog z-index 22 가 .ss z-index 100 에 완전히 가려짐).
+            그런데 `<img src>` 라서 브라우저가 첫 화면에서 20장(1,962KB)을 전부 받고 있었다.
+            시작화면 개구리는 여기가 아니라 위쪽 `.sf` 이고, script.js 맨 위 IIFE 가 frog_4a↔frog_4b 만 바꾼다.
+       [언제 받나] script.js 의 `preloadFrogImgs()` 가 게임 들어갈 때(ABC 카드 누른 순간) 순서대로 받는다.
+       [src 를 남긴 2장]
+         fs1a — 게임은 항상 1단계로 시작(script.js `go()`). 없으면 느린 네트워크에서 '크기가 틀린 개구리'가 보인다.
+         fs4a — frog_4a.png 는 `.sf`·`.wc-frog`·`.ms-frog` 가 어차피 받으므로 추가 비용 0.
+                frog-reactions.js 가 '로딩된 개구리 PNG' 로 발 위치를 재기 때문에 항상 한 장은 있어야 한다.
+       ⚠️ `loading="lazy"` 로 바꾸지 말 것 — 20장 전부 display:none(style.css)이라 화면에 안 걸려서
+          브라우저가 영영 안 받는다. 게임에 들어가도 개구리가 안 나온다. -->
   <div class="frog" id="frog">
     <!-- 5단계 개구리 (각 단계: a=숨쉬기A, b=숨쉬기B, open=입벌림) -->
-    <!-- 1단계 (홀쭉) -->
+    <!-- 1단계 (홀쭉) — fs1a 만 src 유지(위 설명 참고) -->
     <img id="fs1a" class="frog-img active" src="assets/frog/images/frog_1a.png" alt="frog1a" data-stage="1" data-pose="a">
-    <img id="fs1b" class="frog-img" src="assets/frog/images/frog_1b.png" alt="frog1b" data-stage="1" data-pose="b">
-    <img id="fs1o" class="frog-img" src="assets/frog/images/frog_1_open.png" alt="frog1open" data-stage="1" data-pose="open">
-    <img id="fs1y" class="frog-img" src="assets/frog/images/frog_1_yuck.png" alt="frog1yuck" data-stage="1" data-pose="yuck">
+    <img id="fs1b" class="frog-img" data-src="assets/frog/images/frog_1b.png" alt="frog1b" data-stage="1" data-pose="b">
+    <img id="fs1o" class="frog-img" data-src="assets/frog/images/frog_1_open.png" alt="frog1open" data-stage="1" data-pose="open">
+    <img id="fs1y" class="frog-img" data-src="assets/frog/images/frog_1_yuck.png" alt="frog1yuck" data-stage="1" data-pose="yuck">
     <!-- 2단계 (조금) -->
-    <img id="fs2a" class="frog-img" src="assets/frog/images/frog_2a.png" alt="frog2a" data-stage="2" data-pose="a">
-    <img id="fs2b" class="frog-img" src="assets/frog/images/frog_2b.png" alt="frog2b" data-stage="2" data-pose="b">
-    <img id="fs2o" class="frog-img" src="assets/frog/images/frog_2b_open.png" alt="frog2open" data-stage="2" data-pose="open">
-    <img id="fs2y" class="frog-img" src="assets/frog/images/frog_2_yuck.png" alt="frog2yuck" data-stage="2" data-pose="yuck">
+    <img id="fs2a" class="frog-img" data-src="assets/frog/images/frog_2a.png" alt="frog2a" data-stage="2" data-pose="a">
+    <img id="fs2b" class="frog-img" data-src="assets/frog/images/frog_2b.png" alt="frog2b" data-stage="2" data-pose="b">
+    <img id="fs2o" class="frog-img" data-src="assets/frog/images/frog_2b_open.png" alt="frog2open" data-stage="2" data-pose="open">
+    <img id="fs2y" class="frog-img" data-src="assets/frog/images/frog_2_yuck.png" alt="frog2yuck" data-stage="2" data-pose="yuck">
     <!-- 3단계 (통통) -->
-    <img id="fs3a" class="frog-img" src="assets/frog/images/frog_3a.png" alt="frog3a" data-stage="3" data-pose="a">
-    <img id="fs3b" class="frog-img" src="assets/frog/images/frog_3b.png" alt="frog3b" data-stage="3" data-pose="b">
-    <img id="fs3o" class="frog-img" src="assets/frog/images/frog_3_open.png" alt="frog3open" data-stage="3" data-pose="open">
-    <img id="fs3y" class="frog-img" src="assets/frog/images/frog_3_yuck.png" alt="frog3yuck" data-stage="3" data-pose="yuck">
-    <!-- 4단계 (뚜뚜) -->
+    <img id="fs3a" class="frog-img" data-src="assets/frog/images/frog_3a.png" alt="frog3a" data-stage="3" data-pose="a">
+    <img id="fs3b" class="frog-img" data-src="assets/frog/images/frog_3b.png" alt="frog3b" data-stage="3" data-pose="b">
+    <img id="fs3o" class="frog-img" data-src="assets/frog/images/frog_3_open.png" alt="frog3open" data-stage="3" data-pose="open">
+    <img id="fs3y" class="frog-img" data-src="assets/frog/images/frog_3_yuck.png" alt="frog3yuck" data-stage="3" data-pose="yuck">
+    <!-- 4단계 (뚜뚜) — fs4a 만 src 유지(위 설명 참고) -->
     <img id="fs4a" class="frog-img" src="assets/frog/images/frog_4a.png" alt="frog4a" data-stage="4" data-pose="a">
-    <img id="fs4b" class="frog-img" src="assets/frog/images/frog_4b.png" alt="frog4b" data-stage="4" data-pose="b">
-    <img id="fs4o" class="frog-img" src="assets/frog/images/frog_4_open.png" alt="frog4open" data-stage="4" data-pose="open">
-    <img id="fs4y" class="frog-img" src="assets/frog/images/frog_4_yuck.png" alt="frog4yuck" data-stage="4" data-pose="yuck">
+    <img id="fs4b" class="frog-img" data-src="assets/frog/images/frog_4b.png" alt="frog4b" data-stage="4" data-pose="b">
+    <img id="fs4o" class="frog-img" data-src="assets/frog/images/frog_4_open.png" alt="frog4open" data-stage="4" data-pose="open">
+    <img id="fs4y" class="frog-img" data-src="assets/frog/images/frog_4_yuck.png" alt="frog4yuck" data-stage="4" data-pose="yuck">
     <!-- 5단계 (만삭) -->
-    <img id="fs5a" class="frog-img" src="assets/frog/images/frog_5a.png" alt="frog5a" data-stage="5" data-pose="a">
-    <img id="fs5b" class="frog-img" src="assets/frog/images/frog_5b.png" alt="frog5b" data-stage="5" data-pose="b">
-    <img id="fs5o" class="frog-img" src="assets/frog/images/frog_5_open.png" alt="frog5open" data-stage="5" data-pose="open">
-    <img id="fs5y" class="frog-img" src="assets/frog/images/frog_5_yuck.png" alt="frog5yuck" data-stage="5" data-pose="yuck">
+    <img id="fs5a" class="frog-img" data-src="assets/frog/images/frog_5a.png" alt="frog5a" data-stage="5" data-pose="a">
+    <img id="fs5b" class="frog-img" data-src="assets/frog/images/frog_5b.png" alt="frog5b" data-stage="5" data-pose="b">
+    <img id="fs5o" class="frog-img" data-src="assets/frog/images/frog_5_open.png" alt="frog5open" data-stage="5" data-pose="open">
+    <img id="fs5y" class="frog-img" data-src="assets/frog/images/frog_5_yuck.png" alt="frog5yuck" data-stage="5" data-pose="yuck">
   </div>
 
   <div class="tongue" id="tng"></div>
