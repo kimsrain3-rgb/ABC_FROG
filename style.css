@@ -75,6 +75,11 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .spider-sprite{transform:none!important}
 
 /* 그루터기 (ABc 모드 전용) */
+/* 나무둥치(ABc 혼합 모드).
+   ⚠️ 2026-08-14 — 여기 PC 값(-2%)은 **일부러 안 바꿨다.** 바뀐 건 아래 미디어쿼리의 모바일 값(5% → 7%)뿐.
+      폰에서만 개구리가 둥치 윗면 '뒤쪽 1/3'에 있어 걸터앉은 것처럼 보였다. PC는 원래 제대로 앉아 있었고,
+      같이 올려보니(0%) 개구리 다리가 나무에 파묻혀 오히려 나빠졌다(실측 겹침 25px → 41px).
+      PC와 폰은 vmin 기준 크기 비율이 달라 같은 % 를 더하면 안 된다. */
 .stump{position:absolute;bottom:-2%;left:50%;transform:translateX(-50%);width:55vmin;z-index:7;pointer-events:none;display:none}
 .stump img{width:100%;height:auto}
 
@@ -106,7 +111,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 @keyframes crownBounce{0%{transform:translateX(-50%) scale(0) translateY(-50px);opacity:0}50%{transform:translateX(-50%) scale(1.3) translateY(0);opacity:1}100%{transform:translateX(-50%) scale(1) translateY(0);opacity:1}}
 @keyframes crownBreathe{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-3px)}}
 
-@keyframes bfShake{0%{margin-left:-2px}25%{margin-left:2px}50%{margin-left:-2px}75%{margin-left:2px}100%{margin-left:0}}@media(max-width:768px){.cbar{flex-wrap:wrap;gap:3px;padding:6px 4px}.slot{width:calc((100% - 39px)/13);max-width:none;font-size:3.8vw;aspect-ratio:1;border-radius:4px}.sc{font-size:15px;top:10px;right:10px;left:auto}.frog{bottom:10%}.lilypad{bottom:13.6%}.stump{bottom:5%}.ss .sf{width:260px;margin-bottom:-40px}.bubble.bbl-left{left:8%}.bubble.bbl-right{right:8%}.bubble{font-size:7vmin;padding:2.5vmin 3.5vmin;max-width:50%}.bubble::after{bottom:-12px;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #fff}.bubble.bbl-left::after{left:auto;right:10%;bottom:-10px;transform:rotate(-30deg);transform-origin:top center}.bubble.bbl-right::after{right:auto;left:10%;bottom:-10px;transform:rotate(30deg);transform-origin:top center}.bubble.bbl-round.bbl-left{left:22%}.bubble.bbl-round.bbl-right{right:22%}}
+@keyframes bfShake{0%{margin-left:-2px}25%{margin-left:2px}50%{margin-left:-2px}75%{margin-left:2px}100%{margin-left:0}}@media(max-width:768px){.cbar{flex-wrap:wrap;gap:3px;padding:6px 4px}.slot{width:calc((100% - 39px)/13);max-width:none;font-size:3.8vw;aspect-ratio:1;border-radius:4px}.sc{font-size:15px;top:10px;right:10px;left:auto}.frog{bottom:10%}.lilypad{bottom:13.6%}.stump{bottom:7%}.ss .sf{width:260px;margin-bottom:-40px}.bubble.bbl-left{left:8%}.bubble.bbl-right{right:8%}.bubble{font-size:7vmin;padding:2.5vmin 3.5vmin;max-width:50%}.bubble::after{bottom:-12px;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #fff}.bubble.bbl-left::after{left:auto;right:10%;bottom:-10px;transform:rotate(-30deg);transform-origin:top center}.bubble.bbl-right::after{right:auto;left:10%;bottom:-10px;transform:rotate(30deg);transform-origin:top center}.bubble.bbl-round.bbl-left{left:22%}.bubble.bbl-round.bbl-right{right:22%}}
 
 
 /* === 모드 선택 버튼 === */
