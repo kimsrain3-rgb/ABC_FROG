@@ -40,41 +40,91 @@ window.debugSet=function(x,y){
 
 // === 사운드 에셋 (안전 로딩) ===
 function safeAudio(src){try{var a=new Audio(src);a.onerror=function(){};return a;}catch(e){return {play:function(){return Promise.resolve()},pause:function(){},cloneNode:function(){return this},volume:0,currentTime:0,loop:false,onerror:null,onended:null};}}
-const SND_FLY1=safeAudio('assets/bugs/sounds/fly_buzz1.mp3');
-const SND_FLY2=safeAudio('assets/bugs/sounds/fly_buzz2.mp3');
-const SND_FROG=safeAudio('assets/frog/sounds/frog_tongue.mp3');
-const SND_BGM=safeAudio('assets/game/sounds/bgm.mp3');
-SND_BGM.loop=true;SND_BGM.volume=0.25;
-SND_FLY1.volume=0.5;SND_FLY2.volume=0.5;
-SND_FROG.volume=0.5;
+
+// ─────────────────────────────────────────────────────────────────────────
+// ★ 소리 지연 생성 (2026-08-15)
+// [문제] 예전엔 바로 이 자리에서 소리 49개를 통째로 만들었다. new Audio(주소) 는
+//        "만드는 순간" 브라우저가 파일을 받기 시작한다. 그런데 첫 화면(게임 선택 메뉴)에서는
+//        이 49개 중 단 하나도 재생되지 않는다 → 아무도 안 듣는 소리 3,222KB 를 받고 있었다.
+// [해결] 여기서는 '주소만' 적어두고, 진짜 만들기는 게임에 들어갈 때 한다.
+//        만드는 것 자체는 즉시 끝난다 — 뒤로 미뤄지는 건 '파일 받기'뿐이다.
+// [안전] 아직 안 만든 소리를 틀어달라고 해도 sndOf() 가 그 자리에서 만들어 돌려주므로
+//        소리가 빠지는 일은 없다. 모르는 이름을 물어도 '조용한 가짜'를 돌려줘 오류가 안 난다.
+// [주의] 재생이 아니라 '정지'시키려는 곳에서는 sndOf() 대신 sndMade() 를 쓸 것.
+//        sndOf() 는 없으면 만들어버리므로, 정지시키려다 오히려 파일을 받게 된다.
+// ─────────────────────────────────────────────────────────────────────────
+const SND_SRC={
+  fly1:'assets/bugs/sounds/fly_buzz1.mp3',
+  fly2:'assets/bugs/sounds/fly_buzz2.mp3',
+  frog:'assets/frog/sounds/frog_tongue.mp3',
+  // ?v=20260815 = 2026-08-15 에 bgm.mp3 를 더 가벼운 파일로 교체(1,413KB→740KB).
+  // 파일명이 같으면 폰에 남은 옛 파일이 그대로 쓰이므로 날짜표를 붙여 새로 받게 한다.
+  bgm:'assets/game/sounds/bgm.mp3?v=20260815',
+  wooweck:'assets/game/sounds/wooweck.mp3',
+  bf1:'assets/bugs/sounds/butterfly_voice1.mp3',
+  bf2:'assets/bugs/sounds/butterfly_voice2.mp3'
+};
+const SND_VOL={fly1:0.5,fly2:0.5,frog:0.5,bgm:0.25};   // 예전 43~49줄이 정해두던 기본 볼륨
+const _sndMade={};                                      // 한 번 만든 건 여기 담아 재사용(매번 새로 안 만듦)
+function _sndDummy(){return {play:function(){return Promise.resolve()},pause:function(){},cloneNode:function(){return this},volume:0,currentTime:0,loop:false,paused:true,onerror:null,onended:null};}
+function sndOf(k){                                      // 필요할 때 만들어 돌려준다(없으면 그 자리에서 생성)
+  try{
+    if(_sndMade[k]) return _sndMade[k];
+    var src=SND_SRC[k]; if(!src) return _sndDummy();     // 모르는 이름 → 조용한 가짜(크래시 방지)
+    var a=safeAudio(src);
+    if(SND_VOL[k]!=null) a.volume=SND_VOL[k];
+    if(k==='bgm') a.loop=true;
+    _sndMade[k]=a; return a;
+  }catch(e){ return _sndDummy(); }
+}
+function sndMade(k){ try{ return _sndMade[k]||null; }catch(e){ return null; } }  // 이미 만든 것만(새로 안 만듦)
+
+// 1단계 — 게임에 들어가는 즉시 필요한 소리 4개(파리 날갯짓 2 · 개구리 혀 · 배경음악)
+function preloadSoundStage1(){ try{ sndOf('fly1');sndOf('fly2');sndOf('frog');sndOf('bgm'); }catch(e){} }
+// 2단계 — 조금 뒤에 필요한 소리 45개(칭찬 말소리 42 · 우웩 · 나비 2).
+//   1단계가 먼저 받도록 잠깐(1.2초) 양보한 뒤 시작한다. 그 사이에 필요해지면
+//   playVoice/playBfVoice 가 sndOf·voiceOf 로 그 자리에서 만들어 쓰므로 소리는 빠지지 않는다.
+let _snd2Started=false;
+function preloadSoundStage2(){
+  if(_snd2Started) return; _snd2Started=true;
+  try{ setTimeout(function(){
+    try{
+      sndOf('wooweck');sndOf('bf1');sndOf('bf2');
+      for(var k in VOICE_SRC){ voiceOf(k); }
+    }catch(e){}
+  },1200); }catch(e){}
+}
 
 let bgmStarted=false;
-function startBGM(){if(!bgmStarted){SND_BGM.play().catch(()=>{});bgmStarted=true;}}
+function startBGM(){if(!bgmStarted){sndOf('bgm').play().catch(()=>{});bgmStarted=true;}}
 
 // 앱을 닫거나 배경으로 보낼 때(홈버튼/멀티태스킹/화면끔) 모든 소리 정지 — WebView에서 앱 닫아도 BGM이 계속 나오는 문제 방지.
 // 화면이 다시 보이면, 멈추기 전 재생 중이던 BGM만 다시 켬.
 var _bgmWasPlaying=false;
 function _pauseAllSound(){
-  try{ _bgmWasPlaying = !SND_BGM.paused; }catch(e){ _bgmWasPlaying=false; }
-  try{ SND_BGM.pause(); }catch(e){}
+  // ★ sndMade 를 쓰는 이유: 첫 화면에서 홈버튼을 눌러도 여기가 돈다.
+  //   sndOf 였다면 "끄려고" 부른 자리에서 배경음악 파일을 새로 받아버린다.
+  var b=sndMade('bgm');
+  try{ _bgmWasPlaying = !!(b && !b.paused); }catch(e){ _bgmWasPlaying=false; }
+  try{ if(b) b.pause(); }catch(e){}
   try{ document.querySelectorAll('video,audio').forEach(function(m){ try{m.pause();}catch(e){} }); }catch(e){}
   try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
 }
 document.addEventListener('visibilitychange',function(){
   if(document.hidden){ _pauseAllSound(); }
-  else if(_bgmWasPlaying){ try{ SND_BGM.play().catch(function(){}); }catch(e){} }
+  else if(_bgmWasPlaying){ try{ var b=sndMade('bgm'); if(b) b.play().catch(function(){}); }catch(e){} }
 });
 window.addEventListener('pagehide',_pauseAllSound);
 
 function playFlyBuzz(){
-  const s=[SND_FLY1,SND_FLY2][Math.floor(Math.random()*2)];
+  const s=sndOf(Math.random()<0.5?'fly1':'fly2');
   const c=s.cloneNode();c.volume=0.4+Math.random()*0.2;
   c.currentTime=Math.random()*3;
   c.play().catch(()=>{});
   setTimeout(()=>c.pause(),800+Math.random()*1500);
 }
 function playFrogSound(){
-  const c=SND_FROG.cloneNode();c.volume=0.5;
+  const c=sndOf('frog').cloneNode();c.volume=0.5;
   c.currentTime=0;c.play().catch(()=>{});
   setTimeout(()=>c.pause(),1500);
 }
@@ -324,60 +374,65 @@ function updateButterfly(){
   bfEl.style.transform=flipX+' rotate('+tilt+'deg)';
 }
 
-const VOICE={
-  where_is:safeAudio('assets/game/sounds/voice_where_is.mp3'),
-  find_for_me:safeAudio('assets/game/sounds/voice_find_for_me.mp3'),
-  i_see:safeAudio('assets/game/sounds/voice_i_see.mp3'),
-  tap:safeAudio('assets/game/sounds/voice_tap.mp3'),
-  can_you_see:safeAudio('assets/game/sounds/voice_can_you_see.mp3'),
-  help_me_find:safeAudio('assets/game/sounds/voice_help_me_find.mp3'),
-  look:safeAudio('assets/game/sounds/voice_look.mp3'),
-  over_there:safeAudio('assets/game/sounds/voice_over_there.mp3'),
-  catch_v:safeAudio('assets/game/sounds/voice_catch_v.mp3'),
-  congrats:safeAudio('assets/game/sounds/voice_congrats.mp3'),
-  you_did_it:safeAudio('assets/game/sounds/voice_you_did_it.mp3'),
-  hooray:safeAudio('assets/game/sounds/voice_hooray.mp3'),
-  tap_the_letter:safeAudio('assets/game/sounds/voice_tap_the_letter.mp3'),
-  excellent:safeAudio('assets/game/sounds/voice_excellent.mp3'),
-  good_job:safeAudio('assets/game/sounds/voice_good_job.mp3'),
-  nice:safeAudio('assets/game/sounds/voice_nice.mp3'),
-  awesome:safeAudio('assets/game/sounds/voice_awesome.mp3'),
-  great_catch:safeAudio('assets/game/sounds/voice_great_catch.mp3'),
-  youre_a_genius:safeAudio('assets/game/sounds/voice_youre_a_genius.mp3'),
-  thats_right:safeAudio('assets/game/sounds/voice_thats_right.mp3'),
-  amazing:safeAudio('assets/game/sounds/voice_amazing.mp3'),
-  well_done:safeAudio('assets/game/sounds/voice_well_done.mp3'),
-  super:safeAudio('assets/game/sounds/voice_super.mp3'),
-  fantastic:safeAudio('assets/game/sounds/voice_fantastic.mp3'),
-  you_got_it:safeAudio('assets/game/sounds/voice_you_got_it.mp3'),
-  perfect:safeAudio('assets/game/sounds/voice_perfect.mp3'),
-  brilliant:safeAudio('assets/game/sounds/voice_brilliant.mp3'),
-  way_to_go:safeAudio('assets/game/sounds/voice_way_to_go.mp3'),
-  bingo:safeAudio('assets/game/sounds/voice_bingo.mp3'),
-  yummy:safeAudio('assets/game/sounds/voice_yummy.mp3'),
-  yummy_yummy:safeAudio('assets/game/sounds/voice_yummy_yummy.mp3'),
-  i_wanna_eat:safeAudio('assets/game/sounds/voice_i_wanna_eat.mp3'),
-  give_me:safeAudio('assets/game/sounds/voice_give_me.mp3'),
-  i_need:safeAudio('assets/game/sounds/voice_i_need.mp3'),
-  find:safeAudio('assets/game/sounds/voice_find.mp3'),
-  looks_so_yummy:safeAudio('assets/game/sounds/voice_looks_so_yummy.mp3'),
-  gimme:safeAudio('assets/game/sounds/voice_gimme.mp3'),
-  bring_me:safeAudio('assets/game/sounds/voice_bring_me.mp3'),
-  please_v:safeAudio('assets/game/sounds/voice_please_v.mp3'),
-  im_so_hungry:safeAudio('assets/game/sounds/voice_im_so_hungry.mp3'),
-  im_hungry:safeAudio('assets/game/sounds/voice_im_hungry.mp3'),
-  im_so_full:safeAudio('assets/game/sounds/voice_im_so_full.mp3'),
+// ★ 개구리 말소리 42종 — '주소만' 적어둔다(위 '소리 지연 생성' 설명 참고).
+//   예전엔 이 자리에서 42개를 통째로 만들어 첫 화면에서 1,200KB 를 받고 있었다.
+const VOICE_SRC={
+  where_is:'assets/game/sounds/voice_where_is.mp3',
+  find_for_me:'assets/game/sounds/voice_find_for_me.mp3',
+  i_see:'assets/game/sounds/voice_i_see.mp3',
+  tap:'assets/game/sounds/voice_tap.mp3',
+  can_you_see:'assets/game/sounds/voice_can_you_see.mp3',
+  help_me_find:'assets/game/sounds/voice_help_me_find.mp3',
+  look:'assets/game/sounds/voice_look.mp3',
+  over_there:'assets/game/sounds/voice_over_there.mp3',
+  catch_v:'assets/game/sounds/voice_catch_v.mp3',
+  congrats:'assets/game/sounds/voice_congrats.mp3',
+  you_did_it:'assets/game/sounds/voice_you_did_it.mp3',
+  hooray:'assets/game/sounds/voice_hooray.mp3',
+  tap_the_letter:'assets/game/sounds/voice_tap_the_letter.mp3',
+  excellent:'assets/game/sounds/voice_excellent.mp3',
+  good_job:'assets/game/sounds/voice_good_job.mp3',
+  nice:'assets/game/sounds/voice_nice.mp3',
+  awesome:'assets/game/sounds/voice_awesome.mp3',
+  great_catch:'assets/game/sounds/voice_great_catch.mp3',
+  youre_a_genius:'assets/game/sounds/voice_youre_a_genius.mp3',
+  thats_right:'assets/game/sounds/voice_thats_right.mp3',
+  amazing:'assets/game/sounds/voice_amazing.mp3',
+  well_done:'assets/game/sounds/voice_well_done.mp3',
+  super:'assets/game/sounds/voice_super.mp3',
+  fantastic:'assets/game/sounds/voice_fantastic.mp3',
+  you_got_it:'assets/game/sounds/voice_you_got_it.mp3',
+  perfect:'assets/game/sounds/voice_perfect.mp3',
+  brilliant:'assets/game/sounds/voice_brilliant.mp3',
+  way_to_go:'assets/game/sounds/voice_way_to_go.mp3',
+  bingo:'assets/game/sounds/voice_bingo.mp3',
+  yummy:'assets/game/sounds/voice_yummy.mp3',
+  yummy_yummy:'assets/game/sounds/voice_yummy_yummy.mp3',
+  i_wanna_eat:'assets/game/sounds/voice_i_wanna_eat.mp3',
+  give_me:'assets/game/sounds/voice_give_me.mp3',
+  i_need:'assets/game/sounds/voice_i_need.mp3',
+  find:'assets/game/sounds/voice_find.mp3',
+  looks_so_yummy:'assets/game/sounds/voice_looks_so_yummy.mp3',
+  gimme:'assets/game/sounds/voice_gimme.mp3',
+  bring_me:'assets/game/sounds/voice_bring_me.mp3',
+  please_v:'assets/game/sounds/voice_please_v.mp3',
+  im_so_hungry:'assets/game/sounds/voice_im_so_hungry.mp3',
+  im_hungry:'assets/game/sounds/voice_im_hungry.mp3',
+  im_so_full:'assets/game/sounds/voice_im_so_full.mp3',
 };
-function playVoice(k,vol){var v=VOICE[k];if(!v)return;v.currentTime=0;v.volume=vol||0.8;v.play().catch(function(){});}
+const VOICE={};                       // 만들어진 말소리만 여기 담긴다(한 번 만들면 재사용)
+function voiceOf(k){                  // 없으면 그 자리에서 만들어 돌려준다
+  try{
+    if(VOICE[k]) return VOICE[k];
+    var src=VOICE_SRC[k]; if(!src) return null;   // 모르는 이름 → null (부르는 쪽이 이미 걸러냄)
+    VOICE[k]=safeAudio(src); return VOICE[k];
+  }catch(e){ return null; }
+}
+function playVoice(k,vol){var v=voiceOf(k);if(!v)return;v.currentTime=0;v.volume=vol||0.8;v.play().catch(function(){});}
 
-const SND_WOOWECK=safeAudio('assets/game/sounds/wooweck.mp3');
-const BF_VOICES=[
-  safeAudio('assets/bugs/sounds/butterfly_voice1.mp3'),
-  safeAudio('assets/bugs/sounds/butterfly_voice2.mp3')
-];
 let bfVoiceIdx=0;
 function playBfVoice(){
-  var v=BF_VOICES[bfVoiceIdx];
+  var v=sndOf(bfVoiceIdx===0?'bf1':'bf2');
   v.currentTime=0;v.volume=0.8;v.play().catch(function(){});
   bfVoiceIdx=(bfVoiceIdx+1)%2;
 }
@@ -1009,7 +1064,7 @@ function occ(f){
 }
 
 function owc(f){
-  cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');SND_WOOWECK.currentTime=0;SND_WOOWECK.volume=1.0;SND_WOOWECK.play().catch(function(){});
+  cm=0;pk();sb('🤢 Yucky!',1200,'#D32F2F');var _ww=sndOf('wooweck');_ww.currentTime=0;_ww.volume=1.0;_ww.play().catch(function(){});
   setTimeout(()=>{
     pauseAnim();
     setFrame('yuck')
@@ -1035,7 +1090,7 @@ const phrase=getPhrase(dTarget);
 sb(phrase.text,2500,'#2E7D32');
 playVoice(phrase.vk);
 // MP3 끝난 후 알파벳 재생
-var pv=VOICE[phrase.vk];
+var pv=voiceOf(phrase.vk);
 if(pv){pv.onended=function(){playLetter(ct);pv.onended=null;};}
 else{setTimeout(function(){playLetter(ct);},1000);}
 setTimeout(()=>{
@@ -1086,7 +1141,8 @@ function stc(){
   raf();clearRit();
   endGcBack();                                   // 엔딩 화면에서는 뒤로 버튼을 '또렷하게' 보여줌(숨기지 않음)
   // BGM 페이드아웃
-  let bgmFade=setInterval(()=>{if(SND_BGM.volume>0.03)SND_BGM.volume-=0.03;else{SND_BGM.pause();clearInterval(bgmFade);}},100);
+  let _fadeB=sndOf('bgm');
+  let bgmFade=setInterval(()=>{if(_fadeB.volume>0.03)_fadeB.volume-=0.03;else{_fadeB.pause();clearInterval(bgmFade);}},100);
   
   pbr();sb("😊 I'm SO full~ BURP!!",3000,'#2E7D32');playVoice('im_so_full');
   
@@ -1240,9 +1296,14 @@ function go(mode){
   frogStage=1;setFrame('a');
   ea();
   // 오디오 시작
-  SND_BGM.volume=0.25;SND_BGM.loop=true;
-  SND_BGM.play().catch(()=>{});
+  // ★ 1단계 — 게임에 들어오는 즉시 필요한 소리 4개를 여기서 만든다(= 이때부터 파일을 받는다).
+  preloadSoundStage1();
+  var _bgm=sndOf('bgm');
+  _bgm.volume=0.25;_bgm.loop=true;
+  _bgm.play().catch(()=>{});
   bgmStarted=true;
+  // ★ 2단계 — 칭찬 말소리 42개 등 45개를 1.2초 뒤에 뒤에서 만든다(1단계에 대역폭 양보).
+  preloadSoundStage2();
   startFlyBuzz();startFrogBG();initCaterpillar();initButterfly();
   document.getElementById('ss').style.opacity='0';setTimeout(()=>{document.getElementById('ss').style.display='none';icb();startBreathe();scheduleBlink();gl();showGcBack();syncBackGuard();if(gameMode==='ABC'){tut()}else{gp='playing';sb('👆 Tap the letter!',2000,'#2E7D32');playVoice('tap_the_letter');snr()}},500)}
 try{document.addEventListener('touchmove',function(e){e.preventDefault();},{passive:false});}catch(e){}
@@ -1444,11 +1505,11 @@ function goWordPuzzle(){
   // 세로 방향 잠금 시도(지원 브라우저/설치앱) — 미지원 시 무시
   try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
   // 배경음악 (메인 게임과 동일한 bgm.mp3 재사용)
-  try{ SND_BGM.loop=true; SND_BGM.volume=0.25; SND_BGM.play().catch(function(){}); bgmStarted=true; }catch(e){}
+  try{ var _wbgm=sndOf('bgm'); _wbgm.loop=true; _wbgm.volume=0.25; _wbgm.play().catch(function(){}); bgmStarted=true; }catch(e){}
   requestAnimationFrame(function(){requestAnimationFrame(function(){buildPuzzle(WP_ORDER[0]);});});
 }
 function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
-  document.getElementById('wp').classList.remove('show'); try{SND_BGM.pause();}catch(e){} syncBackGuard(); }
+  document.getElementById('wp').classList.remove('show'); try{var _b=sndMade('bgm'); if(_b)_b.pause();}catch(e){} syncBackGuard(); }
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
 function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} syncBackGuard(); }
@@ -1801,7 +1862,7 @@ function goMode(mode){ try{document.getElementById('ms').classList.remove('show'
 //    새로고침 후 모드선택 화면을 자동으로 열어 '한 단계 위'로만 간 것처럼 보이게 한다.
 function gcBack(){
   try{ sessionStorage.setItem('abcfrog_backto','ms'); }catch(e){}
-  try{ SND_BGM.pause(); }catch(e){}                       // 새로고침 전 소리 즉시 끊기(체감 반응)
+  try{ var _b=sndMade('bgm'); if(_b)_b.pause(); }catch(e){}   // 새로고침 전 소리 즉시 끊기(체감 반응)
   try{ if(window.speechSynthesis&&speechSynthesis.cancel) speechSynthesis.cancel(); }catch(e){}
   try{ location.reload(); }catch(e){ try{location.href=location.href;}catch(_){} }
 }
@@ -2623,7 +2684,7 @@ window.addEventListener('popstate',function(e){
   if(wp&&wp.classList.contains('show')){
     if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이머/영상 정리
     wp.classList.remove('show');
-    try{SND_BGM.pause();}catch(_){}
+    try{var _b=sndMade('bgm'); if(_b)_b.pause();}catch(_){}
     syncBackGuard();
     return;
   }
