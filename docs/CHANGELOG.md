@@ -2558,3 +2558,110 @@ Codex도 별도 계획서를 냈고, 비교해서 **뼈대는 `docs/C-2-plan.md`
 **누적**: 공룡+동물 45.8MB → 3g 12.3MB / 2g 7.6MB
 
 **되돌리는 법**: `git revert dce453a`(2단계만) · 또는 `FORCE_ORIGINAL=true`(전체 즉시 무력화) · 또는 `backup-before-adaptive-video-20260817`
+
+---
+
+### 2026-08-17 — 📊 **C-2 후속: 티어 선택 결과를 GA4 에 기록** (`video_tier` / `video_fallback`)
+
+**왜 했나**: 공룡·동물 20개를 라이브에 올렸지만 **실제 폰에서 어느 티어가 나갔는지 확인할 방법이 하나도 없었다.** 폴백이 터져도 조용히 원본으로 돌아가고 끝이라 아무도 모르고, 감지가 아예 작동하지 않고 있어도 알 수 없었다. → **앱이 스스로 보고하게** 만들었다. 이게 있어야 C-2 가 효과를 냈는지 판단할 수 있다.
+
+**★ 관찰만 추가했다. 게임 로직·영상 선택 동작은 한 줄도 바꾸지 않았다.** 반영 커밋 `42845ef`.
+
+#### 보내는 것
+
+**① `video_tier` — 페이지당 1회**
+
+| 파라미터 | 값 |
+|---|---|
+| `tier` | `4g` \| `650` \| `400` |
+| `reason` | `effectivetype` \| `savedata` \| `forced` \| `unsupported` \| `error` \| `killswitch` |
+| `effective_type` | `navigator.connection.effectiveType` **원값** (미지원이면 `none`) |
+| `save_data` | `true` / `false` |
+
+**`reason` 이 핵심이다.** "400 이 나갔다"보다 **"왜 400 인가"** 를 알아야 판단이 된다. `unsupported` 비율이 높으면 **감지 자체가 안 되고 있다**는 뜻이다.
+
+- `killswitch` 는 계획에 없던 값을 하나 더 넣은 것 — `FORCE_ORIGINAL=true` 로 **비상 스위치를 켜 놓고 잊어버리는 사고**를 막으려고 추가했다. 평소엔 절대 안 나온다.
+- 모르는 값(`5g` 등)은 `reason=effectivetype` + `effective_type` 에 **원값을 실어 보낸다** → 나중에 무엇이 왔는지 알 수 있다.
+
+**② `video_fallback` — 터질 때만**
+
+| 파라미터 | 값 |
+|---|---|
+| `tier` | 실패한 티어 |
+| `puzzle` | `dino` \| `animal` |
+
+이게 잡히면 **티어 파일에 문제가 있다는 신호**다.
+
+#### 어디에 넣었나
+
+- `video-quality.js` — 티어 판정 직후 1회. `detect()` 가 티어만 반환하던 것을 `{tier, reason, et, sd}` 반환으로 바꿨다(**판정 로직 자체는 동일**).
+- `dino.html` / `animal.html` — 원본 폴백 지점에서 `__vq.reportFallback(tier, 'dino'|'animal')` 호출(각 1줄).
+
+**부모 gtag 사용** — 공룡·동물은 iframe 이라 자체 GA 태그가 없다. `error-tracker.js` 와 같은 방식(자기 창 → 없으면 부모 창)을 그대로 따랐다.
+★ **GA 태그를 새로 주입하지 않는다.** 관찰용 부가 기능이 GA 로딩을 유발하면 본말전도이고, 부모(`index.html`)에 이미 태그가 있다.
+부모 gtag 가 아직 안 붙었을 수 있어 **0.4·1.2·2.4·3.6초 재시도 후 포기**한다.
+
+#### 지킨 것
+
+- **전 구간 try-catch.** gtag 가 없거나 차단돼도 조용히 포기하고 게임은 그대로 돈다
+- **개인정보 성격 값 없음** — 회선 등급과 판정 이유만
+- **`tierSent` 플래그**로 한 페이지에서 두 번 이상 보내지 않는다
+
+#### 검증
+
+**회선 8가지 → tier·reason 전부 정확, 각 1회만 전송**
+
+| 조건 | tier | reason | effective_type |
+|---|---|---|---|
+| `4g` | `4g` | effectivetype | `4g` |
+| `3g` | `650` | effectivetype | `3g` |
+| `2g` | `400` | effectivetype | `2g` |
+| `slow-2g` | `400` | effectivetype | `slow-2g` |
+| `4g`+`saveData` | `400` | **savedata** | `4g` |
+| `connection` 없음 | `4g` | **unsupported** | `none` |
+| 모르는 값 `5g` | `4g` | effectivetype | **`5g`** |
+| `?vq=400` | `400` | **forced** | `4g` |
+
+**폴백** — 공룡·동물 모두 `video_fallback`(tier=400, puzzle=dino/animal) 발사 + 원본으로 720×1280 재생(5.9초 전진)
+**gtag 를 `undefined` 로 만든 상태** — 영상 정상 재생(540×960, 3.94초 전진), **JS 에러 0건** = 게임 안 멈춤
+**중복 전송** — 재시도 타이머가 다 돈 뒤(5.5초)에도 `video_tier` **1회**
+
+**★ 실제 iframe 경로** (`index.html` → `goDinoPuzzle`/`goAnimalPuzzle`)
+iframe 안 `gtag=undefined`(라이브와 동일 조건) → **부모 창이 `video_tier` 수신 확인.** 폴백까지 태우면 부모 창에 `video_fallback(dino)` / `(animal)` 도 수신.
+
+**★ 라이브 실제 GA4 전송 확인** — 라이브 주소에서 공룡 퍼즐을 열고 나가는 요청을 뜯어 확인:
+`en=video_tier` · `ep.tier=400` · `ep.reason=effectivetype` · `ep.effective_type=2g` · `ep.save_data=false` · `tid=G-VEN3PCFXXL`
+
+⚠️ **GA4 실시간 화면은 확인하지 못했다** — 이 PC 크롬이 해당 속성(G-VEN3PCFXXL)을 가진 계정으로 로그인돼 있지 않다(애널리틱스 신규 개설 안내 화면으로 넘어감). 로그인은 하지 않았다. **사장님이 직접 확인 필요.**
+
+※ 폴백 시 `error-tracker.js` 의 `game_error`(error_type=video, code=4)도 **함께** 잡힌다. 기존 동작이고 유용한 정보라 그대로 뒀다 — GA4 에서 둘이 **쌍으로** 보인다.
+
+#### 며칠 뒤 GA4 에서 볼 방법
+
+🔴 **맞춤 측정기준 등록이 필요하다.** GA4 는 등록하지 않은 이벤트 파라미터를 보고서에서 **쪼개 보여주지 않는다**(실시간·DebugView 에서는 바로 보이지만, 일반 보고서에서는 안 보인다).
+
+**관리 → 데이터 표시 → 맞춤 정의 → 맞춤 측정기준 만들기**, 범위 = **이벤트**, 4개 등록:
+
+| 측정기준 이름 | 이벤트 매개변수 |
+|---|---|
+| 영상 티어 | `tier` |
+| 티어 이유 | `reason` |
+| 회선 등급 | `effective_type` |
+| 데이터 절약 | `save_data` |
+| 퍼즐 종류 | `puzzle` (폴백용) |
+
+⚠️ **등록한 시점 이후 데이터만** 쪼개 보인다(소급 적용 안 됨) → **가능한 빨리 등록할 것.**
+
+**등록 후 보는 곳**: 탐색 → 자유 형식 → 행에 `티어 이유`, 값에 `이벤트 수` → 이벤트 이름을 `video_tier` 로 필터
+
+**무엇을 판단하나**
+
+| 보이는 것 | 뜻 |
+|---|---|
+| `unsupported` 비율이 높다 | 감지가 안 되는 기기가 많다 = C-2 효과가 제한적 |
+| `effectivetype` 이 대부분 + `tier=4g` | 유저 회선이 대체로 빠르다 = 티어가 거의 안 쓰인다 |
+| `650`/`400` 이 꾸준히 잡힌다 | **C-2 가 실제로 작동 중** = 목적 달성 |
+| `video_fallback` 이 잡힌다 | 🔴 **티어 파일에 문제.** `puzzle` 로 어느 퍼즐인지 확인 |
+| `killswitch` 가 보인다 | 비상 스위치를 켜 놓고 잊었다 |
+
+**되돌리는 법**: `git revert 42845ef` (기록만 빠지고 티어 동작은 그대로 남는다)
