@@ -59,37 +59,109 @@
   // ── 회선 판정 (페이지 열릴 때 1회만) ──────────────────────────────────────
   // 재생 중에 회선이 흔들려도 영상이 바뀌지 않게 결과를 고정한다.
   function detect() {
+    // 현재 회선 값을 먼저 읽어 둔다(어느 경로로 끝나든 GA4 에 원값을 실어 보내려고).
+    var c = null;
+    try { c = navigator.connection || navigator.mozConnection || navigator.webkitConnection; } catch (e) {}
+    var et = 'none', sd = false;
+    try { if (c) { et = c.effectiveType || 'none'; sd = (c.saveData === true); } } catch (e) {}
+
     // 1) 주소 강제 스위치 — 검증·폰 확인용. ?vq=400 / ?vq=650 / ?vq=4g
     //    iframe 은 자기 주소에 안 붙으므로 부모(최상위) 주소까지 본다.
     try {
       var qs = '' + location.search;
       try { if (window.top && window.top !== window) qs += '' + window.top.location.search; } catch (e) {}
       var m = /[?&]vq=(4g|650|400)\b/.exec(qs);
-      if (m) return (m[1] === '4g') ? '4g' : m[1];
+      if (m) return { tier: (m[1] === '4g') ? '4g' : m[1], reason: 'forced', et: et, sd: sd };
     } catch (e) {}
 
-    var c = null;
-    try { c = navigator.connection || navigator.mozConnection || navigator.webkitConnection; } catch (e) {}
-    if (!c) return '4g';                       // 미지원(iOS 사파리·파이어폭스) = 원본
+    // 미지원(iOS 사파리·파이어폭스) = 원본
+    if (!c) return { tier: '4g', reason: 'unsupported', et: 'none', sd: false };
 
     // 2) 데이터 절약 모드를 켠 사람은 회선과 무관하게 가장 가볍게
-    try { if (c.saveData === true) return '400'; } catch (e) {}
+    if (sd) return { tier: '400', reason: 'savedata', et: et, sd: true };
 
-    // 3) 회선 등급
-    try {
-      switch (c.effectiveType) {
-        case '2g':
-        case 'slow-2g': return '400';
-        case '3g':      return '650';
-        case '4g':      return '4g';
-      }
-    } catch (e) {}
-
-    return '4g';                               // 값이 없거나 모르는 값 = 원본
+    // 3) 회선 등급 — 모르는 값('5g' 등)이면 원본. 원값은 et 로 함께 보내니 나중에 알 수 있다.
+    var t = '4g';
+    switch (et) {
+      case '2g':
+      case 'slow-2g': t = '400'; break;
+      case '3g':      t = '650'; break;
+    }
+    return { tier: t, reason: 'effectivetype', et: et, sd: false };
   }
 
-  var tier = '4g';
-  try { tier = FORCE_ORIGINAL ? '4g' : detect(); } catch (e) { tier = '4g'; }
+  var tier = '4g', reason = 'error', etRaw = 'none', sdRaw = false;
+  try {
+    if (FORCE_ORIGINAL) {
+      // 비상 스위치가 켜진 상태도 GA4 에 남긴다 — 켜 둔 걸 잊어버리는 사고 방지
+      tier = '4g'; reason = 'killswitch';
+    } else {
+      var d = detect();
+      tier = d.tier; reason = d.reason; etRaw = d.et; sdRaw = d.sd;
+    }
+  } catch (e) {
+    tier = '4g'; reason = 'error';               // 판정 중 예외 = 원본(안전한 쪽)
+  }
+
+  /* ── GA4 기록 ──────────────────────────────────────────────────────────────
+     ★ 기록은 부가 기능이다. gtag 가 없거나 차단돼도 게임은 그대로 돌아가야 한다.
+       전부 try-catch 로 감싸고, 실패하면 조용히 포기한다(재시도만 몇 번).
+     [왜 부모 gtag 를 쓰나] 공룡·동물은 iframe 이라 자체 GA 태그가 없다.
+       error-tracker.js 가 쓰는 방식(자기 창 → 없으면 부모 창)을 그대로 따른다.
+     ※ 여기서는 GA 태그를 새로 주입하지 않는다. 관찰용 부가 기능이 GA 로딩을
+       유발하면 본말전도이고, 부모(index.html)에는 이미 태그가 있다.            */
+  function findGtag() {
+    try { if (typeof window.gtag === 'function') return window.gtag; } catch (e) {}
+    try {
+      if (window.parent && window.parent !== window && typeof window.parent.gtag === 'function') {
+        return window.parent.gtag;
+      }
+    } catch (e) {}
+    return null;
+  }
+  function send(name, params) {
+    try {
+      var g = findGtag();
+      if (!g) return false;
+      g('event', name, params);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  var tierSent = false;                          // ★ 한 페이지에서 두 번 보내지 않는다
+  function sendTier() {
+    if (tierSent) return true;
+    var ok = send('video_tier', {
+      tier: tier,                                // '4g' | '650' | '400'
+      reason: reason,                            // effectivetype | savedata | forced | unsupported | error | killswitch
+      effective_type: etRaw,                     // 원값 그대로('4g','3g','2g','slow-2g','5g','none' …)
+      save_data: sdRaw ? 'true' : 'false'
+    });
+    if (ok) tierSent = true;
+    return ok;
+  }
+  // 부모 gtag 가 아직 안 붙었을 수 있어 몇 번만 재시도하고 포기한다(0.4·1.2·3초).
+  try {
+    if (!sendTier()) {
+      var tries = 0;
+      var iv = setInterval(function () {
+        try { if (sendTier() || ++tries >= 3) clearInterval(iv); } catch (e) { clearInterval(iv); }
+      }, 1200);
+      setTimeout(function () { try { sendTier(); } catch (e) {} }, 400);
+    }
+  } catch (e) {}
+
+  /* ── reportFallback(실패한티어, 퍼즐이름) ──────────────────────────────────
+     티어 파일을 못 받아 원본으로 되돌아갈 때 dino.html / animal.html 이 부른다.
+     이게 GA4 에 잡히면 "티어 파일에 문제가 있다"는 신호다. 지금까지는 조용히 넘어갔다. */
+  function reportFallback(failedTier, puzzle) {
+    try {
+      send('video_fallback', {
+        tier: failedTier || tier,                // 실패한 티어
+        puzzle: puzzle || 'unknown'              // 'dino' | 'animal'
+      });
+    } catch (e) {}
+  }
 
   /* ── pick(url) ─────────────────────────────────────────────────────────────
      허용목록에 걸리는 보상 영상 주소만 티어 폴더로 바꿔 돌려준다.
@@ -137,8 +209,12 @@
   try {
     window.__vq = {
       tier: tier,                    // '4g' | '650' | '400'
+      reason: reason,                // 왜 그 티어가 됐는지 (GA4 에 보내는 값과 동일)
+      effectiveType: etRaw,          // navigator.connection.effectiveType 원값 ('none' = 미지원)
+      saveData: sdRaw,
       pick: pick,
       original: original,
+      reportFallback: reportFallback, // 티어 실패 → 원본 폴백 시 퍼즐 쪽에서 부른다
       forced: FORCE_ORIGINAL
     };
   } catch (e) {}

@@ -253,6 +253,8 @@
             var orig=window.__vq.original(vid.currentSrc||vid.src||'');
             if(orig && orig!==(vid.currentSrc||vid.src)){
               triedOriginal=true;
+              // GA4 에 폴백 발생 보고(관찰만 — 실패해도 아래 재시도는 그대로 진행)
+              try{ if(window.__vq.reportFallback) window.__vq.reportFallback(window.__vq.tier,'animal'); }catch(_){}
               try{ clearTimeout(safetyId); }catch(_){}
               safetyId=setTimeout(finish, 12000);                    // 재시도분 안전장치 재무장
               vid.src=orig; vid.load();
