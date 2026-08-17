@@ -254,7 +254,9 @@
     try{
       ov=document.createElement('div'); ov.className='av-video'; ov.id='avVideo';
       var vid=document.createElement('video');
-      vid.src=bust(A.video);
+      // 회선에 맞는 화질 고르기(C-2 1단계). __vq 가 없거나 실패하면 원본 주소 그대로 = 기존 동작.
+      // 순서 주의: pick() 먼저, bust() 나중 — bust 가 붙이는 ?v= 뒤에 폴더를 바꾸면 안 된다.
+      vid.src=bust((window.__vq&&window.__vq.pick)?window.__vq.pick(A.video):A.video);
       vid.setAttribute('playsinline',''); vid.playsInline=true;     // iOS 전체화면 강제 방지
       vid.controls=false; vid.preload='auto'; vid.volume=1;          // 영상 자체 소리 재생(무음 아님)
       ov.appendChild(vid);
