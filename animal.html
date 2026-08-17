@@ -348,7 +348,9 @@
       el.innerHTML='<svg width="'+fullW+'" height="'+fullH+'" viewBox="0 0 '+fullW+' '+fullH+'">'
         +'<defs><clipPath id="cp'+idx+'" clipPathUnits="userSpaceOnUse"><path d="'+p.d+'"/></clipPath></defs>'
         +'<g transform="translate('+(-bx0)+' '+(-by0)+')">'
-        +'<image href="'+IMG+'" x="'+imgX+'" y="'+imgY+'" width="'+coverW+'" height="'+coverH+'" preserveAspectRatio="none" clip-path="url(#cp'+idx+')"/>'
+        // ★ bust(IMG) 필수 — 여기만 원본 IMG 를 쓰면 유령·완성 그림(?v= 붙음)과 주소가 갈려
+        //   ①같은 그림을 두 번 받고 ②그림을 같은 이름으로 교체할 때 조각만 옛 그림이 남는다. (2026-08-17 실측 확인)
+        +'<image href="'+bust(IMG)+'" x="'+imgX+'" y="'+imgY+'" width="'+coverW+'" height="'+coverH+'" preserveAspectRatio="none" clip-path="url(#cp'+idx+')"/>'
         +'</g></svg>';
       layer.appendChild(el);
       p.el=el; p.scale=st; p.placed=false;
