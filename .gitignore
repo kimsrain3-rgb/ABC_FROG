@@ -30,6 +30,10 @@ docs/.bkit-memory.json
 docs/.pdca-status.json
 docs/.pdca-snapshots/
 
+# 영상 교체 시 원본 보관 폴더 (2026-08-17) — 내 PC에만 두고 저장소엔 안 올림.
+# 원본은 git 태그(backup-before-video-cleanup-20260817)에도 그대로 남아 있어 언제든 되살릴 수 있다.
+_backup/
+
 # 루트에 흩어진 임시 이미지 (앱 이미지는 assets/ 안에 있음)
 /*.png
 /*.jpg

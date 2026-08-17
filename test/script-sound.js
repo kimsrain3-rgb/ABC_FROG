@@ -2579,7 +2579,7 @@ function wpPlayEnding(stage){
   try{
     ov=document.createElement('div'); ov.className='wp-video'; ov.id='wpVideo';
     var vid=document.createElement('video');
-    vid.src='assets/frog/videos/frog-baskit.mp4';
+    vid.src='assets/frog/videos/frog-baskit.mp4?v=20260817';   // 2026-08-17 같은 이름으로 압축본(2,078→684KB) 교체 → 날짜표를 붙여야 폰이 새로 받는다
     vid.muted=true; vid.defaultMuted=true; vid.setAttribute('muted','');     // 무음 → 폰 자동재생 허용
     vid.setAttribute('playsinline',''); vid.playsInline=true;                 // iOS 전체화면 강제 방지
     vid.autoplay=true; vid.controls=false; vid.preload='auto';
