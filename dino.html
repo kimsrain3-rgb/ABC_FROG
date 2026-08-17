@@ -16,6 +16,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
 <!-- 전역 에러 추적(GA4 game_error) — 이 페이지는 iframe이라 부모(index.html)의 gtag를 그대로 씀. 감지·전송만, 퍼즐 로직 미변경. -->
 <script>window.__ETRK_WHERE='puzzle';document.write('<scr' + 'ipt src="error-tracker.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 보상 영상 화질을 회선에 맞춰 고르는 공용 파일(C-2). 없거나 실패하면 아래 코드가 원본을 쓴다. -->
+<script>document.write('<scr' + 'ipt src="video-quality.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <style>
   html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;display:flex;flex-direction:column;background:#fff;overflow:hidden}
@@ -260,7 +262,30 @@
       document.body.appendChild(ov);
       ov.addEventListener('click', finish);                          // 탭하면 건너뛰기
       vid.addEventListener('ended', finish);
-      vid.addEventListener('error', finish);
+      /* ★ 영상 실패 시 '원본으로 1회 재시도' (2026-08-17, C-2 0단계)
+         전엔 error → 곧장 finish 였다. 즉 티어 파일이 하나라도 없거나 주소에 오타가
+         있으면 아이가 보상 영상을 못 보고 그냥 넘어갔다. 조용히 실패해서 알기도 어렵다.
+         이제 티어 주소가 실패하면 원본 주소로 한 번 더 시도하고, 그것마저 실패할 때만
+         finish 한다. 재시도는 딱 1회(triedOriginal) — 무한 반복 방지. */
+      var triedOriginal=false;
+      vid.addEventListener('error', function(){
+        try{
+          if(!triedOriginal && window.__vq && window.__vq.original){
+            var orig=window.__vq.original(vid.currentSrc||vid.src||'');
+            if(orig && orig!==(vid.currentSrc||vid.src)){
+              triedOriginal=true;
+              try{ clearTimeout(safetyId); }catch(_){}
+              safetyId=setTimeout(finish, 12000);                    // 재시도분 안전장치 재무장
+              vid.src=orig; vid.load();
+              var rp=vid.play(); if(rp&&rp.catch) rp.catch(function(){
+                try{ vid.muted=true; vid.defaultMuted=true; var r2=vid.play(); if(r2&&r2.catch) r2.catch(function(){ finish(); }); }catch(e){ finish(); }
+              });
+              return;                                               // 여기서 finish 하지 않는다
+            }
+          }
+        }catch(e){}
+        finish();
+      });
       // 영상 길이에 맞춰 안전장치 재설정(짧은 영상이 잘리지 않게)
       vid.addEventListener('loadedmetadata', function(){ try{ clearTimeout(safetyId); safetyId=setTimeout(finish, (vid.duration||10)*1000+3000); }catch(_){} });
       var shown=false;
