@@ -81,9 +81,12 @@
   var demoDone=false;   // 첫 퍼즐에서 조각 하나 스르륵 들어가는 시범 — 1회만
   function curA(){ return ANIMALS[animalIdx]; }
 
-  // [라이브] 에셋 캐시버스터 끔: 그림/영상은 파일명이 고정이라 브라우저 캐시 사용(유저가 매번 재다운 안 함).
-  //  → 나중에 에셋 교체 시엔 파일명 변경 또는 ?v= 갱신(라이브 미디어 규칙). (테스트판 current.html은 항상최신 위해 켜둠)
-  function bust(u){ return u; }
+  // 라이브: 미디어(그림/영상/소리)는 캐시 사용(재다운로드 방지) — 매번 새로 받게 하면 영상 2MB를 들어올 때마다 다시 받는다.
+  // 다만 **같은 이름으로 파일을 갈아끼우면** 폰에 옛 파일이 그대로 남는다(2026-08-17 공룡 쪽에서 실제로 문제됨).
+  // → 날짜표를 하나 붙여, 이 날짜를 바꿀 때만 새로 받게 한다. `dino.html`·`phonics/index.html` 과 같은 방식.
+  // ★ 그림·영상·소리를 같은 이름으로 교체하면 이 날짜를 오늘로 고칠 것. (안 고치면 폰에 옛 파일이 남는다)
+  var ASSET_VER='20260817';   // 2026-08-17 캐시버스터 도입(교체한 파일은 아직 없음 — 다음 교체 때 이 날짜를 올릴 것)
+  function bust(u){ return u ? u+(u.indexOf('?')<0?'?':'&')+'v='+ASSET_VER : u; }
 
   var COLS=2, ROWS=3;
   var board=document.getElementById('board'), tray=document.getElementById('tray'), layer=document.getElementById('layer');

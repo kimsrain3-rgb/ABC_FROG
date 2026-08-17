@@ -406,7 +406,20 @@
   function playSparkle(){
     try{ var a=ensureSnd(); if(a){ a.currentTime=0; var p=a.play(); if(p&&p.catch)p.catch(function(){}); } }catch(e){}
   }
-  ensureSnd();                           // 미리 로드해서 소리 길이(SOUND_DUR) 확보
+  // ★ 2026-08-17 첫 화면에서 미리 받지 않는다.
+  //   이 소리는 '파리를 잡을 때'만 난다(아래 slp 후킹 → fancyLetterPop → playSparkle).
+  //   전엔 여기서 바로 ensureSnd() 를 불러 **첫 화면에서 49KB 를 받았다** — 첫 화면은 완전 무음이라 순수 낭비였다.
+  //   script.js 의 소리 지연 로딩(2026-08-15)과 같은 방식으로 **게임에 들어갈 때** 받는다.
+  //   ※ playSparkle() 이 ensureSnd() 를 부르므로 이 예열이 실패해도 소리는 난다(첫 글자만 조금 늦을 수 있음).
+  //     예열을 두는 이유: ①첫 글자 소리가 늦지 않게 ②SOUND_DUR(글자 애니 길이)을 실측값으로 확보.
+  ['goModeSelect','go'].forEach(function(fn){
+    // goModeSelect = 실제 게임보다 한 탭 앞(아이가 ABC/abc/ABc 고르는 동안 도착) — script.js 의 preloadFrogImgs 와 같은 자리
+    // go          = 모드선택을 건너뛰고 들어오는 길(뒤로가기 복귀 등) 대비 보장용
+    if(typeof window[fn]==='function'){
+      var orig=window[fn];
+      window[fn]=function(){ try{ ensureSnd(); }catch(e){} return orig.apply(this,arguments); };
+    }
+  });
   // 효과용 CSS 주입(테스트 페이지에만)
   (function injectFxCss(){
     var css=''
