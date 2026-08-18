@@ -1601,6 +1601,19 @@ function closeDinoPuzzle(){
 window.addEventListener('message',function(ev){
   try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key}); } }catch(e){}
 });
+/* 파닉스(iframe phonics/index.html)가 단어 완성을 알려오면 GA로 기록. (2026-08-18 추가)
+   과일·동물·공룡과 **같은 신호 이름** + category:'phonics' → GA4에서 넷을 나란히 비교할 수 있다.
+   ★ 이탈 지점은 `word` 로 본다 — 단어 순서가 곧 진도다:
+       sit → pat → nap → pan → sip → tap
+     단어별 건수가 그대로 깔때기고, **마지막 단어 `tap` 의 건수 = 세트(satpin) 완주자 수**다.
+   ⚠️ 위 순서는 phonics/index.html 의 WORDS 배열 순서다. 단어를 더하거나 순서를 바꾸면
+      "tap = 완주" 가 깨진다. 그때는 이 주석과 GA4 보는 법을 같이 고칠 것.
+   ※ solve_ms(글자 맞추는 데 걸린 시간)는 C-3 계획서에서 신설하기로 한 것을 파닉스만 먼저 넣은 것.
+      공룡·동물·과일은 C-3 0단계에서 같은 이름으로 붙인다. */
+window.addEventListener('message',function(ev){
+  try{ var d=ev&&ev.data; if(d&&d.t==='phonics_done'){
+    gtag('event','word_puzzle_complete',{category:'phonics',word:d.word,solve_ms:d.solve_ms|0}); } }catch(e){}
+});
 
 // === 파닉스 satpin (독립 페이지 phonics/index.html을 전체화면 오버레이로 — 동물·공룡 퍼즐과 동일 구조) ===
 // 2026-08-12 라이브 반영. 기존 게임 코드와 완전 분리(iframe) → 충돌/크래시 위험 0.

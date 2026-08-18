@@ -259,9 +259,11 @@ function shuffle(arr){ for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.ra
    화면을 새로 지을 때마다 번호를 올리고, 예약된 일은 자기 번호가 아직 유효할 때만 실행한다.
    (사람이 🔄 를 눌러야만 넘어가던 때는 이런 겹침이 없었다) */
 var BUILD_ID=0;
+var _wordT0=0;   // 이 단어를 시작한 시각 — 완성까지 걸린 시간(solve_ms) 측정용. 2026-08-18
 
 function build(){
   BUILD_ID++;
+  _wordT0=Date.now();                             // 이 단어 시작 — 완성까지 걸린 시간 재기 시작
   _devSkipVideo=null;                             // (개발 메뉴) 새 화면 = 넘길 영상 없음
   var W=WORDS[CUR]; locked=false;
   slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
@@ -412,6 +414,15 @@ function drop(tile){
 function finish(){
   locked=true;
   var W=WORDS[CUR],i=0;
+  /* ★ 완성 신고 → 부모(script.js)가 받아 GA4 word_puzzle_complete 를 발사한다. (2026-08-18 추가)
+     공룡 `dino.html:480` · 동물과 **똑같은 방식**이다. 새 구조가 아니다.
+     파닉스는 2026-08-12 공개 후 이 신호가 없어서 "몇 명이 어디까지 했는지"를 6일간
+     하나도 몰랐다 — 2~4단계를 열지 말지 판단할 근거가 없었다.
+     ※ 여기(글자를 다 맞춘 순간) = 공룡의 '조각을 다 끼운 순간' 과 같은 층위.
+       영상 3편은 이 뒤에 나오므로 아직 안 봤지만, 공룡도 영상 전에 보낸다. 층위를 맞춘다.
+     ※ 단어 순서가 곧 진도(sit→pat→nap→pan→sip→tap)라 단어별 건수가 그대로 이탈 지점이 된다. */
+  try{ parent.postMessage({ t:'phonics_done', word:W.word,
+                            solve_ms:(_wordT0 ? Date.now()-_wordT0 : 0) }, '*'); }catch(e){}
   tiles.forEach(function(t){ if(!t.placed){ // 남은 함정 글자 사라지게(아래 자리 비움 → 단어 들어갈 자리)
     t.el.style.transition='opacity .3s'; t.el.style.opacity='0';
     setTimeout(function(){ t.el.style.display='none'; },300);
