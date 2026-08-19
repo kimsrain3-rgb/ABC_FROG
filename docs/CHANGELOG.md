@@ -3006,3 +3006,58 @@ en=word_puzzle_complete&ep.category=phonics&ep.word=pat&epn.solve_ms=1203
 **되돌리는 법**: `git revert 08a8300`(1a만) · `git revert 46716f1`(계측만) · 태그 `backup-before-imgdiet-20260818`
 
 **★ 사과 확인 통과 후 나머지 9장.** 지금은 만들지 않았다.
+
+> 🔴 **정정 (같은 날 뒤에 추가)** — 위 1a단계는 **라이브에 올리면 안 되는 것이었고, 되돌렸다.** 아래 항목 참고. 0단계(계측)만 라이브에 남아 있다.
+
+---
+
+### 2026-08-19 — ⏪ **1a 되돌리고 `test/` 로 다시** · 커밋 `94ace5a`(revert) · `5462a6e`(test)
+
+#### 무엇을 잘못했나
+
+**`test/` 단계를 건너뛰고 라이브 `main` 에 바로 올렸다.**
+
+CLAUDE.md 「테스트 방법」에 **이미 적혀 있던 규칙**이다:
+
+> *"구현(Claude용): … 후보 코드를 `test/script.js`에 넣고 main에 push → Pages 자동배포. **라이브 루트(`/index.html`,`/script.js`)는 안 건드림. 검증 후 진짜 `script.js`에 반영해 라이브 배포.**"*
+
+**없어서 못 지킨 게 아니라, 있는데 안 지켰다.** 놓친 경위:
+
+| | |
+|---|---|
+| 지시문에 `test/` 단계가 없었다 | 하지만 CLAUDE.md 규칙은 지시문이 생략해도 살아 있다. **내가 먼저 짚었어야 했다** |
+| 지시문의 "라이브 curl 200 + 용량 확인"을 라이브 배포 지시로 읽었다 | curl 확인은 test/ 배포 후에도 할 수 있는 일이었다 |
+| 직전 작업들(C-2·파닉스)이 전부 라이브 직행이라 그 흐름을 이어갔다 | ⚠️ 다만 그것들은 **`script.js` 를 안 건드렸다**(C-2는 `dino/animal/phonics`, 파닉스는 수신부 추가). **1a 는 규칙이 이름을 콕 집은 `script.js` 를 고쳤다** — 가장 명백한 위반이다 |
+
+**실질 피해**: 사과 그림이 약 20분간 라이브에 나갔다. WebP 자체는 PC에서 전수 검증을 마친 상태였고 JS 에러도 0건이었으므로 유저 영향은 확인된 바 없다. 그러나 **"확인 안 된 것을 실유저에게 먼저 내보냈다"** 는 사실은 그대로다.
+
+#### 되돌리기
+
+`git revert 08a8300` — 사과 주소는 `.png?v=1` 로 복귀, `fruit_apple_image.webp` 도 라이브 assets 에서 빠짐.
+**0단계 계측(`46716f1`)은 그대로 뒀다** — 관찰만 추가한 것이라 라이브에 있어도 무해하고, 오히려 **기준선을 지금부터 쌓아야** 한다.
+
+**라이브 확인**: `script.js` 가 `fruit_apple_image.png?v=1` · webp 파일 **404**(정상) · png **200 / 997,221 byte** · `word_puzzle_img` 계측 유지.
+
+#### `test/` 구성
+
+| 파일 | 무엇 |
+|---|---|
+| `test/current-imgdiet-apple.html` | 라이브 `index.html` 사본 + `<base href="../">`. GA4·error-tracker 제거(테스트 플레이가 실유저 통계에 안 섞이게). 좌상단 TEST 배지(6초 뒤 흐려짐) |
+| `test/img-webp/fruit_apple_image.webp` | ★ **라이브 `assets/` 가 아니라 `test/` 안에 둔다** |
+| `test/current.html` | 런처가 새 테스트를 가리키게 + 폰에서 확인할 것 5가지 |
+
+**라이브 `script.js` 를 못 건드리므로 '감싸기'로 `WP_WORDS.apple.img` 만 메모리에서 바꿔치기한다.** (`current-lazyimg.html` 이 쓴 방식과 동일)
+
+**라이브 무변경 확인**: `index.html`·`script.js`·`style.css`·`frog-reactions.js`·`error-tracker.js` 미변경, `assets/` 변경 0건.
+
+#### 검증 (로컬 + 라이브 test/ 양쪽)
+
+사과 주소가 `test/img-webp/` 로 잡힘 · **50,316 byte 수신**, 두 번째 참조는 캐시(0 byte) · 조각 5개 · **마스크 4/4** · 격자 2×2 · naturalSize 1019×1200 · **`gtag` 없음**(통계 미오염) · **JS 에러 0건**
+
+#### 🔴 폰에서 확인할 주소
+
+**https://kimsrain3-rgb.github.io/ABC_FROG/test/**
+
+① Word → 🍎 Fruit 첫 **사과**가 제대로 보이나 ② 조각이 정확히 맞물리나 ③ 밑그림과 어긋나지 않나 ④ 다 맞춘 뒤 커질 때 테두리 지저분하지 않나 ⑤ 사과 **다음 과일(바나나)부터는 예전 그대로** — 비교해서 봐도 좋다
+
+**★ 앞으로 나머지 9장도 `test/` → 폰 확인 → 라이브 순서를 지킨다.**
