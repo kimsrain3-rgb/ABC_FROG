@@ -2163,8 +2163,18 @@ function buildPuzzle(key){
 
   // PNG 과일: 그림이 로드되면 ① 실제영역(bbox) ② 빈 조각이 안 생기는 격자 자동선택 ③ 마스크 계산 후 다시 그림
   if(data.img && !data._mask){
+    /* ★ 관찰만 (2026-08-19, 그림 다이어트 0단계). 게임 로직은 한 줄도 바꾸지 않는다.
+       재는 것 = "아이가 빈 화면을 보는 시간" — 이 과일 그림을 받아 쓸 준비가 될 때까지.
+       그림을 줄이면 내려가야 하는 바로 그 숫자다. (Slow 3G 에서 첫 그림까지 40.5초 실측)
+       ⚠️ word_puzzle_open 에 실을 수 없다 — 그 이벤트는 화면이 '열리는 순간' 나가는데
+          이 값은 그때 아직 모른다. 기존 이벤트를 늦추면 과거 데이터와 비교가 깨지므로,
+          값이 확정되는 순간 별도 이벤트로 보낸다.
+       ※ 이 블록은 과일마다 처음 한 번만 지난다(`!data._mask` 게이트) = 기다림이 실제로
+          발생하는 그 순간만 잰다. 두 번째부터는 캐시라 기다림이 없다. */
+    var _imT0=Date.now();
     var _im=new Image();
     _im.onload=function(){
+      try{ gtag('event','word_puzzle_img',{category:'fruit',word:wpCurrent,img_ms:Date.now()-_imT0}); }catch(e){}
       data._bbox=wpImgBBox(_im);
       if(data.cut==='bsp' || data.cut==='axis'){          // 비격자 자르기(바나나 등 길쭉/대각선)
         data._axis=(data.cut==='bsp') ? wpBspCut(_im,data._bbox,data.parts||6) : wpAxisCut(_im,data._bbox,data.parts||4);
