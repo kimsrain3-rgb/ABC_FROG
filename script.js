@@ -1449,10 +1449,7 @@ function pineappleSil(){return `
 
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
-  // 사과 = 그림 다이어트 1a (2026-08-19): PNG 997KB → WebP 손실(q80) 50KB, 해상도 1019x1200 그대로.
-  // ★ 확장자가 바뀌므로 주소 자체가 달라진다 = 옛 캐시가 끼어들 수 없다(?v= 갱신 불필요).
-  // ★ 원본 PNG 는 지우지 않고 그대로 둔다 — 되돌릴 때 이 줄만 되돌리면 된다.
-  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/fruit/images/fruit_apple_image.webp?v=1'},
+  apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/fruit/images/fruit_apple_image.png?v=1'},
   banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/fruit/images/fruit_banana_image.png?v=1',cut:'bsp',parts:6},
   grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/fruit/images/fruit_grape_image.png?v=1'},
   orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/fruit/images/fruit_orange_image.png?v=1'},
