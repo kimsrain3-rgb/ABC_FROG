@@ -10,6 +10,9 @@
 <script>window.__ETRK_WHERE='phonics';document.write('<scr' + 'ipt src="../error-tracker.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <!-- 회선에 맞는 보상영상 화질 고르기(C-2 3단계). ★ 이 페이지는 한 칸 아래라 ../ 로 읽는다. -->
 <script>document.write('<scr' + 'ipt src="../video-quality.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 보상 영상을 퍼즐 맞추는 동안 미리 받아두는 공용 파일(C-3). ★ video-quality.js 뒤에 읽어야 한다.
+     0단계(2026-08-20)는 PREFETCH_ON=false — 미리받기는 안 하고 '아이가 기다린 시간'만 잰다(기준선). -->
+<script>document.write('<scr' + 'ipt src="../video-prefetch.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <style>
   html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive}
   #stage{position:relative;width:100%;height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
@@ -515,6 +518,9 @@ function playVideo(W, onSit, onAllDone){
             VID_VER 이 붙인 '?v=' 뒤에서 폴더를 바꾸면 안 된다(공룡·동물에서 확인된 순서). */
       var _vurl=VID_BASE+W.word+'_'+list[k]+'.mp4';        // 예: ../assets/phonics/videos/sit_dog.mp4
       v.src=((window.__vq&&window.__vq.pick)?window.__vq.pick(_vurl):_vurl)+VID_VER;   // 예: sit_dog.mp4?v=20260807
+      /* ★ C-3 0단계 (2026-08-20) — 재는 것만 한다. 동작은 한 줄도 안 바뀐다.
+         공룡·동물과 같은 지표(ready_ms)를 같은 이름으로 보낸다 → 셋을 나란히 비교할 수 있다. */
+      try{ if(window.__vp&&window.__vp.watch) window.__vp.watch(v, v.src, {puzzle:'phonics'}); }catch(_){}
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
       var fx=VIDFX[W.word+'_'+list[k]] || VIDFX[list[k]];   // 그 영상 전용 값 우선, 없으면 동물 공통값

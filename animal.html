@@ -18,6 +18,9 @@
 <script>window.__ETRK_WHERE='puzzle';document.write('<scr' + 'ipt src="error-tracker.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <!-- 보상 영상 화질을 회선에 맞춰 고르는 공용 파일(C-2). 없거나 실패하면 아래 코드가 원본을 쓴다. -->
 <script>document.write('<scr' + 'ipt src="video-quality.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 보상 영상을 퍼즐 맞추는 동안 미리 받아두는 공용 파일(C-3). ★ video-quality.js 뒤에 읽어야 한다.
+     0단계(2026-08-20)는 PREFETCH_ON=false — 미리받기는 안 하고 '아이가 기다린 시간'만 잰다(기준선). -->
+<script>document.write('<scr' + 'ipt src="video-prefetch.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <style>
   html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;display:flex;flex-direction:column;background:#fff;overflow:hidden}
@@ -234,6 +237,12 @@
       // 회선에 맞는 화질 고르기(C-2 2단계). __vq 가 없거나 실패하면 원본 주소 그대로 = 기존 동작.
       // 순서 주의: pick() 먼저, bust() 나중 — bust 가 붙이는 ?v= 뒤에 폴더를 바꾸면 안 된다.
       vid.src=bust((window.__vq&&window.__vq.pick)?window.__vq.pick(A.video):A.video);
+      /* ★ C-3 0단계 (2026-08-20) — 재는 것만 한다. 동작은 한 줄도 안 바뀐다.
+         '주소를 넣고 재생 준비가 될 때까지' 아이가 기다린 시간(ready_ms)을 GA4 로 보낸다.
+         지금은 미리받기가 꺼져 있으므로(PREFETCH_ON=false) 이 값이 그대로 '미리받기 전'
+         기준선이 된다. 1단계에서 미리받기를 켜면 같은 지표가 얼마나 내려가는지 바로 비교된다.
+         ⚠️ vid.src 를 넣은 '직후'에 불러야 한다 — 그 순간이 기다림의 시작이다. */
+      try{ if(window.__vp&&window.__vp.watch) window.__vp.watch(vid, vid.src, {puzzle:'animal'}); }catch(_){}
       vid.setAttribute('playsinline',''); vid.playsInline=true;     // iOS 전체화면 강제 방지
       vid.controls=false; vid.preload='auto'; vid.volume=1;          // 영상 자체 소리 재생(무음 아님)
       ov.appendChild(vid);
@@ -289,7 +298,11 @@
   var PZ=null;   // 현재 퍼즐 상태 {uw,uh,placedCount,total,drag}
 
   // === 한 동물 퍼즐 빌드 (이미지 로드 후) — 동물 바뀔 때마다 호출 ===
+  /* 이 퍼즐을 시작한 시각 — 완성까지 걸린 시간(solve_ms) 측정용. C-3 0단계 2026-08-20.
+     파닉스가 2026-08-18 에 먼저 쓴 것과 같은 방식(_wordT0). 관찰만, 게임 로직 미변경. */
+  var _puzT0=0;
   function buildAnimal(){
+    _puzT0=Date.now();                       // 이 퍼즐 시작 — 완성까지 걸린 시간 재기 시작
     var A=curA(), IMG=A.img, WORD=A.word;
     // 이전 퍼즐 정리
     var og=board.querySelector('.ghost'); if(og) og.remove();
@@ -446,7 +459,8 @@
       clickSound();                                 // 과일 퍼즐과 동일한 딸깍 효과음
       PZ.placedCount++;
       if(PZ.placedCount===PZ.total){
-        try{ parent.postMessage({t:'animal_done', key:curA().key}, '*'); }catch(e){}   // 본게임(부모)에게 "이 동물 완성" 알림 → GA category=animal 기록
+        try{ parent.postMessage({t:'animal_done', key:curA().key,
+                                 solve_ms:(_puzT0 ? Date.now()-_puzT0 : 0)}, '*'); }catch(e){}   // 본게임(부모)에게 "이 동물 완성" 알림 → GA category=animal 기록
         try{bgm.volume=BGM_DUCK;}catch(e){} setTimeout(spellThenSay, 300);              // 음악 끊지 않고 볼륨만 낮춤(스펠링·영상 구간 내내 이어짐)
       }
     } else {

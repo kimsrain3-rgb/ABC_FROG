@@ -1567,7 +1567,7 @@ function closeAnimalPuzzle(){
 // 동물 퍼즐(별도 iframe animal.html)이 완성을 알려오면 GA로 기록.
 // 과일과 같은 신호 이름(word_puzzle_complete) + category:'animal' 로 → GA4에서 과일 vs 동물 비교 가능.
 window.addEventListener('message',function(ev){
-  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){ gtag('event','word_puzzle_complete',{category:'animal',word:d.key}); } }catch(e){}
+  try{ var d=ev&&ev.data; if(d&&d.t==='animal_done'){ gtag('event','word_puzzle_complete',{category:'animal',word:d.key,solve_ms:d.solve_ms|0}); } }catch(e){}
 });
 
 // === 공룡 퍼즐 (독립 페이지 dino.html을 전체화면 오버레이로 — 동물 퍼즐과 완전 동일 구조) ===
@@ -1606,7 +1606,7 @@ function closeDinoPuzzle(){
 }
 // 공룡 퍼즐(별도 iframe dino.html)이 완성을 알려오면 GA로 기록. (과일·동물과 같은 신호 이름 + category:'dino')
 window.addEventListener('message',function(ev){
-  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key}); } }catch(e){}
+  try{ var d=ev&&ev.data; if(d&&d.t==='dino_done'){ gtag('event','word_puzzle_complete',{category:'dino',word:d.key,solve_ms:d.solve_ms|0}); } }catch(e){}
 });
 /* 파닉스(iframe phonics/index.html)가 단어 완성을 알려오면 GA로 기록. (2026-08-18 추가)
    과일·동물·공룡과 **같은 신호 이름** + category:'phonics' → GA4에서 넷을 나란히 비교할 수 있다.
@@ -2150,7 +2150,13 @@ function wpAxisCut(img,bb,n){
   }catch(e){ return null; }
 }
 
+/* 이 과일 퍼즐을 시작한 시각 — 완성까지 걸린 시간(solve_ms) 측정용. C-3 0단계 2026-08-20.
+   파닉스(2026-08-18)·공룡·동물과 같은 방식. 관찰만, 게임 로직 미변경.
+   ⚠️ buildPuzzle 은 그림이 로드되면 자기 자신을 한 번 더 부른다(_mask 계산 뒤).
+      그래서 '아직 마스크가 없을 때'만 시작 시각을 찍는다 — 안 그러면 그림 기다린 시간이 빠진다. */
+var _wpT0=0;
 function buildPuzzle(key){
+  if(!(WP_WORDS[key||'apple']||{})._mask) _wpT0=Date.now();   // 이 퍼즐 시작(그림 기다림 포함)
   wpCurrent=key||'apple';
   dimBack(document.querySelector('.wp-back'));   // 새 퍼즐 시작 = 맞추는 중 → 흐리게 (다시하기로 시즌 재시작해도 여기서 복귀)
   var data=WP_WORDS[wpCurrent];
@@ -2535,7 +2541,7 @@ function wpFitWord(wrap,capPx){
 }
 
 function wpComplete(){
-  try{gtag('event','word_puzzle_complete',{category:'fruit',word:wpCurrent});}catch(e){}
+  try{gtag('event','word_puzzle_complete',{category:'fruit',word:wpCurrent,solve_ms:(_wpT0?Date.now()-_wpT0:0)});}catch(e){}
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   var ghost=document.getElementById('wpGhost'); if(ghost) ghost.style.opacity='0';
