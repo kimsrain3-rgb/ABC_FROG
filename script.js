@@ -1449,19 +1449,23 @@ function pineappleSil(){return `
 
 // 단어 사전: 그림 조각으로 맞출 과일들
 const WP_WORDS={
-  // 사과 = 그림 다이어트 1a (2026-08-19): PNG 997KB → WebP 손실(q80) 50KB, 해상도 1019x1200 그대로.
-  // ★ 확장자가 바뀌므로 주소 자체가 달라진다 = 옛 캐시가 끼어들 수 없다(?v= 갱신 불필요).
-  // ★ 원본 PNG 는 지우지 않고 그대로 둔다 — 되돌릴 때 이 줄만 되돌리면 된다.
+  // ★ 그림 다이어트 1a·1b — 과일 10장 전부 WebP 손실(quality 80 / method 6). (2026-08-19~20)
+  //   16,363,552 → 772,704 byte (-95.3%, 14.87MB 절약). ★ 해상도는 전부 원본 그대로. 리사이즈 없음.
+  //   ⚠️ PNG 256색은 쓰지 말 것 — 팔레트 변환이 반투명 가장자리를 뭉개 '투명 픽셀 수'가 바뀐다.
+  //     퍼즐 조각 마스크는 그림의 알파(alpha>20)에서만 만들어지므로 조각 모양이 달라진다.
+  //     WebP 손실은 색만 건드리고 알파는 무손실로 넣는다 — 10장 실측 알파 최대차 0(비트 단위 동일).
+  //   ★ 확장자가 바뀌므로 주소 자체가 달라진다 = 옛 캐시가 끼어들 수 없다(?v= 갱신 불필요).
+  //   ★ 원본 PNG 는 지우지 않고 그대로 둔다 — 되돌릴 때 이 줄들만 .png 로 되돌리면 된다.
   apple:{word:'APPLE',art:appleArt,sil:appleSil,body:APPLE_BODY,img:'assets/fruit/images/fruit_apple_image.webp?v=1'},
-  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/fruit/images/fruit_banana_image.png?v=1',cut:'bsp',parts:6},
-  grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/fruit/images/fruit_grape_image.png?v=1'},
-  orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/fruit/images/fruit_orange_image.png?v=1'},
-  strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/fruit/images/fruit_strawberry_image.png?v=1'},
-  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/fruit/images/fruit_watermelon_image.png?v=1'},
-  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/fruit/images/fruit_peach_image.png?v=1'},
-  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/fruit/images/fruit_lemon_image.png?v=1'},
-  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/fruit/images/fruit_mango_image.png?v=1'},
-  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/fruit/images/fruit_pineapple_image.png?v=1',scale:1.3}
+  banana:{word:'BANANA',art:bananaArt,sil:bananaSil,body:BANANA_BODY,img:'assets/fruit/images/fruit_banana_image.webp?v=1',cut:'bsp',parts:6},
+  grape:{word:'GRAPE',art:grapeArt,sil:grapeSil,body:GRAPE_BODY,img:'assets/fruit/images/fruit_grape_image.webp?v=1'},
+  orange:{word:'ORANGE',art:orangeArt,sil:orangeSil,body:ORANGE_BODY,img:'assets/fruit/images/fruit_orange_image.webp?v=1'},
+  strawberry:{word:'STRAWBERRY',art:strawberryArt,sil:strawberrySil,body:STRAWBERRY_BODY,img:'assets/fruit/images/fruit_strawberry_image.webp?v=1'},
+  watermelon:{word:'WATERMELON',art:watermelonArt,sil:watermelonSil,body:WATERMELON_BODY,img:'assets/fruit/images/fruit_watermelon_image.webp?v=1'},
+  peach:{word:'PEACH',art:peachArt,sil:peachSil,body:PEACH_BODY,img:'assets/fruit/images/fruit_peach_image.webp?v=1'},
+  lemon:{word:'LEMON',art:lemonArt,sil:lemonSil,body:LEMON_BODY,img:'assets/fruit/images/fruit_lemon_image.webp?v=1'},
+  mango:{word:'MANGO',art:mangoArt,sil:mangoSil,body:MANGO_BODY,img:'assets/fruit/images/fruit_mango_image.webp?v=1'},
+  pineapple:{word:'PINEAPPLE',art:pineappleArt,sil:pineappleSil,body:PINEAPPLE_BODY,img:'assets/fruit/images/fruit_pineapple_image.webp?v=1',scale:1.3}
 };
 // 한 게임에서 진행할 과일 순서 (여기에 추가/순서변경 하면 자동 반영)
 const WP_ORDER=['apple','banana','grape','orange','strawberry','watermelon','peach','lemon','mango','pineapple'];
