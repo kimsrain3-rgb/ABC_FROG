@@ -2488,6 +2488,52 @@ function wpLoadLetter(ch){
   return _wpLbuf[ch];
 }
 
+// ★ 완성 단어 크기 맞추기 — 공식이 아니라 '실제 렌더된 폭'을 재서 맞춘다. (2026-08-20)
+//  [왜 공식이면 안 되나] 글자폭을 0.66em 으로 추정하는 옛 공식은
+//    ① 웹폰트(Fredoka)가 안 뜨고 시스템 글꼴로 폴백되면 폭이 달라지고
+//    ② 앱 WebView 는 폰 '글자 크기' 설정을 웹 글자에 곱한다(2026-07-10 공룡 이름 잘림)
+//    → 어느 쪽이든 공식은 어긋난다. 재면 그 두 가지가 이미 반영된 값이 나온다.
+//    (CLAUDE.md 「Google Play 안정성 규칙」 8번. dino.html 의 fitWord() 와 같은 방식)
+//  [무엇에 맞추나] 화면 폭이다. 옛 공식은 퍼즐판(board)만 봐서 판 양옆에 남는
+//    화면(폰 412px 중 116px)을 통째로 못 쓰고 있었다. 글자는 원래부터 화면 정중앙에 놓인다.
+//  [최고점 기준] wpWordShout 이 45% 지점에서 1.25배(오버슛 포함 실측 1.27배)까지 순간 확대된다.
+//    끝나면 1배로 돌아오지만 그 '한순간'에 잘리므로, 최고점에서 안 넘치게 잡아야 한다.
+//    안전배율 1.30 + 좌우 여백 16px → 최고점에서 화면의 약 90%. (dino.html 과 같은 값)
+//  [상한(capPx)] 호출한 쪽이 준다. 짧은 단어가 과하게 커지지 않게 막는 뚜껑이다.
+//    늘리기도 하고 줄이기도 하되 절대 capPx 를 넘지 않는다.
+var WP_WORD_SHOUT=1.30, WP_WORD_PAD=16;
+function wpFitWord(wrap,capPx){
+  try{
+    if(!wrap||!wrap.firstChild) return;
+    var host=wrap.parentNode;
+    var SW=(host&&host.clientWidth)||document.documentElement.clientWidth||window.innerWidth||360;
+    var allow=Math.max(40,(SW-WP_WORD_PAD*2)/WP_WORD_SHOUT);   // 평상시(1배) 허용 폭
+    // ★ 폭은 offsetWidth 로 잰다 — getBoundingClientRect() 는 '확대 변형이 적용된' 폭을 준다.
+    //   이 상자는 shout 때 1.27배로 커지므로, 혹시라도 그 순간에 재면 폭이 1.27배로 잡혀
+    //   글자를 엉뚱하게 줄여버린다(실측 41.9px → 33px). offsetWidth 는 변형과 무관한 '배치' 폭이다.
+    //   (지금 코드는 shout 를 걸기 '전'에 재므로 안전하지만, 두 줄 순서가 바뀌면 조용히 깨진다)
+    // ① 상한에서 출발해 실측 폭에 비례로 맞춘다(늘리기·줄이기 양방향). 글자 사이 간격은
+    //    비례로 안 줄어드므로 몇 번 반복해 수렴시킨다.
+    for(var i=0;i<4;i++){
+      var cur=wrap.offsetWidth;
+      if(!cur) return;                                          // 화면에 안 붙어 있으면 포기(원래 크기 유지)
+      var fs=parseFloat(wrap.style.fontSize)||capPx;
+      var next=fs*(allow/cur);
+      if(next>capPx) next=capPx;                                // ★ 뚜껑 — 짧은 단어는 여기서 멈춘다
+      if(next<9) next=9;
+      if(Math.abs(next-fs)<0.3) break;                          // 수렴
+      wrap.style.fontSize=next+'px';
+    }
+    // ② 마지막 안전 확인 — 아직 넘치면 줄이기만 한다(늘리지 않는다)
+    for(var j=0;j<3;j++){
+      var c2=wrap.offsetWidth;
+      if(!c2||c2<=allow) break;
+      var f2=parseFloat(wrap.style.fontSize)||capPx;
+      wrap.style.fontSize=Math.max(9,f2*(allow/c2))+'px';
+    }
+  }catch(e){}
+}
+
 function wpComplete(){
   try{gtag('event','word_puzzle_complete',{category:'fruit',word:wpCurrent});}catch(e){}
   var data=WP_WORDS[wpCurrent];
@@ -2506,17 +2552,32 @@ function wpComplete(){
   wrap.className='wp-word-h'; wrap.id='wpWordH';
   wrap.style.left=(bLeft+board/2)+'px';
   wrap.style.top=(bTop+board/2+board*0.06*fscale)+'px';
-  var fs=Math.min(board*0.2, board*0.82/(word.length*0.66))*fscale;
-  wrap.style.fontSize=fs+'px';
+  // ★ 글자 크기 = '상한' 과 '실측으로 맞춘 크기' 중 작은 쪽 (2026-08-20)
+  //  [옛 방식] Math.min(board*0.2, board*0.82/(글자수*0.66))*fscale
+  //    - 기준이 퍼즐판(board)뿐이라 판 양옆에 남는 화면(폰 412px 중 116px)을 못 썼다.
+  //    - 글자수로 나눠서 10자 단어(STRAWBERRY·WATERMELON)가 36.9px = 5자의 0.62배로 작았다.
+  //    - 글자폭을 0.66em 으로 '추정'한 공식이라 웹폰트 폴백·폰 글자확대에서 반드시 어긋난다.
+  //      (CLAUDE.md 안정성 규칙 8번 / dino.html 의 fitWord() 와 같은 문제)
+  //  [새 방식] 상한은 그대로 두고(=짧은 단어 크기 불변), 실제 렌더 폭을 재서 화면에 맞춘다.
+  //    상한 capPx = board*0.2*fscale — 옛 공식의 앞쪽 항 그대로다.
+  //    5·6자 단어는 원래도 이 상한에 막혀 있었으므로 크기가 한 픽셀도 안 변한다.
+  //    9·10자 단어만 옛 '글자수 나누기' 대신 실측 맞춤을 받아 커진다.
+  //  ★ 목적은 '긴 단어를 키우는 것'이지 전체를 키우는 게 아니다.
+  var capPx=board*0.2*fscale;
+  wrap.style.fontSize=capPx+'px';
   word.forEach(function(ch){
     var sp=document.createElement('span'); sp.className='wl'; sp.textContent=ch; wrap.appendChild(sp);
   });
   stage.appendChild(wrap);
+  wpFitWord(wrap,capPx);            // 붙인 뒤에 재야 실제 폭이 나온다
 
   var spans=wrap.querySelectorAll('.wl');
 
   // === 글자 소리를 '앞 소리가 끝나면 다음' 순서로 재생 → 간격 일정하고 자연스럽게 ===
   function afterLetters(){
+    wpFitWord(wrap,capPx);                             // ★ 1.27배로 튀기 직전 한 번 더 잰다
+                                                       //   (느린 회선에서 Fredoka 가 늦게 도착해 폭이 바뀐 경우 대비.
+                                                       //    보통은 이미 맞아 있어 아무 일도 안 일어난다)
     wrap.classList.add('shout');                       // 단어 전체 강조 + 반짝
     wpSayWord(data.word);                               // 단어 한 번 외치기
     var idx=WP_ORDER.indexOf(wpCurrent), isLast=idx>=WP_ORDER.length-1;
