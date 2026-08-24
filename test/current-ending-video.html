@@ -341,7 +341,9 @@ try {
                          "ALPHABET MASTER!!" 말풍선 + you_did_it 음성은 그대로 둔다
        9초               HOORAY 🎊 + hooray 음성          ← 그대로 (안 건드림)
        11초              라이브 PLAY AGAIN 버튼이 생기지만 → 영상 위를 덮지 않게 잠시 숨긴다
-       영상 끝(약 15초)   숨겨 둔 그 버튼을 그대로 보여준다
+       영상 끝(약 15초)   ★ **마지막 장면에 그대로 멈춘다** + 숨겨 둔 그 버튼을 보여준다
+                         게임 화면(개구리·연잎)으로 돌아가지 않는다.
+                         아이가 안 누르면 계속 그 화면이다 — 시간이 지나도 안 돌아간다.
 
      [겹침 규칙 — 무엇이 영상 위에 보이나]
        영상은 z-index 26 이다. 개구리(22)는 가리고, 말풍선(28)·HOORAY(100)·폭죽(100)·
@@ -352,7 +354,7 @@ try {
      [절대 규칙 — 아이가 못 빠져나가는 화면을 만들지 않는다]
        영상이 안 받아지든, 회선이 끊기든, 재생이 막히든, 무슨 일이 있어도
        PLAY AGAIN 까지 간다. 빠져나가는 길을 네 겹으로 둔다.
-         ① 영상 끝(ended)          → 버튼
+         ① 영상 끝(ended)          → 마지막 장면에 멈춘 채로 버튼
          ② 영상 오류(error)        → 티어 파일이면 원본으로 한 번 재시도.
                                     그래도 안 되면 **원래 엔딩 그대로 흘려보내고** 라이브가
                                     11초에 만드는 그 버튼을 쓴다 (서둘러 만들지 않는다)
@@ -429,23 +431,49 @@ try {
     function since() { return Date.now() - T0; }
 
     /* ── 빠져나가는 길 : 무슨 일이 있어도 여기로 온다 ───────────────────────
-       ① 영상을 치우고 ② PLAY AGAIN 을 보이게 하고 ③ 없으면 직접 만든다      */
+       끝난 이유에 따라 두 갈래다.
+         · 영상이 끝까지 잘 나왔다('ended')  → **마지막 장면을 그대로 멈춰 둔다.**
+                                              게임 화면(개구리·연잎)으로 돌아가지 않는다.
+         · 그 밖(오류·재생실패·마감)         → 영상을 치우고 원래 엔딩 화면 그대로 둔다.
+                                              멈출 영상이 애초에 없기 때문이다.
+       두 갈래 모두 마지막에 PLAY AGAIN 을 띄운다.                             */
     function finish(reason) {
       if (done) return;
       done = true; hideBtn = false;
       try { ga(reason, tier); } catch (e) {}
-      try {
-        if (vid) {
-          try { vid.pause(); } catch (e) {}
-          vid.classList.remove('on');
-          var v = vid;
-          setTimeout(function () {
-            try { v.removeAttribute('src'); v.load(); } catch (e) {}
-            try { if (v.parentNode) v.parentNode.removeChild(v); } catch (e) {}
-          }, 400);
-        }
-      } catch (e) {}
+
+      if (reason === 'ended' && vid) {
+        freeze();                               // 마지막 장면 정지 — 아무도 안 치운다
+      } else {
+        try {
+          if (vid) {
+            try { vid.pause(); } catch (e) {}
+            vid.classList.remove('on');
+            var v = vid;
+            setTimeout(function () {
+              try { v.removeAttribute('src'); v.load(); } catch (e) {}
+              try { if (v.parentNode) v.parentNode.removeChild(v); } catch (e) {}
+            }, 400);
+          }
+        } catch (e) {}
+      }
       try { showPlayAgain(); } catch (e) {}
+    }
+
+    /* ── 마지막 장면에 멈춰 세우기 ─────────────────────────────────────────
+       영상이 끝나면 <video> 는 **마지막으로 그린 프레임을 그대로 계속 보여준다.**
+       그래서 요소를 지우지만 않으면 그 장면이 화면에 남는다.
+       · 반복(loop)은 켜지 않는다 — 원래 꺼져 있고, 여기서 한 번 더 못박는다
+       · 시간이 지나도 아무것도 이 영상을 치우지 않는다.
+         26초 마감 타이머가 나중에 울려도 done 이 이미 참이라 그냥 돌아간다
+       · pointer-events:none 이라 위에 뜬 PLAY AGAIN 이 그대로 눌린다          */
+    function freeze() {
+      try {
+        vid.loop = false;
+        vid.pause();
+        vid.classList.add('on');                // 계속 보이게 (혹시 빠졌으면 다시 넣는다)
+        vid.style.opacity = '1';
+      } catch (e) {}
     }
 
     /* ── PLAY AGAIN 을 확실히 띄운다 ───────────────────────────────────────
