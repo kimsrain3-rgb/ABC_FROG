@@ -702,6 +702,7 @@ function displayLetter(l){
   return upper;
 }
 function displayTarget(){
+  if(!ct) return '';                          // 마지막 글자를 잡으면 ct가 null → abc 모드 엔딩에서 TypeError로 콜백이 통째로 죽던 것 (2026-08-24)
   if(gameMode==='abc') return ct.toLowerCase();
   if(gameMode==='ABc' && mixSlotLetters[ct]) return mixSlotLetters[ct];
   return ct;
