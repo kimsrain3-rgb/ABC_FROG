@@ -318,14 +318,14 @@ try {
 
 <!-- ★★★ [TEST 전용] 26글자 채우기 버튼 — 라이브엔 없다 ★★★ -->
 <style>
-#t26{position:fixed;left:10px;top:150px;z-index:99999;
+#t26{position:fixed;left:10px;top:78px;z-index:99999;
   padding:9px 13px;border:none;border-radius:10px;cursor:pointer;
   font:700 14px/1.2 'Segoe UI',sans-serif;color:#fff;
   background:#D500F9;box-shadow:0 3px 10px rgba(0,0,0,.35);
   opacity:.3;pointer-events:none;transition:opacity .3s}
 #t26.on{opacity:1;pointer-events:auto}
 #t26:active{transform:scale(.93)}
-#t26note{position:fixed;left:10px;top:190px;z-index:99999;pointer-events:none;
+#t26note{position:fixed;left:10px;top:118px;z-index:99999;pointer-events:none;
   background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 'Segoe UI',sans-serif;
   padding:5px 9px;border-radius:7px;max-width:62vw;transition:opacity .5s}
 </style>
@@ -411,160 +411,49 @@ try {
 })();
 </script>
 
-<!-- ★★★ [TEST 전용] "지금 상태 보기" — 왕관 위치를 재서 보여주기만 한다 ★★★
-     ⚠️ 왕관 위치는 한 픽셀도 안 건드린다. 읽기(측정)만 하는 코드다.
-     ⚠️ position:fixed 라 게임 배치에 영향이 없고, 개구리·왕관은 화면 아래쪽이라 안 가린다.
+
+<!-- ★★★ [TEST 전용] 왕관 위치 미세조정 ★★★
+     왕관을 아래로 몇 px 내릴지만 정한다. 라이브 script.js 는 안 건드린다.
+
+     ⚠️ 다음 판을 만들 때는 아래 CROWN_NUDGE_PX 숫자 하나만 바꾼다 (5px 단위).
+        예) 더 내리려면 10, 덜 내리려면 0 (0 = 원래 위치)
+
+     [방법] margin-top 을 준다.
+       왕관은 script.js 가 style.top 을 '1%' 로 만들고, 숨쉬기가 1%↔1.5% 로 계속 다시 쓴다.
+       그래서 top 을 바꿔 놓으면 다음 숨쉬기에 덮어써져 되돌아간다.
+       margin-top 은 top 과 따로 더해지므로 숨쉬기가 덮어써도 살아남고,
+       숨쉬기의 위아래 움직임(1%↔1.5%)도 그대로 유지된다.
 -->
-<style>
-#tdiag{position:fixed;left:0;right:0;top:0;z-index:99998;pointer-events:none;
-  background:rgba(0,0,0,.80);color:#fff;
-  font:600 13px/1.5 'Segoe UI',system-ui,sans-serif;
-  padding:7px 8px 8px 90px;                 /* 왼쪽 90px = 뒤로 화살표 자리 비움 */
-  -webkit-text-size-adjust:none; text-size-adjust:none;}
-#tdiag b{color:#FFD54F}
-#tdiag .ok{color:#69F0AE}
-#tdiag .bad{color:#FF8A80}
-#tdiag .snap{display:block;margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,.28);color:#FFEB3B}
-</style>
-<div id="tdiag">준비 중…</div>
 <script>
 (function(){
-  var box = document.getElementById('tdiag');
-  var snapHtml = '';                      // 왕관 뜬 순간에 고정해 둘 줄
-  var snapDone = false;
+  var CROWN_NUDGE_PX = 5;          // ← 이 숫자만 바꾼다 (5px 단위)
 
-  // ── 폰 글자배율 재기 ──
-  // 앱(WebView)의 setTextZoom 이나 폰 글꼴 설정은 '화면에 그려지는 글자'만 키운다.
-  // canvas 의 measureText 는 그 배율을 안 받으므로, 둘의 폭을 비교하면 배율이 나온다.
-  function textZoom(){
+  // 화면 구석에 지금 몇 px 인지 표시 — 어느 판을 보고 있는지 헷갈리지 않게
+  try{
+    var tag = document.createElement('div');
+    tag.id = 'tnudge';
+    tag.style.cssText = 'position:fixed;left:90px;top:10px;z-index:99998;pointer-events:none;' +
+      'background:rgba(0,0,0,.72);color:#FFD54F;border-radius:8px;padding:5px 10px;' +
+      "font:700 14px/1.3 'Segoe UI',system-ui,sans-serif;-webkit-text-size-adjust:none;text-size-adjust:none;";
+    tag.textContent = '왕관 ' + (CROWN_NUDGE_PX >= 0 ? '+' : '') + CROWN_NUDGE_PX + 'px ↓';
+    document.body.appendChild(tag);
+  }catch(e){}
+
+  if (!CROWN_NUDGE_PX) return;
+
+  // 왕관은 엔딩 7초 시점에 생긴다. 생기면 바로 적용한다.
+  var applied = false;
+  var iv = setInterval(function(){
     try{
-      var p = document.createElement('span');
-      p.style.cssText = 'position:absolute;left:-9999px;top:0;font-size:16px;white-space:nowrap;font-family:sans-serif';
-      p.textContent = 'MMMMMMMMMMMMMMMM';
-      document.body.appendChild(p);
-      var domW = p.getBoundingClientRect().width;
-      p.remove();
-      var c = document.createElement('canvas').getContext('2d');
-      c.font = '16px sans-serif';
-      var cvW = c.measureText('MMMMMMMMMMMMMMMM').width;
-      if (!(cvW > 0)) return null;
-      return domW / cvW;
-    }catch(e){ return null; }
-  }
-
-  // ── 어디서 실행 중인가 ──
-  function where(){
-    try{
-      if (window.AndroidBridge) return '본게임 앱';
-      var ua = navigator.userAgent || '';
-      if (/; wv\)/.test(ua)) return '앱(WebView)';
-      return '폰 크롬';
-    }catch(e){ return '?'; }
-  }
-
-  function read(){
-    var out = { err:null };
-    try{
-      var frogEl = document.getElementById('frog');
-      var crown  = document.getElementById('crown');
-      var img    = frogEl ? frogEl.querySelector('.frog-img.active') : null;
-      out.stage   = (typeof frogStage !== 'undefined') ? frogStage : '?';
-      out.imgId   = img ? img.id : '(없음)';
-      out.vw = Math.round(innerWidth); out.vh = Math.round(innerHeight);
-      out.dpr = (window.devicePixelRatio || 1).toFixed(2);
-      out.zoom = textZoom();
-      out.where = where();
-      try{ out.fredoka = (document.fonts && document.fonts.check) ? document.fonts.check('16px Fredoka') : null; }
-      catch(e){ out.fredoka = null; }
-
-      if (!crown){ out.noCrown = true; return out; }
-
-      var fr = frogEl.getBoundingClientRect();
-      var cr = crown.getBoundingClientRect();
-      var cs = getComputedStyle(crown);
-
-      // 왕관 이모지의 '실제 그려지는' 세로 범위
-      var m = document.createElement('canvas').getContext('2d');
-      m.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
-      var M = m.measureText('👑');
-      var contentH = M.fontBoundingBoxAscent + M.fontBoundingBoxDescent;
-      var halfLead = (cr.height - contentH) / 2;
-      var baseY    = cr.top + halfLead + M.fontBoundingBoxAscent;
-      out.inkTop    = baseY - M.actualBoundingBoxAscent;
-      out.inkBottom = baseY + M.actualBoundingBoxDescent;
-      out.inkH      = M.actualBoundingBoxAscent + M.actualBoundingBoxDescent;
-      out.lineH     = cr.height;
-      out.padTop    = out.inkTop - cr.top;
-      out.padBot    = cr.bottom - out.inkBottom;
-      out.fontPx    = parseFloat(cs.fontSize);
-
-      // 개구리 그림의 '진짜 머리 꼭대기' (투명하지 않은 첫 줄)
-      if (img && img.naturalWidth){
-        var S = 256, cv = document.createElement('canvas');
-        cv.width = S; cv.height = S;
-        var cx = cv.getContext('2d');
-        cx.drawImage(img, 0, 0, S, S);
-        var d = cx.getImageData(0, 0, S, S).data, t = -1;
-        for (var y = 0; y < S && t < 0; y++)
-          for (var x = 0; x < S; x++) if (d[(y*S+x)*4+3] > 20){ t = y; break; }
-        out.headPct = t / S;
-        out.headY   = fr.top + fr.height * out.headPct;
-        out.gap     = out.headY - out.inkBottom;      // 양수 = 떠 있음
-        out.gapPct  = out.gap / fr.height * 100;
-      }
-      out.frogH = fr.height;
-    }catch(e){ out.err = (e && e.message) ? e.message : String(e); }
-    return out;
-  }
-
-  function line(o){
-    if (o.err) return '<span class="bad">측정 실패: ' + o.err + '</span>';
-    var z = (o.zoom == null) ? '?' : Math.round(o.zoom * 100) + '%';
-    var head = '<b>단계 ' + o.stage + '</b> · ' + o.imgId +
-               ' · 글자배율 <b>' + z + '</b> · ' + o.vw + '×' + o.vh + ' (dpr ' + o.dpr + ')' +
-               ' · ' + o.where;
-    var f = (o.fredoka === null) ? 'Fredoka ?' : (o.fredoka ? 'Fredoka 로드됨' : '<span class="bad">Fredoka 실패</span>');
-    if (o.noCrown) return head + '<br>왕관 아직 없음 — 엔딩 7초 시점에 값이 나옵니다<br>' + f;
-    var verdict = (o.gap == null) ? '<span class="bad">머리 측정 불가</span>'
-                : (o.gap > 0 ? '<span class="bad">⚠️ 떠 있음</span>' : '<span class="ok">✅ 얹힘</span>');
-    var g = (o.gap == null) ? '?' : (o.gap > 0 ? '+' : '') + o.gap.toFixed(1) + 'px (' + o.gapPct.toFixed(1) + '%)';
-    var l2 = '왕관아래 ' + o.inkBottom.toFixed(0) + ' / 머리꼭대기 ' +
-             (o.headY == null ? '?' : o.headY.toFixed(0)) + ' → 틈 <b>' + g + '</b>  ' + verdict;
-    var l3 = '왕관글자 ' + o.fontPx.toFixed(1) + 'px · 잉크 ' + o.inkH.toFixed(0) +
-             'px · 줄상자 ' + o.lineH.toFixed(0) + 'px(빈공간 위' + o.padTop.toFixed(0) +
-             '/아래' + o.padBot.toFixed(0) + ') · ' + f;
-    var l4 = '머리 ' + (o.headPct == null ? '?' : (o.headPct*100).toFixed(1) + '%') +
-             ' · 개구리칸 ' + o.frogH.toFixed(0) + 'px';
-    return head + '<br>' + l2 + '<br>' + l3 + '<br>' + l4;
-  }
-
-  var crownSeen = false;
-  setInterval(function(){
-    try{
-      var o = read();
-      var html = line(o);
-
-      // 왕관이 처음 뜨면 1.6초 뒤(등장 애니메이션이 끝난 뒤) 값을 '고정'해 둔다.
-      // 숨쉬기가 왕관을 1%↔1.5% 로 흔들어 실시간 값이 ±1px 움직이기 때문.
-      if (!crownSeen && document.getElementById('crown')){
-        crownSeen = true;
-        setTimeout(function(){
-          if (snapDone) return;
-          snapDone = true;
-          var s2 = read();
-          snapHtml = '<span class="snap">★ 왕관 뜬 순간 고정값 — ' +
-                     ((s2.gap == null) ? '?' :
-                       ((s2.gap > 0 ? '+' : '') + s2.gap.toFixed(1) + 'px  ' +
-                        (s2.gap > 0 ? '⚠️ 떠 있음' : '✅ 얹힘'))) +
-                     ' (단계 ' + s2.stage + ' · ' + s2.imgId +
-                     ' · 배율 ' + (s2.zoom == null ? '?' : Math.round(s2.zoom*100) + '%') + ')</span>';
-        }, 1600);
-      }
-      box.innerHTML = html + snapHtml;
-    }catch(e){
-      try{ box.textContent = '표시 오류: ' + e.message; }catch(_){}
-    }
-  }, 400);
+      var c = document.getElementById('crown');
+      if (!c) return;
+      if (!applied){ c.style.marginTop = CROWN_NUDGE_PX + 'px'; applied = true; }
+      // 혹시 다른 코드가 지우면 다시 넣는다(숨쉬기는 top 만 건드리므로 보통 안 지워진다)
+      if (c.style.marginTop !== CROWN_NUDGE_PX + 'px') c.style.marginTop = CROWN_NUDGE_PX + 'px';
+    }catch(e){}
+  }, 100);
+  // 엔딩이 끝나고도 계속 돌 필요는 없다
+  setTimeout(function(){ try{ clearInterval(iv); }catch(e){} }, 60000);
 })();
 </script>
 </body>
