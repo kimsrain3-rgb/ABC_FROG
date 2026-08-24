@@ -1,25 +1,36 @@
 <!DOCTYPE html>
 <!-- ★ 테스트 빌드 — 엔딩 축하 영상 + "26글자 채우기" 버튼 (2026-08-24)
 
-     [무엇을 보는 판인가] 엔딩 7초 시점(왕관이 뜨던 자리)에 축하 영상
-       assets/frog/videos/frog_lastdance.mp4 (8초·음악 있음)을 게임 화면 가득 트는 판이다.
-       영상 안에 왕관 쓴 개구리가 춤추는 장면이 들어 있어, 게임의 왕관 👑 과 개구리 춤은 지웠다.
+     [무엇을 보는 판인가] 축하 영상 assets/frog/videos/frog_lastdance.mp4 (8초·음악 있음)을
+       게임 화면 가득 트는 판이다. 영상 안에 왕관 쓴 개구리가 춤추는 장면이 들어 있어,
+       게임의 왕관 👑 과 개구리 춤은 지웠다.
+
+     ⚠️ **라이브 엔딩 시간표를 바꿔치기해서 쓴다.** 아래 STC_REMAP 의 '원래 값' 이
+        script.js 의 setTimeout 숫자와 정확히 같아야 갈린다. 라이브 엔딩이 바뀌면 그 표도 고칠 것.
+
+     [축하는 쉬는 시간 없이 쭉 이어진다 — 2026-08-24 2차]
+       "I'm SO full~ BURP!!" 말풍선은 뺐다. 그 3초가 마지막 파리와 축하 사이를 끊고 있었다.
+       마지막 파리를 잡은 순간(0초)부터 이렇게 간다. **말풍선·음성은 하나도 안 뺐고 간격만 좁혔다.**
+         0.0초  마지막 파리를 먹는다 (Yummy / BINGO — 그대로 나온다)
+         0.3초  ★ 폭죽 + "WELL DONE!" + congrats 음성   ← 기다림 없이 즉시
+         1.3초  ★ "ALPHABET MASTER!!" + you_did_it 음성 + 폭죽 8발
+         1.5초  ★ 축하 영상 시작 (음악과 함께)
+                왕관·개구리 춤은 안 나와야 한다
+         2.2초  ★ HOORAY 🎊 + hooray 음성
+         9.5초  영상 끝 → **마지막 장면에서 정지** + 그 위에 PLAY AGAIN
+       ※ 축하 멘트·음성이 서로 겹쳐 쏟아진다. 그게 목적이다(축제 분위기).
 
      [폰에서 볼 것]
-       ① 소문자(abc) 모드로 들어가 🏁 26글자 채우기 를 누른다
-          → 3.5초  "WELL DONE!" 말풍선 + 축하 음성        (예전 그대로)
-          → 7초    ★ 축하 영상 시작 (음악과 함께)
-                   왕관·개구리 춤은 안 나와야 한다 ← 이게 이번 판의 핵심
-                   "ALPHABET MASTER!!" 말풍선 + 음성은 영상 위에 그대로 나온다
-          → 9초    HOORAY 🎊 + 음성                        (예전 그대로)
-          → 영상 끝(약 15초) PLAY AGAIN 버튼
-       ② 음악과 축하 음성(you_did_it · hooray)이 같이 들린다 — 겹쳐 들리는지 꼼지파파가 판단하실 것
-       ③ 대문자(ABC) · 섞기(ABc) 모드에서도 같은지
-       ④ 비행기모드로 켜 보기 — 영상이 안 떠도 PLAY AGAIN 까지 가야 한다(가장 중요)
+       ① 소문자(abc) 모드로 들어가 🏁 26글자 채우기 를 누른다 → 위 순서대로 나오는가
+       ② 대문자(ABC) · 섞기(ABc) 모드에서도 같은지
+       ③ 비행기모드로 켜 보기 — 영상이 안 떠도 **약 3.6초**에 PLAY AGAIN 까지 가야 한다(가장 중요)
+          ⚠️ 영상을 **한 번도 본 적 없는 상태**에서 해야 진짜 확인이 된다.
+             한 번 봤으면 브라우저가 받아 둔 것을 그대로 틀어 준다(2026-08-24 실측).
 
      [빠져나가는 길을 네 겹으로 뒀다]
        영상이 안 받아지든 회선이 끊기든 재생이 막히든 무슨 일이 있어도 PLAY AGAIN 까지 간다.
-       ① 영상 끝  ② 영상 오류(원본 재시도 후)  ③ 4초 안에 재생이 시작 안 됨  ④ 무조건 26초 마감
+       ① 영상 끝  ② 영상 오류(원본 재시도 후)  ③ 5초 안에 재생이 시작 안 됨  ④ 무조건 20초 마감
+       실패해도 **축하는 하나도 안 줄어든다** — 다 나오고 3.6초에 버튼이 뜬다.
        버튼은 새로 만들지 않고 **라이브가 만든 그 버튼**을 잠시 숨겼다 되돌려 쓴다(하는 일이 같다).
        라이브 버튼이 끝내 안 생기면 그때만 같은 버튼을 직접 만든다.
 
@@ -380,10 +391,48 @@ try {
   // ── 손으로 바꿀 수 있는 값 ────────────────────────────────────────────────
   var VID_FILE   = 'frog_lastdance.mp4';
   var VID_VER    = '?v=20260824';   // 같은 이름으로 영상을 갈아끼우면 이 날짜를 바꾼다
-  var SHOW_AT    = 7000;            // 엔딩 시작 후 몇 ms 에 영상을 트나 (= 왕관이 뜨던 시각)
-  var START_WAIT = 4000;            // 튼 뒤 이 시간 안에 안 움직이면 포기하고 버튼으로
-  var HARD_MS    = 26000;           // 무슨 일이 있어도 이때는 PLAY AGAIN 이 떠 있어야 한다
+  var SHOW_AT    = 1200;            // 엔딩 시작 후 몇 ms 에 영상을 트나
+  var START_WAIT = 5000;            // 튼 뒤 이 시간 안에 안 움직이면 포기하고 버튼으로
+  var HARD_MS    = 20000;           // 무슨 일이 있어도 이때는 PLAY AGAIN 이 떠 있어야 한다
   var VIDEO_Z    = 26;              // 영상 층. 200 으로 올리면 말풍선·HOORAY 도 영상 뒤로 숨는다
+
+  /* ── 엔딩을 쉬는 시간 없이 이어 붙인다 ────────────────────────────────────
+     라이브 script.js 의 엔딩 stc() 는 setTimeout 으로 짜인 시간표다.
+     그 파일을 못 건드리므로, **stc() 가 도는 그 순간에만** setTimeout 을 잠깐 바꿔치기해서
+     "몇 ms 뒤" 라는 숫자만 갈아 끼운다. stc() 는 시간표를 전부 자기 안에서 한 번에 등록하므로
+     이 방식으로 전부 잡힌다. 다 등록되면 곧바로 원래 setTimeout 으로 되돌린다.
+
+     ⚠️ 말풍선·음성은 **하나도 빼지 않는다.** 간격만 좁힌다(겹쳐 쏟아지는 게 목적).
+     ⚠️ 여기 적은 '원래 값' 은 script.js 안의 숫자와 정확히 같아야 갈린다.
+        라이브 엔딩 시간표가 바뀌면 이 표도 같이 고칠 것.                        */
+  var STC_REMAP = {
+    500:   0,      // 폭죽 1
+    1500:  400,    // 폭죽 2
+    2500:  700,    // 폭죽 3
+    3500:  0,      // ★ WELL DONE! + congrats 음성  → 기다림 없이 즉시
+    4500:  900,    // 폭죽 연타 5발
+    7000:  1000,   // ★ ALPHABET MASTER!! + you_did_it 음성 + 폭죽 8발
+    9000:  1900,   // ★ HOORAY 🎊 + hooray 음성
+    10000: 10000,  //   인앱 리뷰 요청 — 그대로 둔다(영상이 끝난 뒤에 뜨는 게 맞다)
+    11000: 3300    //   라이브 PLAY AGAIN 버튼 (영상이 있으면 숨겼다 나중에 보여준다)
+  };
+  // 마지막 파리를 먹고 엔딩이 시작되기까지 script.js 가 기다리는 시간(occ 의 2800ms).
+  // 마지막 한 마리일 때만 이 값을 줄인다 — 평소 파리에는 손대지 않는다.
+  var LAST_FLY_GAP = { 2800: 300 };
+
+  /* setTimeout 을 잠깐 바꿔치기해서 fn 을 부른다. 반드시 되돌린다(finally). */
+  function withRemap(map, fn, self, args) {
+    var orig = window.setTimeout;
+    try {
+      window.setTimeout = function (cb, ms) {
+        var m = (map && Object.prototype.hasOwnProperty.call(map, ms)) ? map[ms] : ms;
+        return orig.call(window, cb, m);
+      };
+      return fn.apply(self, args);
+    } finally {
+      window.setTimeout = orig;          // 무슨 일이 있어도 되돌린다
+    }
+  }
 
   // ── 왕관은 이 판에서 안 보이게 한다 (영상 안에 왕관 쓴 개구리가 들어 있다) ──
   // 타이밍에 안 흔들리게 CSS 로 막는다. script.js 는 그대로 왕관을 만들지만 화면엔 안 나온다.
@@ -483,7 +532,8 @@ try {
           (2026-08-24 404 검증에서 실제로 108ms 에 떴다 — 그래서 아래처럼 고쳤다)
        영상이 실패하면 **원래 엔딩 그대로** 흘러가게 두고, 라이브가 11초에 만드는
        그 버튼을 기다렸다가 보여준다. 그마저 안 생기면 그때(12.5초) 직접 만든다. */
-    var BTN_FLOOR = 12500;                     // 이 시각 전에는 우리가 버튼을 만들지 않는다
+    var BTN_FLOOR = 4200;                      // 이 시각 전에는 우리가 버튼을 만들지 않는다
+                                               // (라이브 버튼이 3.3초에 생기므로 그보다 뒤)
     var ensuring  = false;
     function showPlayAgain() {
       try {
@@ -548,8 +598,8 @@ try {
       mo.observe(gcEl, { childList: true });
     } catch (e) {}
     // 관찰기가 없는 환경(아주 옛 WebView)을 위한 보조 — 11초 근처에 한 번씩 찾아본다
-    later(function () { try { var b = findLiveBtn(); if (b) { btnRef = b; if (hideBtn) b.style.display = 'none'; } } catch (e) {} }, 11200);
-    later(function () { try { var b = findLiveBtn(); if (b) { btnRef = b; if (hideBtn) b.style.display = 'none'; } } catch (e) {} }, 12000);
+    later(function () { try { var b = findLiveBtn(); if (b) { btnRef = b; if (hideBtn) b.style.display = 'none'; } } catch (e) {} }, 3400);
+    later(function () { try { var b = findLiveBtn(); if (b) { btnRef = b; if (hideBtn) b.style.display = 'none'; } } catch (e) {} }, 4000);
 
     // ── 개구리 춤 지우기 ─────────────────────────────────────────────────
     // script.js 가 7초에 frog.className='frog dancing' 을 준다. 그 뒤에 'dancing' 만 뗀다.
@@ -561,7 +611,7 @@ try {
           if (fr && fr.classList.contains('dancing')) fr.classList.remove('dancing');
         } catch (e) {}
       }, 120);
-      later(function () { try { clearInterval(dv); } catch (e) {} }, 12000);
+      later(function () { try { clearInterval(dv); } catch (e) {} }, 4000);
     } catch (e) {}
 
     /* ── 영상 만들기 : 엔딩이 시작되는 지금 '받기'만 시작한다 ────────────────
@@ -577,7 +627,14 @@ try {
       vid.controls = false;
       vid.src = urlFor(tier);
 
-      vid.addEventListener('playing', function () { started = true; });
+      /* ⚠️ **그림이 실제로 나오기 시작할 때 보여준다.**
+         예전에는 트는 순간 바로 보이게 했는데, 이제 영상이 1.2초에 시작하므로 아직 덜 받아졌을 수
+         있다. 그 상태로 보이게 하면 **검은 네모**가 축하 한가운데를 덮는다.
+         그래서 첫 프레임이 도는 순간('playing')에 비로소 보이게 한다.               */
+      vid.addEventListener('playing', function () {
+        started = true;
+        try { if (!done) vid.classList.add('on'); } catch (e) {}
+      });
       vid.addEventListener('ended',   function () { finish('ended'); });
       vid.addEventListener('error',   function () {
         // 티어 파일이 없거나 깨졌으면 원본으로 딱 한 번 재시도한다
@@ -617,8 +674,7 @@ try {
     later(function () {
       if (done) return;
       shown = true;
-      try { vid.classList.add('on'); } catch (e) {}
-      tryPlay();
+      tryPlay();                       // 보이게 하는 건 'playing' 이 왔을 때 (검은 네모 방지)
       // 이 안에 안 움직이면 포기하고 버튼으로 간다
       later(function () { if (!started && !done) finish('stall'); }, START_WAIT);
     }, SHOW_AT);
@@ -638,11 +694,61 @@ try {
       window.stc = function () {
         var r;
         // 원래 엔딩이 먼저다. 여기서 넘어져도 영상·버튼 절차는 계속 간다.
-        try { r = _stc.apply(this, arguments); } catch (e) {}
+        try {
+          r = withRemap(STC_REMAP, function () {
+            return noBurp(function () { return _stc.apply(this, arguments); }, this, arguments);
+          }, this, arguments);
+        } catch (e) {}
         try { startEndingVideo(); } catch (e) {}
         return r;
       };
       window.stc.__endvid = 1;
+    }
+  } catch (e) {}
+
+  /* ── "I'm SO full~ BURP!!" 한 줄만 빼고 부르기 ───────────────────────────
+     이 대사는 stc() 맨 앞에서 **곧바로** 나온다(말풍선 3초 + 음성).
+     그 3초가 마지막 파리와 축하 사이를 끊고 있었다.
+     말풍선을 그리는 sb() 와 음성을 트는 playVoice() 를 **stc() 가 도는 그 순간에만**
+     바꿔치기해서, 이 한 줄만 거르고 나머지는 전부 그대로 통과시킨다.
+     ⚠️ 트림 소리(pbr) 는 남겨 뒀다 — 0.5초짜리 효과음이라 흐름을 안 끊는다.
+        이것도 빼려면 아래 주석 한 줄을 살리면 된다.                            */
+  function noBurp(fn, self, args) {
+    var _sb = window.sb, _pv = window.playVoice;
+    try {
+      window.sb = function (t) {
+        if (typeof t === 'string' && t.indexOf('SO full') !== -1) return;   // 이 한 줄만 거른다
+        return _sb.apply(this, arguments);
+      };
+      window.playVoice = function (k) {
+        if (k === 'im_so_full') return;
+        return _pv.apply(this, arguments);
+      };
+      // window.pbr = function(){};                                        // ← 트림 소리도 빼려면 이 줄을 살린다
+      return fn.apply(self, args);
+    } finally {
+      window.sb = _sb; window.playVoice = _pv;                             // 무슨 일이 있어도 되돌린다
+    }
+  }
+
+  /* ── 마지막 파리를 잡자마자 축하가 시작되게 ──────────────────────────────
+     script.js 의 occ()(파리를 먹었을 때)는 **2.8초 뒤에** 다음 차례(snr)를 부른다.
+     마지막 파리에서는 그 다음 차례가 곧 엔딩이라, 2.8초가 통째로 빈 시간이 됐다.
+     **마지막 한 마리일 때만** 그 2.8초를 0.3초로 줄인다. 평소 파리는 손대지 않는다.
+     ⚠️ 'Yummy'·'BINGO' 같은 먹은 표시는 그대로 나온다 — 축하와 겹칠 뿐 사라지지 않는다. */
+  try {
+    if (typeof occ === 'function' && !occ.__endvid) {
+      var _occ = occ;
+      window.occ = function (f) {
+        var last = false;
+        try {
+          last = !!f && typeof col !== 'undefined' && typeof L !== 'undefined' &&
+                 !col.has(f.letter) && (col.size === L.split('').length - 1);
+        } catch (e) { last = false; }
+        if (!last) return _occ.apply(this, arguments);
+        return withRemap(LAST_FLY_GAP, function () { return _occ.apply(this, arguments); }, this, arguments);
+      };
+      window.occ.__endvid = 1;
     }
   } catch (e) {}
 })();
