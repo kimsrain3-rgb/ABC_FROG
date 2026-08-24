@@ -12,13 +12,21 @@
        "I'm SO full~ BURP!!" 말풍선은 뺐다. 그 3초가 마지막 파리와 축하 사이를 끊고 있었다.
        마지막 파리를 잡은 순간(0초)부터 이렇게 간다. **말풍선·음성은 하나도 안 뺐고 간격만 좁혔다.**
          0.0초  마지막 파리를 먹는다 (Yummy / BINGO — 그대로 나온다)
-         0.3초  ★ 폭죽 + "WELL DONE!" + congrats 음성   ← 기다림 없이 즉시
-         1.3초  ★ "ALPHABET MASTER!!" + you_did_it 음성 + 폭죽 8발
+         0.3초  ★ "WELL DONE!" + congrats 음성   ← 기다림 없이 즉시
+         1.3초  ★ "ALPHABET MASTER!!" + you_did_it 음성
          1.5초  ★ 축하 영상 시작 (음악과 함께)
                 왕관·개구리 춤은 안 나와야 한다
          2.2초  ★ HOORAY 🎊 + hooray 음성
          9.5초  영상 끝 → **마지막 장면에서 정지** + 그 위에 PLAY AGAIN
        ※ 축하 멘트·음성이 서로 겹쳐 쏟아진다. 그게 목적이다(축제 분위기).
+
+     [폭죽 — 2026-08-24 3차]
+       폰에서 폭죽이 영상 위에 쏟아지니 **영상이 끊겼다.** 그래서 갈랐다.
+         · 영상이 정상으로 나오면 → 폭죽 **전부 없앤다** (영상 자체가 축하다)
+         · 영상이 안 뜨면        → 폭죽을 **그대로 다 터뜨린다** (그때는 폭죽이 유일한 축하다)
+       폭죽은 0.3초부터 터지는데 영상이 뜰지는 1.5초쯤에야 안다 — 판정보다 폭죽이 먼저다.
+       그래서 시간표가 아니라 **알갱이가 화면에 붙는 순간을 가로채서** 판정 날 때까지 들고 있는다.
+       자세한 건 아래 '폭죽 문지기(fw)' 주석 참고. 폭죽 **소리**(psu)는 그대로 둔다.
 
      [폰에서 볼 것]
        ① 소문자(abc) 모드로 들어가 🏁 26글자 채우기 를 누른다 → 위 순서대로 나오는가
@@ -446,6 +454,85 @@ try {
     (document.head || document.documentElement).appendChild(st);
   } catch (e) {}
 
+  /* ── 폭죽 문지기 ─────────────────────────────────────────────────────────
+     [왜 필요한가] 폰에서 폭죽이 영상 위에 쏟아지니 **영상이 끊긴다**(2026-08-24 확인).
+       · 영상이 정상으로 나오면 → 폭죽을 **전부** 없앤다 (영상 자체가 축하다)
+       · 영상이 안 뜨면        → 폭죽을 **그대로 다** 터뜨린다 (그때는 폭죽이 유일한 축하다)
+
+     [왜 이런 방식인가] 폭죽은 0.3초부터 터지는데 영상이 뜰지는 1.5초쯤에야 알 수 있다.
+       즉 **판정보다 폭죽이 먼저** 나온다. 그래서 시간표로는 못 가른다.
+       대신 폭죽 알갱이가 **화면에 붙는 순간**(gc.appendChild)을 가로채서,
+       판정이 날 때까지 손에 들고 있는다.
+         · 영상이 돌기 시작하면(playing) → 들고 있던 것도, 그 뒤 것도 전부 버린다
+         · 영상이 실패하면              → 들고 있던 것을 곧바로 다 붙인다(0.3초쯤이라 티가 안 난다)
+       ⚠️ 안 붙여도 script.js 의 알갱이 애니메이션은 그대로 돈다(화면 밖 요소를 움직일 뿐이라
+          그리기 비용이 없다). 그래서 영상이 끊길 이유가 사라진다.
+       ⚠️ 폭죽 '소리'(psu)는 그대로 둔다 — 소리는 영상을 안 끊고, 축제 분위기가 목적이다.
+
+     [무엇을 폭죽으로 보는가] script.js:1156 이 만드는 알갱이의 생김새로 가른다.
+       DIV + border-radius:50% + z-index:100 + box-shadow + 가로 12px 미만.
+       HOORAY 글자(둥근 테두리·그림자 없음)·PLAY AGAIN 버튼(BUTTON)은 안 걸린다.        */
+  var fw = (function () {
+    var verdict = null;          // null=아직 모름 · 'drop'=버린다 · 'show'=붙인다
+    var held = [];               // 판정 전까지 들고 있는 알갱이
+    var host = null, origAppend = null;
+
+    function looksLikeFirework(n) {
+      try {
+        if (!n || n.nodeType !== 1 || n.tagName !== 'DIV') return false;
+        var s = n.style;
+        if (s.borderRadius !== '50%') return false;
+        if (String(s.zIndex) !== '100') return false;
+        if (!s.boxShadow) return false;
+        return parseFloat(s.width) < 12;
+      } catch (e) { return false; }
+    }
+
+    return {
+      // 엔딩이 시작될 때 문을 연다
+      install: function (gcEl) {
+        try {
+          if (!gcEl || origAppend) return;
+          host = gcEl;
+          origAppend = gcEl.appendChild;
+          gcEl.appendChild = function (n) {
+            try {
+              if (looksLikeFirework(n)) {
+                if (verdict === 'drop') return n;                 // 영상이 도는 중 — 아예 안 붙인다
+                if (verdict === null) { held.push(n); return n; } // 아직 모름 — 손에 들고 있는다
+              }
+            } catch (e) {}
+            return origAppend.call(this, n);                      // 폭죽이 아니면 그대로 통과
+          };
+        } catch (e) {}
+      },
+      // 영상이 실제로 돌기 시작했다 → 폭죽은 전부 버린다
+      videoPlaying: function () {
+        if (verdict) return;
+        verdict = 'drop';
+        held.length = 0;
+      },
+      // 영상이 안 뜬다 → 들고 있던 것부터 곧바로 다 붙이고, 그 뒤 것도 그대로 통과시킨다
+      noVideo: function () {
+        if (verdict) return;
+        verdict = 'show';
+        try {
+          for (var i = 0; i < held.length; i++) {
+            try { origAppend.call(host, held[i]); } catch (e) {}
+          }
+        } catch (e) {}
+        held.length = 0;
+      },
+      // 엔딩이 끝나면 문을 원래대로 돌려놓는다
+      uninstall: function () {
+        try { if (host && origAppend) delete host.appendChild; } catch (e) {}
+        try { if (host && origAppend && host.appendChild !== origAppend) host.appendChild = origAppend; } catch (e) {}
+        host = null; origAppend = null; held.length = 0;
+      },
+      state: function () { return verdict; }
+    };
+  })();
+
   // ── 기록(GA4) — 부가 기능이다. 실패해도 게임은 그대로 간다 ────────────────
   // result·tier 는 이미 등록된 매개변수라 새로 등록할 것이 없다.
   function ga(result, tier) {
@@ -466,6 +553,7 @@ try {
   function startEndingVideo() {
     var gcEl = document.getElementById('gc');
     if (!gcEl) return;                         // 게임판이 없으면 아무것도 안 한다(원래 엔딩 그대로)
+    fw.install(gcEl);                          // 폭죽 문지기 — 판정이 날 때까지 폭죽을 손에 들고 있는다
 
     var tier    = tierOf();
     var vid     = null;
@@ -492,8 +580,11 @@ try {
       try { ga(reason, tier); } catch (e) {}
 
       if (reason === 'ended' && vid) {
+        try { fw.videoPlaying(); } catch (e) {}  // 여기까지 왔으면 영상은 잘 나왔다
         freeze();                               // 마지막 장면 정지 — 아무도 안 치운다
       } else {
+        // ★ 영상이 안 떴다 → 폭죽을 그대로 다 터뜨린다. 그때는 폭죽이 유일한 축하다
+        try { fw.noVideo(); } catch (e) {}
         try {
           if (vid) {
             try { vid.pause(); } catch (e) {}
@@ -633,6 +724,7 @@ try {
          그래서 첫 프레임이 도는 순간('playing')에 비로소 보이게 한다.               */
       vid.addEventListener('playing', function () {
         started = true;
+        try { fw.videoPlaying(); } catch (e) {}   // ★ 영상이 돈다 → 폭죽은 전부 버린다
         try { if (!done) vid.classList.add('on'); } catch (e) {}
       });
       vid.addEventListener('ended',   function () { finish('ended'); });
@@ -682,6 +774,8 @@ try {
     // ── 마지막 안전망 : 위가 전부 실패해도 여기서 끝낸다 ────────────────────
     later(function () { finish('timeout'); }, HARD_MS);
     later(function () { try { for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]); } catch (e) {} }, HARD_MS + 4000);
+    // 폭죽이 다 끝나고도 한참 뒤에 문지기를 원래대로 돌려놓는다(엔딩 뒤엔 폭죽이 없다)
+    later(function () { try { fw.uninstall(); } catch (e) {} }, HARD_MS + 4000);
   }
 
   /* ── 엔딩 함수 감싸기 ───────────────────────────────────────────────────
