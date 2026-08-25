@@ -260,6 +260,9 @@ gtag('config','G-VEN3PCFXXL',{
   <div class="rw-t2">휴대폰을 세로로 세워주세요</div>
 </div>
 
+<!-- 회선에 맞는 영상 화질 고르기(공용). 알파벳 26글자 엔딩 축하 영상이 __vq.pick() 을 쓰므로
+     script.js 보다 먼저 온다. 없어도 게임은 그대로 돌아간다(script.js 가 없으면 원본을 쓴다). -->
+<script>document.write('<scr' + 'ipt src="video-quality.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
 <script>document.write('<scr' + 'ipt src="script.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). test/에서 검증 후 이식, script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드. -->

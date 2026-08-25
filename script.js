@@ -819,11 +819,11 @@ function startBreathe(){
   breatheInterval = setInterval(()=>{
     if(animPaused || ia) return;
     // base → breathe → base
+    // ※ 예전엔 여기서 엔딩 왕관(#crown)을 숨쉬기에 맞춰 위아래로 흔들었다.
+    //   2026-08-25 축하 영상을 넣으면서 왕관 자체를 뺐다(영상 안에 왕관 쓴 개구리가 있다).
     setFrame('b');
-    const cr=document.getElementById('crown');if(cr)cr.style.top='1.5%';
     setTimeout(()=>{
       if(!animPaused && !ia) setFrame('a');
-      const cr2=document.getElementById('crown');if(cr2)cr2.style.top='1%';
     }, 400);
   }, 1000);
 }
@@ -1061,7 +1061,15 @@ function occ(f){
   else{sb('😋 Yummy',1200,'#FF8F00');playVoice('yummy')}
   var cheer=getCheer();setTimeout(function(){sb('🎉 '+cheer.t,1500,'#FF6F00');playVoice(cheer.vk)},800);
   if(cm>=2){cbd.textContent='🔥 '+cm+' combo!';cbd.classList.add('show');setTimeout(function(){cbd.classList.remove('show')},1500)}
-  setTimeout(function(){resumeAnim();frog.className='frog';snr()},2800);
+  /* ── 마지막 파리는 곧바로 축하로 넘긴다 ──────────────────────────────────
+     평소엔 2.8초 뒤에 다음 차례(snr)를 부른다. 그런데 26번째 파리에서는 그 다음 차례가
+     곧 엔딩(stc)이라, 2.8초가 통째로 빈 시간이 됐다 — 마지막 파리를 먹고 나서 아무 일도
+     안 일어나는 2.8초. 마지막 한 마리일 때만 0.3초로 줄인다. 평소 파리는 손대지 않는다.
+     ⚠️ 'Yummy'·'BINGO' 같은 먹은 표시는 그대로 나온다 — 축하와 겹칠 뿐 사라지지 않는다.
+     ⚠️ col.add 는 이 함수 맨 위에서 이미 했다. 그래서 여기서 26이면 마지막이다.       */
+  var lastFly=false;
+  try{ lastFly=(col.size>=L.length); }catch(e){}
+  setTimeout(function(){resumeAnim();frog.className='frog';snr()},lastFly?300:2800);
 }
 
 function owc(f){
@@ -1145,16 +1153,19 @@ function stc(){
   let _fadeB=sndOf('bgm');
   let bgmFade=setInterval(()=>{if(_fadeB.volume>0.03)_fadeB.volume-=0.03;else{_fadeB.pause();clearInterval(bgmFade);}},100);
   
-  pbr();sb("😊 I'm SO full~ BURP!!",3000,'#2E7D32');playVoice('im_so_full');
-  
-  // 폭죽 함수
+  /* ⚠️ "😊 I'm SO full~ BURP!!" 말풍선은 2026-08-25 에 뺐다.
+        이 대사는 stc() 맨 앞에서 곧바로 나오는데, 그 3초가 마지막 파리와 축하 사이를
+        통째로 끊고 있었다. 트림 소리(pbr)는 0.5초짜리라 흐름을 안 끊으므로 남겨 뒀다. */
+  pbr();
+
+  // 폭죽 함수 — 알갱이를 화면에 붙이는 일은 fwPlace() 가 한다(아래 '폭죽 문지기' 참고)
   function firework(x,y,count,colors){
     for(let i=0;i<count;i++){
       const s=document.createElement('div');
       const c=colors[Math.floor(Math.random()*colors.length)];
       const size=3+Math.random()*5;
       s.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+size+'px;height:'+size+'px;background:'+c+';border-radius:50%;z-index:100;pointer-events:none;box-shadow:0 0 6px '+c;
-      gc.appendChild(s);
+      fwPlace(s);          // ← 바로 붙이지 않는다. 영상이 뜰지 판정날 때까지 문지기가 들고 있는다
       const ang=Math.random()*Math.PI*2;
       const spd=2+Math.random()*6;
       const dx=Math.cos(ang)*spd,dy=Math.sin(ang)*spd;
@@ -1171,30 +1182,44 @@ function stc(){
   const cW=gc.offsetWidth,cH=gc.offsetHeight;
   const fwColors=['#FF1744','#FF9100','#FFEA00','#00E676','#2979FF','#D500F9','#FF4081','#00BCD4'];
   
+  /* ── 축하는 쉬는 시간 없이 쭉 이어진다 (2026-08-25) ──────────────────────────
+     예전엔 마지막 파리를 먹고 0.5→1.5→2.5→3.5→4.5→7→9→11초로 띄엄띄엄 갔다.
+     그 사이 빈 시간마다 아이가 "끝났나?" 하고 화면을 떠났다.
+     **말풍선·음성·폭죽은 하나도 안 뺐다. 간격만 좁혔다** — 겹쳐 쏟아지는 게 목적이다(축제).
+     마지막 파리를 먹은 순간을 0초로 보면(occ 가 0.3초에 여기로 넘긴다):
+       0.3초  WELL DONE! + congrats
+       1.3초  ALPHABET MASTER!! + you_did_it
+       1.5초  축하 영상 시작 (evStart 안의 EV_SHOW_AT)
+       2.2초  HOORAY 🎊 + hooray
+       3.6초  PLAY AGAIN (영상이 잘 나오면 숨겼다가 영상 끝에 보여준다)
+       9.5초  영상 끝 → 마지막 장면 정지
+     ⚠️ 이 숫자를 바꾸면 test/current-ending-video.html 의 STC_REMAP 표도 같이 고칠 것.
+        그 파일은 이 시간표를 바꿔치기하는 방식이라, 어긋나면 테스트 판이 안 갈린다.       */
+
   // 1단계: 개구리 트림 + 첫 폭죽
   setTimeout(()=>{
     firework(cW*0.5,cH*0.3,40,fwColors);
     psu();
-  },500);
-  
+  },0);
+
   // 2단계: 연속 폭죽 (여러 위치)
   setTimeout(()=>{
     firework(cW*0.2,cH*0.2,30,fwColors);
     firework(cW*0.8,cH*0.25,30,fwColors);
     psu();
-  },1500);
-  
+  },400);
+
   setTimeout(()=>{
     firework(cW*0.5,cH*0.15,35,fwColors);
     firework(cW*0.3,cH*0.35,25,fwColors);
     firework(cW*0.7,cH*0.3,25,fwColors);
-  },2500);
-  
+  },700);
+
   setTimeout(()=>{
     sb('WELL DONE!',4000,'#D500F9');
     playVoice('congrats');
-  },3500);
-  
+  },0);
+
   // 4단계: 대형 폭죽 연타
   setTimeout(()=>{
     for(let i=0;i<5;i++){
@@ -1203,31 +1228,24 @@ function stc(){
         psu();
       },i*400);
     }
-  },4500);
-  
-  // 5단계: 왕관 + 최종 메시지
+  },900);
+
+  /* 5단계: 최종 메시지
+     ⚠️ 왕관 👑 요소와 개구리 춤은 2026-08-25 에 뺐다 — 축하 영상 안에
+        왕관 쓴 개구리가 춤추는 장면이 그대로 들어 있어 화면에서 겹쳤다.
+        말풍선 글자의 👑 이모지는 그대로 둔다(겹치는 것은 화면 위 왕관 쪽이었다). */
   setTimeout(()=>{
-    const crown=document.createElement('div');
-    crown.style.cssText='position:absolute;left:52%;top:1%;transform:translateX(-50%);font-size:8vmin;z-index:100;pointer-events:none;animation:crownBounce 0.5s ease-out;';
-    crown.id='crown';
-    setTimeout(()=>{crown.style.animation='none';},500);
-    crown.textContent='👑';
-    frog.appendChild(crown);
-    
     sb('🏆 ALPHABET MASTER!! 👑',5000,'#FF6F00');
     playVoice('you_did_it');
-    
-    // 개구리 댄스
-    frog.className='frog dancing';
-    
+
     // 마지막 대형 폭죽
     for(let i=0;i<8;i++){
       setTimeout(()=>{
         firework(cW*(0.1+Math.random()*0.8),cH*(0.05+Math.random()*0.35),50,fwColors);
       },i*300);
     }
-  },7000);
-  
+  },1000);
+
   // 6단계: 곤충 환호 텍스트
   setTimeout(()=>{
     const hooray=document.createElement('div');
@@ -1235,22 +1253,297 @@ function stc(){
     hooray.innerHTML='🎊 HOORAY 🎊';
     gc.appendChild(hooray);
     playVoice('hooray');
-  },9000);
-  
+  },1900);
+
   // GA4 완료 이벤트 + 인앱 리뷰
+  // ⚠️ 리뷰 요청 10초는 일부러 안 줄였다 — 영상(9.5초)이 끝난 뒤에 뜨는 게 맞다.
   try{gtag('event','game_complete',{game_mode:gameMode});}catch(e){}
   setTimeout(()=>{try{if(window.AndroidBridge)AndroidBridge.requestReview();}catch(e){}},10000);
 
-  // 다시하기 버튼
+  /* 다시하기 버튼
+     ⚠️ 영상이 살아 있는 동안에는 잠시 숨긴다(영상 한가운데를 덮으므로).
+        영상이 끝나거나 실패하면 evFinish() 가 곧바로 되돌려 보여준다.
+        영상 자체를 못 만든 경우엔 EV 가 없거나 이미 done 이라 그냥 바로 보인다. */
   setTimeout(()=>{
     const btn=document.createElement('button');
     btn.textContent='PLAY AGAIN';
     btn.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:3vmin 8vmin;font-size:5vmin;font-weight:bold;color:#fff;background:linear-gradient(135deg,#FF6F00,#FF9800);border:none;border-radius:12vmin;cursor:pointer;z-index:110;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
     btn.onclick=function(){location.reload();};
     gc.appendChild(btn);
-  },11000);
+    try{ if(EV){ EV.btn=btn; if(!EV.done&&EV.hideBtn) btn.style.display='none'; } }catch(e){}
+  },3300);
+
+  /* ★ 축하 영상은 맨 마지막에 시작한다 — 위 시간표가 전부 등록된 뒤여야
+       폭죽 문지기가 첫 폭죽(0ms)보다 먼저 자리를 잡는다.
+       여기서 넘어져도 위 축하는 이미 다 예약돼 있어 그대로 나온다. */
+  try{ evStart(); }catch(e){}
 }
 
+
+/* ════════════════════════════════════════════════════════════════════════════
+   엔딩 축하 영상 (알파벳 26글자를 다 모았을 때)  — 2026-08-25 라이브
+   ----------------------------------------------------------------------------
+   [무엇인가] assets/frog/videos/frog_lastdance.mp4 (8초·음악 있음)을 게임 화면 가득
+     튼다. 영상 안에 왕관 쓴 개구리가 춤추는 장면이 들어 있어서, 화면의 왕관 👑 과
+     개구리 춤(frog dancing)은 stc() 에서 뺐다.
+
+   [시간표] stc() 안 주석 참고. 영상은 엔딩 시작 1.2초 뒤(= 마지막 파리로부터 1.5초).
+
+   [절대 규칙 — 아이가 못 빠져나가는 화면을 만들지 않는다]
+     영상이 안 받아지든, 회선이 끊기든, 재생이 막히든 무슨 일이 있어도 PLAY AGAIN 까지
+     간다. 빠져나가는 길을 **네 겹**으로 뒀다.
+       ① 영상 끝(ended)        → 마지막 장면에 멈춘 채로 버튼
+       ② 영상 오류(error)      → 티어 파일이면 원본으로 한 번 재시도. 그래도 안 되면
+                                 **원래 엔딩 그대로 흘려보내고** 3.3초에 생기는 그 버튼을 쓴다
+       ③ 5초 안에 재생이 시작 안 됨 → 위와 같음
+       ④ 무조건 20초 마감      → 위가 전부 실패해도 버튼. 4.2초까지도 버튼이 안 생겼으면
+                                 그때만 똑같은 버튼을 직접 만든다
+     실패해도 **축하는 하나도 안 줄어든다** — 다 나오고 3.6초에 버튼이 뜬다.
+
+   ⚠️ **서둘러 버튼을 만들지 않는다.** 영상이 시작하자마자 실패했다고(예: 404) 그 자리에서
+      버튼을 만들면 폭죽·WELL DONE 이 나오기도 전인 0.1초에 PLAY AGAIN 이 떠서 아이가
+      축하를 통째로 건너뛴다(2026-08-24 404 검증에서 실제로 108ms 에 떴다).
+
+   ⚠️ 영상을 부르는 코드는 전부 이 함수 안에 있다. 최상위에 두면 첫 화면에서 1MB 를
+      받아 버린다(2026-08-15 소리 지연 로딩과 같은 함정).
+   ════════════════════════════════════════════════════════════════════════════ */
+
+var EV_SRC       = 'assets/frog/videos/frog_lastdance.mp4';
+var EV_VER       = '?v=20260824';   // 같은 이름으로 영상을 갈아끼우면 이 날짜를 바꾼다
+var EV_SHOW_AT   = 1200;            // 엔딩 시작 후 몇 ms 에 영상을 트나
+var EV_START_WAIT= 5000;            // 튼 뒤 이 시간 안에 안 움직이면 포기하고 버튼으로
+var EV_HARD_MS   = 20000;           // 무슨 일이 있어도 이때는 PLAY AGAIN 이 떠 있어야 한다
+var EV_BTN_FLOOR = 4200;            // 이 시각 전에는 우리가 버튼을 만들지 않는다(라이브 버튼 3.3초보다 뒤)
+var EV = null;                      // 엔딩 영상 상태. 엔딩 전에는 null
+
+/* ── 폭죽 문지기 ──────────────────────────────────────────────────────────────
+   [왜 필요한가] 폰에서 폭죽이 영상 위에 쏟아지니 **영상이 끊겼다**(2026-08-24 실측).
+     · 영상이 정상으로 나오면 → 폭죽을 **전부** 없앤다 (영상 자체가 축하다)
+     · 영상이 안 뜨면        → 폭죽을 **그대로 다** 터뜨린다 (그때는 폭죽이 유일한 축하다)
+
+   [왜 이런 방식인가] 폭죽은 0초부터 터지는데 영상이 뜰지는 1.5초쯤에야 알 수 있다.
+     즉 **판정보다 폭죽이 먼저** 나온다. 그래서 시간표로는 못 가른다.
+     대신 알갱이가 **화면에 붙는 순간**(fwPlace)을 가로채서 판정날 때까지 손에 들고 있는다.
+   ⚠️ 안 붙여도 stc() 안 알갱이 애니메이션은 그대로 돈다(화면 밖 요소를 움직일 뿐이라
+      그리기 비용이 없다). 그래서 영상이 끊길 이유가 사라진다.
+   ⚠️ 폭죽 '소리'(psu)는 그대로 둔다 — 소리는 영상을 안 끊고, 축제 분위기가 목적이다.
+   ⚠️ 문을 안 열었을 때(armed=false)는 예전과 똑같이 곧바로 붙인다. 엔딩 밖에서는
+      아무 일도 일어나지 않는다.                                                    */
+var fwG={armed:false,verdict:null,held:[]};   // verdict: null=아직 모름 · 'drop'=버린다 · 'show'=붙인다
+function fwPlace(el){
+  try{
+    if(fwG.armed){
+      if(fwG.verdict==='drop')return;                     // 영상이 도는 중 — 아예 안 붙인다
+      if(fwG.verdict===null){fwG.held.push(el);return;}    // 아직 모름 — 손에 들고 있는다
+    }
+  }catch(e){}
+  try{gc.appendChild(el);}catch(e){}
+}
+function fwArm(){try{fwG.armed=true;fwG.verdict=null;fwG.held.length=0;}catch(e){}}
+function fwVideoOn(){                                      // 영상이 실제로 돌기 시작했다
+  try{if(!fwG.armed||fwG.verdict)return;fwG.verdict='drop';fwG.held.length=0;}catch(e){}
+}
+function fwNoVideo(){                                      // 영상이 안 뜬다 → 들고 있던 것부터 다 붙인다
+  try{
+    if(!fwG.armed||fwG.verdict)return;
+    fwG.verdict='show';
+    for(var i=0;i<fwG.held.length;i++){try{gc.appendChild(fwG.held[i]);}catch(e){}}
+    fwG.held.length=0;
+  }catch(e){}
+}
+function fwDisarm(){try{fwG.armed=false;fwG.verdict=null;fwG.held.length=0;}catch(e){}}
+
+// GA4 기록 — 부가 기능이다. 실패해도 게임은 그대로 간다.
+// result·tier 는 이미 등록된 매개변수라 새로 등록할 것이 없다.
+function evGa(result,tier){
+  try{if(typeof gtag==='function')gtag('event','ending_video',{result:result,tier:tier||'unknown'});}catch(e){}
+}
+
+/* 회선에 맞는 주소 만들기.
+   ⚠️ 순서 = pick() 먼저, 캐시 꼬리표 나중 (C-2 규칙). 뒤집으면 허용목록에 안 걸린다. */
+function evUrl(){
+  var u=EV_SRC;
+  try{if(window.__vq&&__vq.pick)u=__vq.pick(EV_SRC);}catch(e){u=EV_SRC;}
+  return u+EV_VER;
+}
+function evTier(){
+  try{if(window.__vq&&__vq.tier)return __vq.tier;}catch(e){}
+  return 'unknown';
+}
+
+function evStart(){
+  if(!gc)return;                       // 게임판이 없으면 아무것도 안 한다(원래 엔딩 그대로)
+  if(EV&&!EV.done)return;              // 이미 도는 중이면 두 번 켜지 않는다
+  fwArm();                             // 폭죽 문지기 — 판정날 때까지 폭죽을 손에 들고 있는다
+
+  var st={done:false,started:false,retried:false,shown:false,hideBtn:true,
+          vid:null,btn:null,ensuring:false,timers:[],t0:Date.now(),tier:evTier()};
+  EV=st;
+
+  function later(fn,ms){try{st.timers.push(setTimeout(fn,ms));}catch(e){}}
+  function since(){return Date.now()-st.t0;}
+
+  /* ── 빠져나가는 길 : 무슨 일이 있어도 여기로 온다 ─────────────────────────
+     · 영상이 끝까지 잘 나왔다('ended') → **마지막 장면을 그대로 멈춰 둔다.**
+       게임 화면(개구리·연잎)으로 돌아가지 않는다. 아이가 안 누르면 계속 그 화면이다.
+     · 그 밖(오류·재생실패·마감)        → 영상을 치우고 원래 엔딩 화면 그대로 둔다.
+       멈출 영상이 애초에 없기 때문이다. 폭죽은 그때 다 터뜨린다.
+     두 갈래 모두 마지막에 PLAY AGAIN 을 띄운다.                              */
+  function evFinish(reason){
+    if(st.done)return;
+    st.done=true;st.hideBtn=false;
+    try{evGa(reason,st.tier);}catch(e){}
+
+    if(reason==='ended'&&st.vid){
+      try{fwVideoOn();}catch(e){}       // 여기까지 왔으면 영상은 잘 나왔다
+      evFreeze();                       // 마지막 장면 정지 — 아무도 안 치운다
+    }else{
+      try{fwNoVideo();}catch(e){}       // ★ 영상이 안 떴다 → 폭죽이 유일한 축하다. 다 터뜨린다
+      try{
+        if(st.vid){
+          var v=st.vid;
+          try{v.pause();}catch(e){}
+          v.classList.remove('on');
+          setTimeout(function(){
+            try{v.removeAttribute('src');v.load();}catch(e){}
+            try{if(v.parentNode)v.parentNode.removeChild(v);}catch(e){}
+          },400);
+        }
+      }catch(e){}
+    }
+    try{evShowBtn();}catch(e){}
+  }
+
+  /* ── 마지막 장면에 멈춰 세우기 ───────────────────────────────────────────
+     영상이 끝나면 <video> 는 **마지막으로 그린 프레임을 그대로 계속 보여준다.**
+     그래서 요소를 지우지만 않으면 그 장면이 화면에 남는다.
+     · 반복(loop)은 켜지 않는다   · 20초 마감이 나중에 울려도 done 이라 그냥 돌아간다
+     · pointer-events:none 이라 위에 뜬 PLAY AGAIN 이 그대로 눌린다             */
+  function evFreeze(){
+    try{
+      st.vid.loop=false;
+      st.vid.pause();
+      st.vid.classList.add('on');
+      st.vid.style.opacity='1';
+    }catch(e){}
+  }
+
+  // ── PLAY AGAIN 을 확실히 띄운다 ─────────────────────────────────────────
+  function evShowBtn(){
+    try{
+      if(st.btn&&st.btn.parentNode){st.btn.style.display='';return;}
+      var f=evFindBtn();
+      if(f){st.btn=f;f.style.display='';return;}
+      if(st.ensuring)return;
+      st.ensuring=true;
+      // 3.3초 버튼이 생기는지 지켜본다. 안 생기면 마감시각에 직접 만든다.
+      var iv=setInterval(function(){
+        try{
+          var b=evFindBtn();
+          if(b){st.btn=b;b.style.display='';clearInterval(iv);return;}
+          if(since()>=EV_BTN_FLOOR){clearInterval(iv);evMakeBtn();}
+        }catch(e){try{clearInterval(iv);}catch(e2){}}
+      },200);
+    }catch(e){}
+  }
+  function evFindBtn(){
+    try{
+      var bs=gc.querySelectorAll('button');
+      for(var i=0;i<bs.length;i++){
+        if((bs[i].textContent||'').trim()==='PLAY AGAIN')return bs[i];
+      }
+    }catch(e){}
+    return null;
+  }
+  // 최후의 안전망 — stc() 가 도중에 넘어져 버튼이 끝내 안 생겼을 때만 똑같은 것을 만든다
+  function evMakeBtn(){
+    try{
+      if(evFindBtn())return;
+      var b=document.createElement('button');
+      b.textContent='PLAY AGAIN';
+      b.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:3vmin 8vmin;font-size:5vmin;font-weight:bold;color:#fff;background:linear-gradient(135deg,#FF6F00,#FF9800);border:none;border-radius:12vmin;cursor:pointer;z-index:110;box-shadow:0 4px 15px rgba(0,0,0,0.3);';
+      b.onclick=function(){location.reload();};
+      gc.appendChild(b);
+      st.btn=b;
+    }catch(e){}
+  }
+
+  /* ── 영상 만들기 : 엔딩이 시작되는 지금 '받기'만 시작한다 ──────────────────
+     1.2초 뒤에 틀 것을 지금부터 받아 두면 느린 회선에서도 끊길 확률이 줄어든다.
+     ⚠️ 받는 것과 트는 것이 같은 <video> 한 개다 — 따로 받아 두면 브라우저가 재생할 때
+        처음부터 다시 받는다(2026-08-20 C-3 에서 실측된 함정).                    */
+  try{
+    var vid=document.createElement('video');
+    st.vid=vid;
+    vid.id='endvid';
+    vid.setAttribute('playsinline','');
+    vid.setAttribute('webkit-playsinline','');
+    vid.preload='auto';
+    vid.controls=false;
+    vid.src=evUrl();
+
+    /* ⚠️ **그림이 실제로 나오기 시작할 때 보여준다.** 트는 순간 바로 보이게 하면 아직
+       덜 받아진 상태의 **검은 네모**가 축하 한가운데를 덮는다.                     */
+    vid.addEventListener('playing',function(){
+      st.started=true;
+      try{fwVideoOn();}catch(e){}        // ★ 영상이 돈다 → 폭죽은 전부 버린다
+      try{if(!st.done)vid.classList.add('on');}catch(e){}
+    });
+    vid.addEventListener('ended',function(){evFinish('ended');});
+    vid.addEventListener('error',function(){
+      // 티어 파일이 없거나 깨졌으면 원본으로 딱 한 번 재시도한다
+      if(!st.retried&&st.tier!=='4g'&&st.tier!=='unknown'){
+        st.retried=true;
+        try{if(window.__vq&&__vq.reportFallback)__vq.reportFallback(st.tier,'ending');}catch(e){}
+        try{
+          var ou=EV_SRC+EV_VER;
+          try{if(window.__vq&&__vq.original)ou=__vq.original(evUrl());}catch(e2){}
+          vid.src=ou;vid.load();
+          if(st.shown)evPlay();
+          return;
+        }catch(e3){}
+      }
+      evFinish('error');
+    });
+
+    gc.appendChild(vid);
+  }catch(e){
+    st.vid=null;
+    evFinish('no_video');      // 영상을 못 만들면 원래 엔딩 그대로 흘러가고 버튼도 그대로 뜬다
+    return;
+  }
+
+  // ── 1.2초 : 튼다 ───────────────────────────────────────────────────────
+  function evPlay(){
+    try{
+      var p=st.vid.play();
+      if(p&&typeof p['catch']==='function'){
+        p['catch'](function(){
+          // 소리 때문에 막혔을 수 있다 → 소리를 끄고 한 번 더 (그림이라도 보여준다)
+          try{
+            st.vid.muted=true;
+            var p2=st.vid.play();
+            if(p2&&typeof p2['catch']==='function')p2['catch'](function(){evFinish('blocked');});
+          }catch(e2){evFinish('blocked');}
+        });
+      }
+    }catch(e){evFinish('blocked');}
+  }
+
+  later(function(){
+    if(st.done)return;
+    st.shown=true;
+    evPlay();                            // 보이게 하는 건 'playing' 이 왔을 때(검은 네모 방지)
+    later(function(){if(!st.started&&!st.done)evFinish('stall');},EV_START_WAIT);
+  },EV_SHOW_AT);
+
+  // ── 마지막 안전망 : 위가 전부 실패해도 여기서 끝낸다 ──────────────────────
+  later(function(){evFinish('timeout');},EV_HARD_MS);
+  later(function(){
+    try{for(var i=0;i<st.timers.length;i++)clearTimeout(st.timers[i]);}catch(e){}
+    try{fwDisarm();}catch(e){}           // 폭죽이 다 끝나고 한참 뒤에 문지기를 원래대로
+  },EV_HARD_MS+4000);
+}
 function tut(){
   gp='tutorial';sb("🥺 I'm hungry~",2000,'#555');playVoice('im_hungry');psg();
   setTimeout(()=>{

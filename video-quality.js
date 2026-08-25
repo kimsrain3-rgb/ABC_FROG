@@ -54,7 +54,12 @@
   // 과일은 폴더가 아니라 이 파일 하나만 대상(같은 폴더의 webm 은 제외).
   // ※ 2026-08-18 현재 과일은 적용 대상에서 제외됐다(docs/C-2-plan.md 결정 ①).
   //   목록에 남겨두면 나중에 켤 때 이 파일만 정확히 걸린다.
-  var ALLOW_FILE = ['assets/frog/videos/frog-baskit.mp4'];
+  //   frog_lastdance.mp4 = 알파벳 26글자를 다 모았을 때 나오는 엔딩 축하 영상(2026-08-25 추가).
+  //   같은 폴더의 개구리 액션 클립(webm)은 여기 없으므로 그대로 원본이 나간다.
+  var ALLOW_FILE = [
+    'assets/frog/videos/frog-baskit.mp4',
+    'assets/frog/videos/frog_lastdance.mp4'
+  ];
 
   // ── 회선 판정 (페이지 열릴 때 1회만) ──────────────────────────────────────
   // 재생 중에 회선이 흔들려도 영상이 바뀌지 않게 결과를 고정한다.
