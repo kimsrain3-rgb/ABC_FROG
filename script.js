@@ -1099,11 +1099,18 @@ const phrase=getPhrase(dTarget);
 sb(phrase.text,2500,'#2E7D32');
 playVoice(phrase.vk);
 // MP3 끝난 후 알파벳 재생
+/* ⚠️ 아래 세 곳은 **나중에 깨어나는 코드**라서 그때 ct 가 아직 있는지 확인해야 한다.
+   ct 는 '지금 찾는 글자'인데, 26글자를 다 모으면 pnt() 가 ct 를 null 로 만들고 엔딩으로 간다.
+   그 사이에 이 콜백들이 깨어나면 playLetter(null)·displayLetter(null) 이 터진다
+   (`toUpperCase` of null). window.onerror 가 잡아 앱이 죽진 않지만 GA4 game_error 로 잡힌다.
+   2026-08-25 마지막 파리 간격을 2.8초→0.3초로 줄이면서 이 틈이 2.5초 넓어져 실제로 터졌다
+   (라이브 실측 2건). 음성 mp3 가 늦게 끝나는 느린 회선일수록 잘 난다.                     */
 var pv=voiceOf(phrase.vk);
-if(pv){pv.onended=function(){playLetter(ct);pv.onended=null;};}
-else{setTimeout(function(){playLetter(ct);},1000);}
+if(pv){pv.onended=function(){if(ct)playLetter(ct);pv.onended=null;};}
+else{setTimeout(function(){if(ct)playLetter(ct);},1000);}
 setTimeout(()=>{
   resumeAnim();
+  if(!ct)return;                 // 엔딩으로 넘어갔다 — 파리를 새로 뿌리지 않는다
   const n=Math.min(3+Math.floor(rc/5),5);const ls=grl(n,ct);
   ls.forEach((l,i)=>setTimeout(()=>{
     const f=cf(l,l===ct);
