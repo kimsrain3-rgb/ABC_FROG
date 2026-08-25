@@ -1196,10 +1196,11 @@ function stc(){
      마지막 파리를 먹은 순간을 0초로 보면(occ 가 0.3초에 여기로 넘긴다):
        0.3초  WELL DONE! + congrats
        1.3초  ALPHABET MASTER!! + you_did_it
-       1.5초  축하 영상 시작 (evStart 안의 EV_SHOW_AT)
+       1.5초  개구리가 손을 흔든다 (evWave 안의 EV_CLIP_AT, 3.6초짜리 클립)
        2.2초  HOORAY 🎊 + hooray
        3.6초  PLAY AGAIN (영상이 잘 나오면 숨겼다가 영상 끝에 보여준다)
-       9.5초  영상 끝 → 마지막 장면 정지
+       5.1초  축하 영상 시작 (evStart 안의 EV_SHOW_AT · 클립 끝과 0.45초 겹친다)
+      13.2초  영상 끝 → 마지막 장면 정지
      ⚠️ 이 숫자를 바꾸면 test/current-ending-video.html 의 STC_REMAP 표도 같이 고칠 것.
         그 파일은 이 시간표를 바꿔치기하는 방식이라, 어긋나면 테스트 판이 안 갈린다.       */
 
@@ -1284,6 +1285,12 @@ function stc(){
        폭죽 문지기가 첫 폭죽(0ms)보다 먼저 자리를 잡는다.
        여기서 넘어져도 위 축하는 이미 다 예약돼 있어 그대로 나온다. */
   try{ evStart(); }catch(e){}
+
+  /* ★ 개구리가 한 번 손을 흔들고 영상으로 넘어간다 (1.2초에 시작, 자세한 건 evWave 주석)
+       ⚠️ evStart() 뒤에 부른다 — 클립이 실패하면 evKickVideo() 가 EV.vid 를 곧바로 트는데,
+          그 EV 를 evStart() 가 만들기 때문이다.
+       ⚠️ 여기서 넘어져도 영상은 EV_SHOW_AT 타이머로 어차피 뜬다. */
+  try{ evWave(); }catch(e){}
 }
 
 
@@ -1317,10 +1324,14 @@ function stc(){
 
 var EV_SRC       = 'assets/frog/videos/frog_lastdance.mp4';
 var EV_VER       = '?v=20260824';   // 같은 이름으로 영상을 갈아끼우면 이 날짜를 바꾼다
-var EV_SHOW_AT   = 1200;            // 엔딩 시작 후 몇 ms 에 영상을 트나
+var EV_SHOW_AT   = 4800;            // 엔딩 시작 후 몇 ms 에 영상을 트나 (= 손 흔들기가 끝나는 시점)
 var EV_START_WAIT= 5000;            // 튼 뒤 이 시간 안에 안 움직이면 포기하고 버튼으로
 var EV_HARD_MS   = 20000;           // 무슨 일이 있어도 이때는 PLAY AGAIN 이 떠 있어야 한다
 var EV_BTN_FLOOR = 4200;            // 이 시각 전에는 우리가 버튼을 만들지 않는다(라이브 버튼 3.3초보다 뒤)
+var EV_CLIP      = 'frog_shakehands_2_fwd';  // 영상 앞에 끼우는 개구리 클립 (손 흔들기, 3.6초)
+var EV_CLIP_AT   = 1200;            // 엔딩 시작 후 몇 ms 에 클립을 트나 (= 마지막 파리로부터 1.5초)
+var EV_CLIP_WAIT = 800;             // 이 시간 안에 클립이 화면에 안 뜨면 포기하고 곧바로 영상으로
+var EV_FADE_MS   = 450;             // 클립 마지막 프레임을 지우는 데 걸리는 시간(영상과 겹치는 구간)
 var EV = null;                      // 엔딩 영상 상태. 엔딩 전에는 null
 
 /* ── 폭죽 문지기 ──────────────────────────────────────────────────────────────
@@ -1383,7 +1394,7 @@ function evStart(){
   if(EV&&!EV.done)return;              // 이미 도는 중이면 두 번 켜지 않는다
   fwArm();                             // 폭죽 문지기 — 판정날 때까지 폭죽을 손에 들고 있는다
 
-  var st={done:false,started:false,retried:false,shown:false,hideBtn:true,
+  var st={done:false,started:false,retried:false,shown:false,hideBtn:true,kicked:false,
           vid:null,btn:null,ensuring:false,timers:[],t0:Date.now(),tier:evTier()};
   EV=st;
 
@@ -1550,6 +1561,153 @@ function evStart(){
     try{for(var i=0;i<st.timers.length;i++)clearTimeout(st.timers[i]);}catch(e){}
     try{fwDisarm();}catch(e){}           // 폭죽이 다 끝나고 한참 뒤에 문지기를 원래대로
   },EV_HARD_MS+4000);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   엔딩 — 축하 영상 앞에 개구리가 한 번 손을 흔든다  (2026-08-25 라이브)
+   ----------------------------------------------------------------------------
+   [왜 넣었나] you_did_it 음성(1.3초) 뒤에 곧바로 축하 영상으로 넘어가는 것이
+     너무 갑작스러워 **오류처럼 보였다**(본게임 앱에서 확인). 그 사이에 원게임 개구리가
+     한 번 움직이고 넘어가게 했다. 전체가 9.5초 → 13.2초로 길어지지만,
+     '툭 끊긴다'는 느낌이 사라지는 값이 더 크다고 봤다.
+
+   [시간표] 마지막 파리를 잡은 순간이 0초
+     0.3초  WELL DONE! + congrats
+     1.3초  ALPHABET MASTER!! + you_did_it
+     1.5초  ★ 손 흔들기 시작 (frog_shakehands_2_fwd, 3.6초)
+     2.2초  HOORAY 🎊 + hooray
+     5.1초  ★ 클립 끝 → 축하 영상 (마지막 프레임이 0.45초에 걸쳐 녹는다)
+    13.2초  영상 끝 → 마지막 장면 정지 + PLAY AGAIN
+
+   [클립은 frog-reactions.js 것을 그대로 빌려 쓴다]
+     게임 중 파리를 잡을 때마다 쓰는 그 클립·그 재생기(`__frogreact.playGame`)다.
+     새로 만든 것이 없다. 그래서 위치·크기 맞추기, 개구리 숨기기/되살리기가 전부 공짜다.
+
+   ⚠️ **랜덤 반응 클립을 막아야 한다.** frog-reactions.js 는 occ 를 감싸 파리를 먹은
+      0.38초 뒤에 **5종 중 랜덤**으로 하나를 튼다. 마지막 파리도 예외가 아니다.
+      안 막으면 랜덤이 먼저 뜨고 1.5초에 손 흔들기로 갈아타 **두 번 움직이는** 꼴이 된다.
+      (2026-08-25 실측: 예전 엔딩이 매번 달라 보였던 것도 이 랜덤 때문이었다.
+       frog_jump 0.95초가 걸리면 1.38초에 끝나 **0.18초 정적** 뒤 영상이 툭 떴다.)
+
+   ⚠️ **클립 때문에 엔딩이 멈추면 안 된다.** 세 경우 모두 곧바로 영상으로 넘어간다.
+        · frog-reactions.js 가 아예 없다        → 클립을 시도조차 안 하고 1.2초에 영상
+        · EV_CLIP_WAIT 안에 화면에 안 나타난다   → 그 자리에서 영상
+        · 도중에 사라진다(감시타이머·재생오류)   → 그 자리에서 영상
+      라이브 영상 타이머(EV_SHOW_AT)는 그대로 살아 있어서, 우리가 일찍 틀어도 그때 한 번 더
+      play() 가 불릴 뿐이다. 이미 돌고 있으면 아무 일도 안 일어난다 = **어느 쪽이든 영상은 뜬다.**
+   ════════════════════════════════════════════════════════════════════════════ */
+
+function evReactVid(){ try{ return document.getElementById('frogReactVid'); }catch(e){ return null; } }
+
+// 클립이 지금 화면에 '실제로 보이는가'
+function evClipVisible(){
+  try{
+    var v=evReactVid();
+    return !!(v && v.style.display!=='none' && v.style.opacity==='1' && v.videoWidth);
+  }catch(e){ return false; }
+}
+
+/* 축하 영상을 지금 당장 튼다 — evStart() 가 만들어 둔 그 <video> 를 그대로 쓴다.
+   'playing' 이 오면 evStart() 안의 핸들러가 알아서 .on 을 붙여 보이게 한다. */
+function evKickVideo(){
+  try{
+    if(!EV || EV.done || !EV.vid || EV.kicked) return;
+    EV.kicked=true;
+    var p=EV.vid.play();
+    if(p && typeof p['catch']==='function'){
+      p['catch'](function(){
+        try{ EV.vid.muted=true; var p2=EV.vid.play(); if(p2&&p2['catch'])p2['catch'](function(){}); }catch(e){}
+      });
+    }
+  }catch(e){}
+}
+
+/* ── 클립 마지막 프레임을 캔버스로 떠서 천천히 지운다 ──────────────────────────
+   [왜] 클립이 끝나는 순간 frog-reactions.js 는 영상을 곧바로 치우고 **앉은 개구리를
+     되살린다.** 그러면 '손 흔들던 개구리 → 앉은 개구리 → 축하 영상' 으로 한 번 튄다.
+     마지막 프레임을 같은 자리에 덮어두고 천천히 지우면, 그 사이 축하 영상이 밑에서
+     떠올라 **앉은 개구리가 보일 틈이 없다.**
+   [왜 캔버스인가] frog-reactions.js 의 감시타이머가 '재생이 멈춘'(ended) 영상을 120ms 안에
+     강제로 치워 버려서, 클립 영상 자체를 천천히 지울 수가 없다. 그래서 사진을 떠서 쓴다.
+   ⚠️ 실패하면 아무것도 안 한다 — 예전처럼 툭 끊길 뿐, 엔딩은 그대로 간다.            */
+function evFreezeLastFrame(){
+  var snap=null;
+  try{
+    var v=evReactVid();
+    if(v && gc && v.videoWidth && v.style.display!=='none'){
+      var vr=v.getBoundingClientRect(), gr=gc.getBoundingClientRect();
+      if(vr.width>2 && vr.height>2){
+        snap=document.createElement('canvas');
+        snap.width=v.videoWidth; snap.height=v.videoHeight;
+        snap.getContext('2d').drawImage(v,0,0,snap.width,snap.height);
+        snap.style.cssText='position:absolute;pointer-events:none;z-index:200;'+
+          'left:'+(vr.left-gr.left)+'px;top:'+(vr.top-gr.top)+'px;'+
+          'width:'+vr.width+'px;height:'+vr.height+'px;'+
+          'opacity:1;transition:opacity '+EV_FADE_MS+'ms linear';
+        gc.appendChild(snap);
+      }
+    }
+  }catch(e){ snap=null; }
+
+  try{ if(window.__frogreact) __frogreact.stop(); }catch(e){}   // 개구리 되살리기(캔버스 뒤에 가려진다)
+
+  if(snap){
+    try{
+      // 다음 프레임에 투명도를 낮춰야 transition 이 실제로 돈다
+      requestAnimationFrame(function(){ try{ snap.style.opacity='0'; }catch(e){} });
+      setTimeout(function(){ try{ if(snap.parentNode)snap.parentNode.removeChild(snap); }catch(e){} }, EV_FADE_MS+250);
+    }catch(e){}
+  }
+}
+
+/* ── 손 흔들기 클립 : 틀고, 끝까지 지켜보고, 영상으로 넘긴다 ─────────────────── */
+function evPlayWave(){
+  if(!window.__frogreact || typeof __frogreact.playGame!=='function'){ evKickVideo(); return; }
+  try{ __frogreact.playGame(EV_CLIP); }catch(e){ evKickVideo(); return; }
+
+  var handed=false, everShown=false, t0=Date.now(), iv=null;
+  function handoff(){
+    if(handed) return;
+    handed=true;
+    try{ clearInterval(iv); }catch(e){}
+    evFreezeLastFrame();
+    evKickVideo();
+  }
+  // frog-reactions.js 가 걸어둔 onended 를 우리 것으로 바꾼다(원래는 곧바로 개구리를 되살린다)
+  try{
+    var v=evReactVid();
+    if(v){
+      v.onended=function(){ handoff(); };
+      v.onerror=function(){ handoff(); };
+    }
+  }catch(e){}
+
+  // 감시 — ①제때 안 뜨면 ②뜬 뒤 사라지면, 두 경우 다 곧바로 영상으로
+  iv=setInterval(function(){
+    try{
+      if(evClipVisible()){ everShown=true; return; }
+      if(!everShown && Date.now()-t0>EV_CLIP_WAIT){ handed=true; clearInterval(iv); evKickVideo(); return; }
+      if(everShown) handoff();                     // 감시타이머가 치웠거나 재생이 멈췄다
+    }catch(e){ try{ clearInterval(iv); }catch(e2){} }
+  },60);
+  setTimeout(function(){ try{ clearInterval(iv); }catch(e){} }, 12000);   // 안전망
+}
+
+/* ── 엔딩에서 개구리를 한 번 움직인다 (stc 가 부른다) ───────────────────────── */
+function evWave(){
+  /* ① 랜덤 반응 클립 막기 — occ 이 0.38초에 예약해 둔 것이 0.43초쯤 화면에 뜬다.
+        stop() 은 아무것도 안 틀어져 있으면 그냥 돌아가므로 반복해도 싸다.
+     ⚠️ 10ms 간격이어야 한다 — 화면 한 프레임(60fps=16.7ms)보다 짧아야 눈에 한 장도 안 남는다.
+        25ms 로 했더니 19ms 짜리 한 프레임이 실측으로 잡혔다(2026-08-25).                */
+  try{
+    var killer=setInterval(function(){
+      try{ if(window.__frogreact) __frogreact.stop(); }catch(e){}
+    },10);
+    setTimeout(function(){ try{ clearInterval(killer); }catch(e){} }, EV_CLIP_AT-40);
+  }catch(e){}
+
+  // ② 1.2초 뒤(= 마지막 파리로부터 1.5초) 손 흔들기
+  try{ setTimeout(evPlayWave, EV_CLIP_AT); }catch(e){ evKickVideo(); }
 }
 function tut(){
   gp='tutorial';sb("🥺 I'm hungry~",2000,'#555');playVoice('im_hungry');psg();

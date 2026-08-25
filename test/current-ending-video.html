@@ -5,28 +5,29 @@
        파리를 26마리 잡을 필요 없이 🏁 버튼 한 번으로 엔딩까지 간다.
 
      ⚠️⚠️ **2026-08-25 부터 이 파일에는 엔딩 코드가 없다.** ⚠️⚠️
-       엔딩 축하 영상·폭죽 문지기·시간표는 전부 **라이브 script.js 안에 들어갔다**
-       (2026-08-25 반영, 백업태그 backup-before-endvideo-20260825).
-       예전에는 이 파일이 라이브 stc() 를 감싸서 setTimeout 숫자를 바꿔치기하고 영상을
-       얹었지만, 라이브에 반영되면서 그 블록(약 500줄)을 통째로 지웠다.
-       **안 지웠으면 영상이 두 개 뜬다.**
+       엔딩 축하 영상·폭죽 문지기·시간표·개구리 손흔들기는 전부 **라이브 script.js 안에 있다.**
+       (영상 2026-08-25 반영 `backup-before-endvideo-20260825` /
+        손흔들기 2026-08-25 반영 `backup-before-endwave-20260825`)
+       예전에는 이 파일이 라이브 stc() 를 감싸서 시간표를 바꿔치기하고 영상·클립을 얹었지만,
+       라이브에 반영될 때마다 그 블록을 통째로 지웠다(영상 약 500줄 + 손흔들기 약 190줄).
+       **안 지웠으면 영상도 클립도 두 개씩 뜬다.**
        → 즉 이 판에서 보이는 엔딩 = **실유저가 보는 그 엔딩 그대로**다. 그게 목적이다.
        → 이 파일에 남은 [TEST 전용]은 맨 아래 '26글자 채우기' 버튼 하나뿐이다.
 
      [엔딩이 어떻게 가는가 — 마지막 파리를 잡은 순간이 0초]
-       ★ = 이 판에만 있는 것(라이브엔 아직 없다). 아래 '개구리 손흔들기' 블록이 만든다.
+       자세한 시간표·이유는 라이브 script.js 의 stc() / evWave() 주석에 있다.
          0.3초  WELL DONE! + congrats
          1.3초  ALPHABET MASTER!! + you_did_it
-         1.5초  ★ 개구리가 손을 흔든다 (frog_shakehands_2_fwd, 3.6초)
+         1.5초  개구리가 손을 흔든다 (frog_shakehands_2_fwd, 3.6초)
          2.2초  HOORAY 🎊 + hooray
-         5.1초  ★ 클립이 끝나면서 축하 영상으로 넘어간다 (마지막 프레임이 0.45초에 걸쳐 녹는다)
+         5.1초  클립이 끝나면서 축하 영상으로 넘어간다 (마지막 프레임이 0.45초에 걸쳐 녹는다)
         13.2초  영상 끝 → **마지막 장면에서 정지** + 그 위에 PLAY AGAIN
-       ※ 라이브(손흔들기 없음)는 1.5초에 곧바로 영상이 뜨고 9.5초에 끝난다.
        ※ 축하 멘트·음성이 서로 겹쳐 쏟아진다. 그게 목적이다(축제 분위기).
+       ※ 클립이 안 뜨면 기다리지 않고 곧바로 영상으로 간다.
        ※ 영상이 안 뜨면 폭죽이 대신 다 터지고 PLAY AGAIN 이 뜬다.
 
      [폰에서 볼 것]
-       ⓪ ★ **개구리가 손 흔드는 것 → 축하 영상** 넘어가는 이음새가 자연스러운가 (이번 확인의 핵심)
+       ⓪ **개구리가 손 흔드는 것 → 축하 영상** 넘어가는 이음새
        ① 소문자(abc) 모드로 들어가 🏁 26글자 채우기 를 누른다 → 위 순서대로 나오는가
        ② 대문자(ABC) · 섞기(ABc) 모드에서도 같은지
        ③ 비행기모드로 켜 보기 — 영상이 안 떠도 약 3.6초에 PLAY AGAIN 까지 가야 한다(가장 중요)
@@ -337,196 +338,6 @@ try {
 
 
 
-<!-- ★★★ [TEST 전용] 엔딩에 개구리 손흔들기 클립 끼우기 (2026-08-25) ★★★
-     ⚠️ 라이브 파일(script.js · index.html · style.css · frog-reactions.js)은 한 글자도 안 건드린다.
-        라이브 엔딩 함수 stc() 를 이 파일 안에서 감싸는 방식이다.
-
-     [왜 넣나] you_did_it 음성(1.3초) 뒤에 곧바로 축하 영상으로 넘어가는 게 너무 갑작스러워
-       오류처럼 보였다(본게임 앱에서 확인). 그 사이에 원게임 개구리가 한 번 움직이고 넘어가게 한다.
-
-     [지금(라이브)은 이렇다 — 2026-08-25 실측]
-       0.43초  frog-reactions.js 가 occ 를 감싸 **랜덤 반응 클립 5종 중 하나**를 튼다
-               → 어떤 클립이 걸리느냐에 따라 길이가 0.95~3.6초로 제각각이다
-       1.38초  클립 끝 → **앉은 개구리로 되돌아감**
-       1.38~1.56초  **0.18초 동안 아무것도 안 일어남**  ← 여기가 '툭 끊기는' 자리
-       1.56초  축하 영상이 그냥 뜬다
-       ⚠️ 즉 지금은 **랜덤이라 매번 다르고**, 긴 클립이 걸리면 영상 위에 겹쳐서까지 계속 돈다
-          (반응 클립 z-index 200 > 엔딩 영상 26).
-
-     [이 판에서 바꾼 것]
-       0.3초  WELL DONE! + congrats            ← 그대로
-       1.3초  ALPHABET MASTER!! + you_did_it   ← 그대로
-       1.5초  ★ 손 흔들기(frog_shakehands_2_fwd, 3.625초) 시작 — 랜덤이 아니라 **항상 이것**
-       2.2초  HOORAY + hooray                  ← 그대로 (클립 위로 나온다)
-       5.1초  ★ 축하 영상 시작 (클립 끝과 맞물린다)
-      13.1초  영상 끝 → 마지막 장면 정지 + PLAY AGAIN
-
-     [세 가지를 한다]
-       ① 랜덤 반응 클립을 화면에 못 뜨게 막는다 (0.3~1.5초, __frogreact.stop() 을 짧게 반복)
-          → 안 막으면 랜덤 클립이 먼저 뜨고 1.5초에 손흔들기로 갈아타 **두 번 움직이는** 꼴이 된다
-       ② 1.5초에 손 흔들기를 직접 튼다
-       ③ 엔딩 영상 시각을 1.2초 → 4.8초로 미룬다 (라이브 script.js 의 EV_SHOW_AT 값만 바꿔 쓴다)
-
-     [클립이 안 뜨면 기다리지 않는다 — 가장 중요]
-       클립 때문에 엔딩이 멈추면 안 된다. 세 가지 경우 모두 **즉시 영상으로 넘어간다.**
-         · frog-reactions.js 가 아예 없다        → 클립을 시도조차 안 하고 원래대로 1.2초에 영상
-         · 0.8초 안에 클립이 화면에 안 나타난다  → 그 자리에서 영상 시작
-         · 도중에 클립이 사라진다(감시타이머·오류) → 그 자리에서 영상 시작
-       ⚠️ 라이브 영상 타이머(4.8초)는 그대로 살아 있다. 일찍 틀어도 그때 한 번 더 play() 가
-          불릴 뿐이고, 이미 돌고 있으면 아무 일도 안 일어난다. 즉 **어느 쪽이든 영상은 뜬다.**
-
-     [클립 → 영상 이음새를 부드럽게]
-       클립이 끝나는 순간 frog-reactions.js 는 영상을 곧바로 지우고 **앉은 개구리를 되살린다.**
-       그러면 '손 흔들던 개구리 → 앉은 개구리 → 축하 영상' 으로 한 번 튄다.
-       그래서 클립의 **마지막 프레임을 캔버스로 떠서** 같은 자리에 덮어두고, 그것을 0.45초에 걸쳐
-       천천히 지운다. 그 사이 축하 영상이 밑에서 떠오르므로 앉은 개구리가 보일 틈이 없다.
-       ⚠️ 캔버스로 뜨는 이유 = frog-reactions.js 의 감시타이머가 '재생이 멈춘'(ended) 영상을
-          120ms 안에 강제로 치워 버려서, 클립 영상 자체를 천천히 지울 수가 없다.
--->
-<script>
-(function () {
-  'use strict';
-
-  // ── 손으로 바꿀 수 있는 값 ────────────────────────────────────────────────
-  var CLIP       = 'frog_shakehands_2_fwd';  // 손 흔들기 (3.625초)
-  var CLIP_AT    = 1200;                     // 엔딩 시작 후 몇 ms 에 클립을 트나 (= 마지막 파리로부터 1.5초)
-  var VIDEO_AT   = 4800;                     // 엔딩 시작 후 몇 ms 에 축하 영상을 트나 (= 5.1초)
-  var CLIP_WAIT  = 800;                      // 이 시간 안에 클립이 화면에 안 뜨면 포기하고 영상으로
-  var FADE_MS    = 450;                      // 클립 마지막 프레임을 지우는 데 걸리는 시간
-
-  function el(id) { try { return document.getElementById(id); } catch (e) { return null; } }
-  function reactVid() { return el('frogReactVid'); }
-
-  // 클립이 지금 화면에 '실제로 보이는가'
-  function clipVisible() {
-    try {
-      var v = reactVid();
-      return !!(v && v.style.display !== 'none' && v.style.opacity === '1' && v.videoWidth);
-    } catch (e) { return false; }
-  }
-
-  /* ── 축하 영상을 지금 당장 튼다 ────────────────────────────────────────────
-     라이브 evStart() 가 만들어 둔 그 <video> 를 그대로 쓴다(새로 만들지 않는다).
-     · 'playing' 이 오면 라이브 코드가 알아서 .on 을 붙여 보이게 한다
-     · 라이브의 4.8초 타이머가 나중에 또 play() 를 불러도 이미 돌고 있으면 무해하다 */
-  var videoKicked = false;
-  function kickVideo(why) {
-    if (videoKicked) return;
-    videoKicked = true;
-    try {
-      if (!window.EV || EV.done || !EV.vid) return;
-      var p = EV.vid.play();
-      if (p && p['catch']) p['catch'](function () {
-        try { EV.vid.muted = true; EV.vid.play()['catch'](function () {}); } catch (e) {}
-      });
-    } catch (e) {}
-    try { if (window.console) console.log('[endclip] kickVideo:', why); } catch (e) {}
-  }
-
-  /* ── 클립 마지막 프레임을 캔버스로 떠서 천천히 지우기 ──────────────────────
-     실패하면 아무것도 안 한다 — 그냥 예전처럼 툭 끊길 뿐, 엔딩은 그대로 간다. */
-  function freezeAndFade() {
-    var snap = null;
-    try {
-      var v = reactVid(), gc = el('gc');
-      if (v && gc && v.videoWidth && v.style.display !== 'none') {
-        var vr = v.getBoundingClientRect(), gr = gc.getBoundingClientRect();
-        if (vr.width > 2 && vr.height > 2) {
-          snap = document.createElement('canvas');
-          snap.width = v.videoWidth; snap.height = v.videoHeight;
-          snap.getContext('2d').drawImage(v, 0, 0, snap.width, snap.height);
-          snap.style.cssText = 'position:absolute;pointer-events:none;z-index:200;' +
-            'left:' + (vr.left - gr.left) + 'px;top:' + (vr.top - gr.top) + 'px;' +
-            'width:' + vr.width + 'px;height:' + vr.height + 'px;' +
-            'opacity:1;transition:opacity ' + FADE_MS + 'ms linear';
-          gc.appendChild(snap);
-        }
-      }
-    } catch (e) { snap = null; }
-
-    try { if (window.__frogreact) __frogreact.stop(); } catch (e) {}   // 개구리 되살리기(캔버스 뒤에 가려진다)
-
-    if (snap) {
-      try {
-        // 다음 프레임에 투명도를 낮춰야 transition 이 실제로 돈다
-        requestAnimationFrame(function () { try { snap.style.opacity = '0'; } catch (e) {} });
-        setTimeout(function () { try { if (snap.parentNode) snap.parentNode.removeChild(snap); } catch (e) {} }, FADE_MS + 250);
-      } catch (e) {}
-    }
-  }
-
-  // ── 클립을 틀고 끝까지 지켜본다 ───────────────────────────────────────────
-  function runClip() {
-    if (!window.__frogreact || typeof __frogreact.playGame !== 'function') { kickVideo('no_frogreact'); return; }
-
-    try { __frogreact.playGame(CLIP); } catch (e) { kickVideo('play_threw'); return; }
-
-    // frog-reactions.js 가 걸어둔 onended 를 우리 것으로 바꾼다(원래는 곧바로 개구리를 되살린다)
-    var handed = false;
-    function handoff(why) {
-      if (handed) return;
-      handed = true;
-      try { clearInterval(iv); } catch (e) {}
-      freezeAndFade();
-      kickVideo(why);
-    }
-    try {
-      var v = reactVid();
-      if (v) {
-        v.onended = function () { handoff('clip_ended'); };
-        v.onerror = function () { handoff('clip_error'); };
-      }
-    } catch (e) {}
-
-    // 감시 — ①제때 안 뜨면 ②뜬 뒤 사라지면, 두 경우 다 곧바로 영상으로
-    var t0 = Date.now(), everShown = false;
-    var iv = setInterval(function () {
-      try {
-        var vis = clipVisible();
-        if (vis) { everShown = true; return; }
-        if (!everShown && Date.now() - t0 > CLIP_WAIT) { handed = true; clearInterval(iv); kickVideo('clip_never_shown'); return; }
-        if (everShown) handoff('clip_vanished');       // 감시타이머가 치웠거나 재생이 멈췄다
-      } catch (e) { try { clearInterval(iv); } catch (e2) {} }
-    }, 60);
-    setTimeout(function () { try { clearInterval(iv); } catch (e) {} }, 12000);   // 안전망
-  }
-
-  /* ── 엔딩 함수 감싸기 ───────────────────────────────────────────────────
-     ⚠️ 이 블록은 아래 '26글자 채우기' 버튼 블록보다 **먼저** 실행되어야 한다.
-        그래야 그쪽의 '한 번만' 잠금이 바깥쪽에 놓여 엔딩이 두 번 불려도 클립이 두 개 안 뜬다. */
-  try {
-    if (typeof stc === 'function' && !stc.__endclip) {
-      var _stc = stc;
-      window.stc = function () {
-        // ③ 축하 영상을 클립 뒤로 미룬다 (라이브 evStart 가 이 값을 읽어 타이머를 건다)
-        try { window.EV_SHOW_AT = VIDEO_AT; } catch (e) {}
-        videoKicked = false;
-
-        var r;
-        try { r = _stc.apply(this, arguments); } catch (e) {}   // 원래 엔딩이 먼저다
-
-        /* ① 랜덤 반응 클립 막기 — occ 이 0.38초에 예약해 둔 것이 0.43초쯤 화면에 뜬다.
-              stop() 은 아무것도 안 틀어져 있으면 그냥 돌아가므로 반복해도 싸다.
-              (뜨기 전에 치우므로 화면에는 한 프레임도 안 보인다)                       */
-        try {
-          // 10ms 간격 — 화면 한 프레임(60fps=16.7ms)보다 짧아야 눈에 한 장도 안 남는다.
-          // (25ms 로 했더니 19ms 짜리 한 프레임이 실측으로 잡혔다 — 2026-08-25)
-          var killer = setInterval(function () {
-            try { if (window.__frogreact) __frogreact.stop(); } catch (e) {}
-          }, 10);
-          setTimeout(function () { try { clearInterval(killer); } catch (e) {} }, CLIP_AT - 40);
-        } catch (e) {}
-
-        // ② 1.2초 뒤(= 마지막 파리로부터 1.5초) 손 흔들기
-        try { setTimeout(runClip, CLIP_AT); } catch (e) { kickVideo('schedule_threw'); }
-
-        return r;
-      };
-      window.stc.__endclip = 1;
-    }
-  } catch (e) {}
-})();
-</script>
 <!-- ★★★ [TEST 전용] 26글자 채우기 버튼 — 라이브엔 없다 ★★★ -->
 <style>
 #t26{position:fixed;left:10px;top:78px;z-index:99999;
