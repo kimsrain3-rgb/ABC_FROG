@@ -11,7 +11,7 @@ body{background:linear-gradient(180deg,#4CAF50,#2E7D32);background-attachment:fi
 .frog img{display:none}
 .frog img.active{display:block}
 
-.tongue{position:absolute;left:50%;width:3vmin;transform-origin:bottom center;opacity:0;z-index:30;pointer-events:none;background:url('assets/ui/images/bg_2.png') center/100% 100% no-repeat;border-radius:10px}
+.tongue{position:absolute;left:50%;width:3vmin;transform-origin:bottom center;opacity:0;z-index:30;pointer-events:none;background:url('assets/ui/images/bg_2.webp') center/100% 100% no-repeat;border-radius:10px}
 
 
 .fly{position:absolute;width:15vmin;height:15vmin;cursor:pointer;z-index:20}

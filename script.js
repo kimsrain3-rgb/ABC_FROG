@@ -137,16 +137,16 @@ function startFlyBuzz(){function loop(){playFlyBuzz();flyBuzzInterval=setTimeout
 function stopFlyBuzz(){if(flyBuzzInterval)clearTimeout(flyBuzzInterval);}
 
 const FLY_IMGS={
-  left:["assets/bugs/images/fly_left.png","assets/bugs/images/fly_left2.png"],
-  right:["assets/bugs/images/fly_right.png","assets/bugs/images/fly_right2.png"],
-  front:["assets/bugs/images/fly_front.png","assets/bugs/images/fly_front2.png"]
+  left:["assets/bugs/images/fly_left.webp","assets/bugs/images/fly_left2.webp"],
+  right:["assets/bugs/images/fly_right.webp","assets/bugs/images/fly_right2.webp"],
+  front:["assets/bugs/images/fly_front.webp","assets/bugs/images/fly_front2.webp"]
 };
 const DRAGONFLY_IMGS={
-  left:["assets/bugs/images/dregon1.png","assets/bugs/images/dregon1-1.png"],
-  right:["assets/bugs/images/dregon2.png","assets/bugs/images/dregon2-1.png"],
-  front:["assets/bugs/images/dregon1.png","assets/bugs/images/dregon1-1.png"]
+  left:["assets/bugs/images/dregon1.webp","assets/bugs/images/dregon1-1.webp"],
+  right:["assets/bugs/images/dregon2.webp","assets/bugs/images/dregon2-1.webp"],
+  front:["assets/bugs/images/dregon1.webp","assets/bugs/images/dregon1-1.webp"]
 };
-const SPIDER_IMGS=["assets/bugs/images/spider1.png","assets/bugs/images/spider1-1.png"];
+const SPIDER_IMGS=["assets/bugs/images/spider1.webp","assets/bugs/images/spider1-1.webp"];
 const DIRS=['left','right','front'];
 
 const PHRASES=[
@@ -171,8 +171,8 @@ const LETTER_SOUND={
 };
 
 const BUTTERFLY_FRAMES=[
-  'assets/bugs/images/butterfly_frame1.png',
-  'assets/bugs/images/butterfly_frame2.png'
+  'assets/bugs/images/butterfly_frame1.webp',
+  'assets/bugs/images/butterfly_frame2.webp'
 ];
 
 // 나비 (파리 사이 날아다님)
@@ -438,16 +438,16 @@ function playBfVoice(){
 }
 
 const BUTTERFLY_SHOCK=[
-  'assets/bugs/images/butterfly_shock1.png',
-  'assets/bugs/images/butterfly_shock2.png'
+  'assets/bugs/images/butterfly_shock1.webp',
+  'assets/bugs/images/butterfly_shock2.webp'
 ];
 
 const CATERPILLAR_FRAMES=[
-  'assets/bugs/images/caterpillar_frame1.png',
-  'assets/bugs/images/caterpillar_frame2.png',
-  'assets/bugs/images/caterpillar_frame3.png',
-  'assets/bugs/images/caterpillar_frame4.png',
-  'assets/bugs/images/caterpillar_frame5.png'
+  'assets/bugs/images/caterpillar_frame1.webp',
+  'assets/bugs/images/caterpillar_frame2.webp',
+  'assets/bugs/images/caterpillar_frame3.webp',
+  'assets/bugs/images/caterpillar_frame4.webp',
+  'assets/bugs/images/caterpillar_frame5.webp'
 ];
 
 // 애벌레 (연잎 위)
@@ -1741,15 +1741,15 @@ function go(mode){
   const gc=document.getElementById('gc');
   gc.classList.remove('mode-abc','mode-ABc');
   if(gameMode==='abc'){
-    document.body.style.background="url('assets/ui/images/bg_4.png') center bottom/cover no-repeat";
+    document.body.style.background="url('assets/ui/images/bg_4.webp') center bottom/cover no-repeat";
     document.body.style.backgroundColor="#87CEEB";
     gc.classList.add('mode-abc');
   } else if(gameMode==='ABc'){
-    document.body.style.background="url('assets/ui/images/bg_5.png') center/cover no-repeat";
+    document.body.style.background="url('assets/ui/images/bg_5.webp') center/cover no-repeat";
     document.body.style.backgroundColor="#2a3a1a";
     gc.classList.add('mode-ABc');
   } else {
-    document.body.style.background="url('assets/ui/images/bg_1.png') center/cover no-repeat";
+    document.body.style.background="url('assets/ui/images/bg_1.webp') center/cover no-repeat";
     document.body.style.backgroundColor="#2D6B5E";
   }
   frogStage=1;setFrame('a');

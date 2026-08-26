@@ -4216,3 +4216,56 @@ setTimeout(()=>{
 - abc 모드 진입 → 버튼 켜짐 → 눌렀더니 **엔딩 정상**: 손흔들기 클립 → `frog_lastdance.mp4` **8.00/8.00초** →
   `ALPHABET MASTER!!` → **PLAY AGAIN 1개**(중복 없음). 버튼은 스스로 `display:none` 이 되어 엔딩을 안 가린다
 - 라이브 `index.html`·`script.js`·`style.css` 여전히 **변경 0건**
+
+---
+
+### 2026-08-26 — 🚀 **그림 WebP 전환 1차 라이브 반영** · 백업태그 `backup-before-webp1-20260826`
+
+**한 일**: 폰 확인(꼼지파파, 세 모드 이상 없음)을 통과해 **라이브 3파일에 그림 주소를 반영**했다.
+이제 실유저가 **27장을 3,592KB 가 아니라 914KB 로 받는다(−74.6%, 한 사람당 2,678KB 절약).**
+
+| 파일 | 바꾼 곳 |
+|---|---|
+| `script.js` | 벌레 21종 **23곳**(dregon1·dregon1-1 이 각 2번) + `bg_1`·`bg_4`·`bg_5` 3곳 = **26곳** |
+| `style.css` | `bg_2` 1곳 (혀 배경) |
+| `index.html` | `lilypad` · `bg_5-1` · `fly_front` 3곳 |
+
+> ⚠️ **테스트 판을 그대로 복사하지 않고 같은 치환을 라이브에 다시 돌렸다.** 테스트 판에는 라이브에 가면
+> 안 되는 것이 두 개 들어 있기 때문 — ① `style.css` 의 `../` 접두사 ② `index.html` 의 🏁 26글자 버튼 94줄.
+> 그래서 `test/style-webp1.css` 는 **베끼는 원본이 아니라 대조용**으로만 썼다.
+
+**"바꾼 것 말고는 안 바뀌었다"의 증거**
+- 라이브 `script.js` = 폰 확인을 통과한 `test/script-webp1.js`(헤더 4줄 제외)와 **차이 0줄. 완전히 동일**
+- 라이브 `style.css` = `test/style-webp1.css` 와 차이 8줄인데 **전부 `url()` 의 `../` 유무**뿐 (의도한 차이)
+- 라이브 `index.html` 의 그림 참조 목록 = 테스트 판과 **완전히 동일**. 테스트 잔재(`t26`·`base href`·`style-webp1`) **0건**,
+  GA4·`error-tracker.js` 는 그대로 살아 있음
+- `node --check` — `script.js`·`error-tracker.js`·`frog-reactions.js`·`video-quality.js` **전부 통과**
+- 라이브 CSS 에 `../assets` **0건**(들어갔으면 혀·뒤로화살표·공룡아이콘이 통째로 사라진다)
+
+**로컬 실측 (라이브 루트 `index.html` 직접, 412×915)**
+
+| 모드 | 배경 | 벌레 | 연잎/둥치 | 혀 |
+|---|---|---|---|---|
+| ABC | `bg_1.webp` | 파리·나비·애벌레 webp | `lilypad.webp` | `bg_2.webp` |
+| abc | `bg_4.webp` | 잠자리(dregon) webp | `lilypad.webp` | `bg_2.webp` |
+| ABc | `bg_5.webp` | 거미 webp | `bg_5-1.webp`(둥치) | `bg_2.webp` |
+
+**깨진 그림 0장 · `assets/` 404 0건 · JS 에러 0건.**
+**엔딩도 그대로** — 1.2초 시점에 손흔들기 클립(`frog_shakehands_2_fwd.webm`)이 실제로 **재생 중**,
+`frog_lastdance.mp4` **8.00/8.00초 끝까지**, `ALPHABET MASTER!!`, `PLAY AGAIN` **1개**(중복 없음).
+
+> ⚠️ **검증 중 GA4 를 차단하고 돌렸다** — Playwright `page.route()` 로 `googletagmanager`·`google-analytics` 를
+> abort 시켰다. 라이브 `index.html` 은 테스트 판과 달리 GA4 가 살아 있어서, 안 막으면 **내 검증 플레이가
+> 실유저 통계에 섞인다.** 앞으로 라이브 루트를 로컬에서 돌릴 때는 이 차단을 같이 걸 것.
+
+**안 건드린 것**
+- **원본 PNG 27장 그대로** (`assets/bugs/images/` 21장 · `assets/ui/images/` 6장). 되돌릴 때 주소만 `.png` 로 바꾸면 된다
+- **`test/` 판 3개 그대로** (`current-webp1.html`·`script-webp1.js`·`style-webp1.css`)
+- `?v=` 갱신 안 함 — **확장자가 바뀌어 주소 자체가 다르므로** 캐시에 옛 파일이 남을 자리가 없다
+
+**남은 `.png` 참조 = 전부 2차 대상** (`assets/bugs/`·`assets/ui/images/` 에는 **0개** 남음)
+- `assets/frog/images/` 20장 — ⚠️ 2차 때 **`script.js:7` 의 `'frog_4'+(t?'b':'a')+'.png'`** 를 같이 고칠 것. 파일명이 통째로 안 적혀 있어 검색으로 안 잡힌다
+- `assets/fruit/images/fruit_apple_icon.png` 1장 · `assets/ui/icons/` 3장(`back_arrow_gold`·`dino_silhouette`·`icon-192x192`)
+
+**되돌리는 법**: `git revert <이 커밋>` 또는 백업태그 **`backup-before-webp1-20260826`**(원격에도 올림) 으로 복귀.
+원본 PNG 가 전부 남아 있어 주소만 되돌리면 그 즉시 원상복구된다.
