@@ -4591,3 +4591,46 @@ PKCS12 에는 키 비밀번호가 따로 없어(저장소 비번 = 키 비번) `
 
 **되돌리는 법**: `git checkout -- .gitignore twa-project/app/build.gradle .github/workflows/build-aab.yml`
 + 도장 파일을 `_keystore\release-keystore.jks.BEFORE-PWCHANGE-20260826` 으로 되돌리기(옛 비번 복귀).
+
+---
+
+### 2026-08-26 — 🚨 **도메인 전환(abcfrog.kr)으로 앱이 안 열리던 사고 · 긴급 복구** · 커밋 `0df1c3c`
+
+**무슨 일**: 16:20 에 `CNAME`(`abcfrog.kr`)이 올라간 뒤 **앱이 안 열렸다.** `CNAME` 을 지워 즉시 복구.
+브라우저로는 멀쩡해 보여서 **앱에서만 터지는 종류의 사고**였다.
+
+#### 원인 — 앱은 http 를 아예 거부한다
+
+```
+앱이 여는 주소   https://kimsrain3-rgb.github.io/ABC_FROG/   (MainActivity.java:35 에 박혀 있음)
+      ↓ 301
+                http://abcfrog.kr/        ← https 가 아니라 http
+      ↓
+   WebView 차단   AndroidManifest: usesCleartextTraffic="false"
+```
+
+세 가지가 겹쳐서 났다.
+1. `CNAME` 을 두면 GitHub Pages 가 옛 주소를 **새 도메인으로 301** 보낸다
+2. 그런데 **"Enforce HTTPS" 가 꺼져 있어 목적지가 `http://`** 였다. `http://abcfrog.kr/` 는 200 을 그대로 돌려주고 https 로 안 넘긴다
+3. 앱은 **`usesCleartextTraffic="false"`**(v1.0.3 `2fb3a3f` 부터, **지금 프로덕션 vc10 에도 있음**) 라 http 를 아예 거부한다
+
+→ 앱은 목적지에 닿지도 못하고 막혔다. **브라우저는 http 를 그냥 열어주므로 아무 문제가 없어 보였다.**
+
+#### 조치
+
+`CNAME` 파일 삭제 → 옛 주소가 **301 없이 바로 200**. 게임 파일 5종 전부 `redirects=0` 확인.
+도메인 자체는 살아 있다 — 파일 하나만 지운 것이다.
+
+#### ⭐ 다음에 도메인을 다시 붙일 때의 순서 (이번에 거꾸로 했다)
+
+1. Settings → Pages 에 도메인 등록 → **인증서 발급을 기다린다**
+2. **"Enforce HTTPS" 가 켜지는 것을 먼저 확인한다** ← 이번에 빠진 단계
+3. `https://kimsrain3-rgb.github.io/ABC_FROG/` 가 **`https://`** 로 301 되는지 확인
+4. **그 다음에** 실제 폰 앱을 완전종료→재시작해서 열리는지 확인
+5. 나중에 `MainActivity.java` 의 `GAME_URL` 을 새 도메인으로 바꾸면 301 자체가 없어진다(앱 심사 필요)
+
+> ⚠️ **교훈 — 주소가 걸린 변경은 브라우저로 검증하면 안 된다.**
+> 브라우저는 http 를 열어주고 앱은 거부한다. **"측정 없이 내보내지 않는다" 와 같은 종류의 실수**로,
+> 검증 수단이 실제 사용 환경과 달랐다. 주소·프로토콜 변경은 **반드시 실제 앱**에서 확인할 것.
+
+> ⚠️ **`git revert 0df1c3c` 로 CNAME 이 되살아난다.** HTTPS 강제를 켜기 전에는 되돌리지 말 것.
