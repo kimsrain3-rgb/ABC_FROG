@@ -4269,3 +4269,100 @@ setTimeout(()=>{
 
 **되돌리는 법**: `git revert <이 커밋>` 또는 백업태그 **`backup-before-webp1-20260826`**(원격에도 올림) 으로 복귀.
 원본 PNG 가 전부 남아 있어 주소만 되돌리면 그 즉시 원상복구된다.
+
+---
+
+### 2026-08-26 — 🐸 **그림 WebP 전환 2차 (개구리 20장) — 테스트 판까지** · 라이브 미변경
+
+**한 일**: 개구리 20장을 PNG → WebP 로 바꿨다. **1,962KB → 532KB (−72.9%, 1,430KB 절약).**
+라이브 `index.html`·`script.js`·`style.css`·`frog-reactions.js` 는 **한 글자도 안 건드렸다.**
+
+| 단계 | PNG | WebP | 줄임 |
+|---|---|---|---|
+| 1단계 4장 | 373KB | 101KB | −73% |
+| 2단계 4장 | 373KB | 100KB | −73% |
+| 3단계 4장 | 377KB | 103KB | −73% |
+| 4단계 4장 | 459KB | 124KB | −73% |
+| 5단계 4장 | 380KB | 104KB | −73% |
+| **합계 20장** | **1,962KB** | **532KB** | **−72.9%** |
+
+편차가 거의 없다(장당 −67~−75%). `*_yuck` 4장만 −67~−68% 로 조금 덜 줄었다.
+`frog_4a`·`frog_4b` 만 1024², 나머지 18장은 768² — 크기는 안 건드렸다.
+
+#### ⚠️ 이번 작업의 위험 두 곳 — 둘 다 확인 완료
+
+**① `script.js:7` — 파일 이름을 글자로 이어 붙이는 자리**
+
+```js
+f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.png'   // 시작화면 개구리 깜빡임(800ms)
+```
+
+파일명이 통째로 안 적혀 있어 **`frog_4a.png` 로 검색하면 안 잡힌다.** 놓치면 시작화면 개구리가 사라진다.
+→ 문자열 `'.png'` 자체를 `'.webp'` 로 바꿨고, **실제로 깜빡이는 것을 확인**했다
+(`frog_4b.webp` → 0.9초 뒤 `frog_4a.webp`, 둘 다 `naturalWidth>0`).
+
+**② `frog-reactions.js` 의 `opaqueBBox` — 그림의 투명한 부분으로 발 위치를 잡는다**
+
+`frog-reactions.js` 에는 **개구리 파일명이 한 곳도 없다.** DOM 에 로드된 `#frog .frog-img` 를 캔버스에 그려
+알파(`>40`)로 bbox 를 재고, `img.src` 를 키로 캐시한다. → **코드 수정이 필요 없다**(주소가 바뀌면 캐시 키만 새로 생김).
+남는 위험은 "WebP 로 바꾸면서 알파가 미세하게 변해 발 위치가 밀리는가" 하나였고, 3중으로 확인했다.
+
+1. **알파 원본 대조** — 20장 전부 **알파 최대 차이 0**, 가로세로 동일
+2. **Python 으로 `opaqueBBox` 재구현** — 20장 전부 `cxFrac`·`feetFrac` **완전히 동일**
+3. **브라우저 안에서 진짜 `opaqueBBox` 그대로 실행** — PNG/WebP 20쌍을 canvas 로 재서 **cx 0건·feet 0건 차이**
+   (premultiplied alpha 때문에 ±1 이 생길 수 있다고 의심했으나 실제로는 안 생겼다)
+
+> 🚩 **하마터면 헛보고할 뻔한 것** — 클립 배치 좌표를 재니 PNG 판 `left=98.44`, WebP 판 `left=99.92` 로
+> **1.48px 차이**가 났다. WebP 탓인 줄 알았는데, **PNG·WebP 를 3번씩 번갈아 재 보니 원인은 숨쉬기였다.**
+>
+> | 잰 판 | 그때 떠 있던 그림 | 클립 left |
+> |---|---|---|
+> | PNG | `frog_3a` | 98.44 |
+> | WebP | `frog_3a` | **98.44** |
+> | PNG | `frog_3b` | 99.70 |
+> | WebP | `frog_3b` | **99.70** |
+>
+> 개구리는 800ms 마다 a↔b 로 바뀌는데 **a 와 b 는 원래 그림부터 가로 중심이 1픽셀 다르다**
+> (`frog_3a` cx=0.53125 / `frog_3b` cx=0.54375 — PNG 원본에서도 그렇다). 측정 순간 어느 쪽이 떠 있었느냐의 문제였다.
+> **같은 그림끼리 비교하면 PNG·WebP 차이는 0.** 발바닥(`bottom`)은 모든 회차에서 `809.41` 로 완전히 같았다.
+> → 교훈: **애니메이션이 도는 화면에서 좌표를 잴 때는 "그때 무엇이 떠 있었나"를 같이 기록할 것.**
+
+#### 테스트 판 (`test/`)
+
+| 파일 | 바탕 | 다른 점 |
+|---|---|---|
+| `test/script-webp2.js` | 최신 `script.js` | 개구리 주소 **2곳** (7줄 동적 조립 + `wc-frog` 의 `frog_4a`) |
+| `test/current-webp2.html` | 최신 `index.html` | 개구리 그림 **23곳** + base·제목·GA4 제거·js 파일명 교체 |
+
+> ✅ **`style.css` 복사본은 안 만들었다** — 개구리 그림이 CSS 에 **한 곳도 없기 때문**(실측 0건).
+> 라이브 `style.css` 를 그대로 공유한다. 덕분에 **1차 때의 `../` 함정이 이번엔 아예 없다.**
+
+- 🏁 26글자 채우기 버튼은 1차 판에서 그대로 가져왔다(94줄). 안내 쪽지만 **`🐸 WebP 2차 판 (개구리)`** 로 바꿈
+- 고정 주소 `/test/` 가 이 판을 연다. **앞 판들은 안 지웠다**(`current-webp1.html` 등 주소 직접 입력으로 열림)
+
+#### 대상에서 뺀 개구리 7장 (합계 1,804KB)
+
+`frog_base` · `frog_blink` · `frog_breathe` · `frog_half` · `frog_open` · `frog_side` · `start_frog`
+— **어느 코드도 안 부른다.** 손대지 않았고 `.webp` 도 안 만들었다(실측 확인).
+
+#### 검증
+
+- **`node --check`** — `test/script-webp2.js` 통과. 라이브 `script.js` 도 통과(미변경)
+- **`script-webp2.js` vs 라이브 `script.js` 차이 = 4줄, 전부 개구리 주소 줄.** 로직은 한 글자도 안 달라졌다
+- **개구리 5단계 × 4표정 = 20장 전부** 로드 성공(`naturalWidth` 768 / `frog_4a`·`4b` 만 1024). 깨진 그림 0장
+- **맛없는 표정**(`frog_5_yuck.webp`) 화면 확인
+- **세 모드** — ABC(`bg_1`) · abc(`bg_4`) · ABc(`bg_5`), 벌레는 1차에서 이미 webp. **`assets/` 404 0건 · JS 에러 0건**
+- **엔딩 정상** — 🏁 버튼 → 손흔들기 클립 재생 확인(1.2초 시점 `paused:false`) → `frog_lastdance.mp4` **8.00/8.00초** →
+  `ALPHABET MASTER!!` → **PLAY AGAIN 1개**
+- 라이브 루트를 대조군으로 열 때 **GA4 는 `page.route()` 로 차단**(8/26 1차 때 정한 규칙)
+- 브라우저·로컬 서버는 확인 직후 껐다
+
+#### 남은 `.png` 참조 (2차 반영 후 기준)
+
+- `assets/fruit/images/fruit_apple_icon.png` — Word 버튼 아이콘 21KB
+- `assets/ui/icons/` 3장 — `back_arrow_gold.png`(style.css) · `dino_silhouette.png`(style.css) · `icon-192x192.png`(앱 아이콘)
+- **`assets/frog/`·`assets/bugs/`·`assets/ui/images/` 는 0개.** 남은 건 아이콘류뿐이라 3차 대상은 사실상 없다
+  (퍼즐 쪽 `dino_spinosaurus` 2,425KB · `animal_raccoon` 527KB 는 `dino.html`·`animal.html` 소관이라 별건)
+
+**되돌리는 법**: 테스트 판 2개를 지우고 `test/index.html` 을 `current-webp1.html` 로 되돌리면 끝
+(라이브가 안 바뀌었으므로 되돌릴 것이 없다).
