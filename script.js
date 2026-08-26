@@ -4,7 +4,7 @@ window.onerror=function(msg,src,line,col,err){console.warn('Error caught:',msg);
 window.addEventListener('unhandledrejection',function(e){e.preventDefault();console.warn('Promise rejected:',e.reason);});
 
 // === 인트로 개구리 숨쉬기 ===
-(function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{t=!t;f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.png'},800);})();
+(function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{t=!t;f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.webp'},800);})();
 
 // === 디버그 도구 ===
 // debugStage(4) → 4단계로 점프
@@ -2116,7 +2116,7 @@ function _buildPhonicsMenu(){
     var d=document.createElement('div');
     d.className='ps'; d.id='ps';
     var h='<button class="wc-back gbk" onclick="psBack()" aria-label="back"></button>'+
-          '<img class="wc-frog" src="assets/frog/images/frog_4a.png" alt="frog">'+
+          '<img class="wc-frog" src="assets/frog/images/frog_4a.webp" alt="frog">'+
           '<h2 class="wc-title">Pick a set!</h2>'+
           '<div class="wc-cards">';
     for(var i=0;i<PH_SETS.length;i++){

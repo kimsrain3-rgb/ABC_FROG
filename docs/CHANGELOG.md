@@ -4366,3 +4366,68 @@ f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.png'   // 시작화면 개구리
 
 **되돌리는 법**: 테스트 판 2개를 지우고 `test/index.html` 을 `current-webp1.html` 로 되돌리면 끝
 (라이브가 안 바뀌었으므로 되돌릴 것이 없다).
+
+---
+
+### 2026-08-26 — 🚀 **그림 WebP 전환 2차 (개구리 20장) 라이브 반영** · 백업태그 `backup-before-webp2-20260826`
+
+**한 일**: 폰 확인(꼼지파파 — 시작화면 깜빡임·5단계·혀·발 위치·맛없는 표정 전부 이상 없음)을 통과해
+**라이브 2파일에 개구리 그림 주소를 반영**했다. 실유저가 개구리 20장을 **1,962KB 가 아니라 532KB 로 받는다.**
+
+| 파일 | 바꾼 곳 |
+|---|---|
+| `index.html` | 개구리 그림 **23곳** (`.sf`·`.wc-frog`·`.ms-frog` 3곳 + 5단계 20장) |
+| `script.js` | **2곳** — ⭐ 7줄 동적 조립 + `wc-frog` 의 `frog_4a` |
+| `style.css` | **손대지 않음** (개구리가 CSS 에 0건) |
+
+**1·2차 합계 — 라이브가 부르는 그림 47장이 5,554KB → 1,446KB (−74%, 4,108KB 절약)**
+
+> ⭐ **`script.js:7` 이 이 작업의 핵심이었다.**
+> ```js
+> f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.webp'   // ← .png 였던 자리
+> ```
+> 파일명이 통째로 안 적혀 있어 `frog_4a.png` 로 검색하면 **안 잡힌다.** 놓쳤으면 시작화면 개구리가 사라졌다.
+> 반영 후 실제로 **`frog_4b.webp` → 0.9초 뒤 `frog_4a.webp`** 로 깜빡이는 것을 확인했다.
+
+> ⚠️ **테스트 판을 그대로 복사하지 않고 같은 치환을 라이브에 다시 돌렸다** (1차에서 정한 절차).
+> 테스트 판에는 라이브에 가면 안 되는 것이 셋 있다 — 🏁 26글자 버튼 94줄 · 🐸 "WebP 2차 판" 표시 ·
+> `<base>`/GA4 제거 같은 테스트용 손질.
+
+**"바꾼 것 말고는 안 바뀌었다"의 증거**
+- 라이브 `script.js` = 폰 확인을 통과한 `test/script-webp2.js`(헤더 6줄 제외)와 **차이 0줄. 완전히 동일**
+- 라이브 `index.html` 의 그림 참조 목록 = 테스트 판과 **완전히 동일**
+- 라이브 2파일의 변경 **46줄(23+2 쌍)이 전부 개구리 주소 줄.** 다른 줄은 하나도 안 건드려졌다
+- 테스트 잔재 **0건** — `t26` · `26글자 채우기` · `base href` · `script-webp2` · `WebP 2차 판` · `window.gtag=` 전부 0.
+  GA4 · `error-tracker.js` 는 그대로 살아 있음
+- `node --check` — `script.js`·`error-tracker.js`·`frog-reactions.js`·`video-quality.js`·`video-prefetch.js` **전부 통과**
+
+**로컬 실측 (라이브 루트 `index.html` 직접, 412×915, GA4 차단)**
+- **시작화면 깜빡임** `frog_4b.webp` → `frog_4a.webp` (둘 다 로드 성공) — `script.js:7` 살아 있음
+- **5단계 × 4표정 = 20장 전부** 로드 성공 + 전부 `.webp` 확인. 맛없는 표정 `frog_5_yuck.webp` 포함
+- **혀** 배경 `bg_2.webp` (1차에서 바꾼 것, 그대로 정상)
+- **발 위치** — `frog_3a` 가 떠 있을 때로 고정해서 쟀다: 클립 `left 98.44 · bottom 809.41 · 236.59×325.59`.
+  **2차 테스트 판·PNG 원판과 소수점까지 완전히 동일**
+- **세 모드** ABC(`bg_1.webp`) · abc(`bg_4.webp`) · ABc(`bg_5.webp`) — 깨진 그림 0장 · `assets/` 404 0건 · JS 에러 0건
+- **엔딩 정상** — 손흔들기 클립이 **1.27초에 떠서 계속 재생**되는 것을 100ms 간격으로 추적 확인
+  (`currentTime` 0.05 → 1.23, `paused:false`, 237px, opacity 1) → `frog_lastdance.mp4` **8.00/8.00초** →
+  `ALPHABET MASTER!!` → **PLAY AGAIN 1개**
+
+> 🚩 **또 하나 헛짚을 뻔한 것** — 처음엔 1.2초 시점을 **한 번만** 찍었는데 손흔들기 클립이 안 잡혔다.
+> 100ms 간격으로 추적해 보니 **1.27초에 뜬다.** 70ms 차이로 못 본 것이었다.
+> → 교훈: **한 시점만 찍어서 "안 나왔다"고 판단하지 말 것.** 뜨고 사라지는 것은 구간으로 추적해야 한다.
+
+**안 건드린 것**
+- **원본 PNG 그대로** — `assets/frog/images/` 에 `.png` 27장 전부 남아 있다. 되돌릴 때 주소만 `.png` 로 바꾸면 된다
+- **코드가 안 부르는 개구리 7장(1,804KB)** — `frog_base`·`blink`·`breathe`·`half`·`open`·`side`·`start_frog`.
+  `.webp` 도 안 만들었고, 라이브 3파일 어디에도 참조가 없음을 재확인했다
+- **`test/` 판 전부** (`current-webp1.html`·`current-webp2.html`·`script-webp2.js`·`current.html` 등)
+- **`style.css`·`frog-reactions.js`** — 변경 0건
+- `?v=` 갱신 안 함 — 확장자가 바뀌어 주소 자체가 다르다
+
+**남은 `.png` 참조 = 아이콘 4장뿐**
+`fruit_apple_icon.png`(21KB) · `back_arrow_gold.png` · `dino_silhouette.png` · `icon-192x192.png`
+→ **`assets/frog/`·`assets/bugs/`·`assets/ui/images/` 는 전부 0개.** 본게임 쪽 WebP 전환은 이것으로 끝났다.
+(퍼즐 쪽 `dino_spinosaurus` 2,425KB · `animal_raccoon` 527KB 는 `dino.html`·`animal.html` 소관이라 별건)
+
+**되돌리는 법**: `git revert <이 커밋>` 또는 백업태그 **`backup-before-webp2-20260826`**(원격에도 올림).
+원본 PNG 가 전부 남아 있어 주소만 되돌리면 즉시 원상복구된다.
