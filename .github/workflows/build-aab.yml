@@ -22,6 +22,22 @@ jobs:
       - name: Restore signing key from secret
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release-keystore.jks
 
+      # 비밀번호는 2026-08-26부터 build.gradle 에 안 적혀 있다(저장소가 Public).
+      # keystore.properties 는 .gitignore 라 CI 에는 없으므로 Secrets 로 여기서 만든다.
+      # ⚠️ 아래 두 Secret 이 비어 있으면 build.gradle 이 명확한 메시지와 함께 빌드를 멈춘다.
+      - name: Create keystore.properties from secrets
+        run: |
+          if [ -z "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "::error::Secret KEYSTORE_PASSWORD 가 비어 있습니다. GitHub → Settings → Secrets 에 등록하세요."
+            exit 1
+          fi
+          cat > keystore.properties <<EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=abc-frog
+          EOF
+          echo "keystore.properties 생성됨 (내용은 출력하지 않음)"
+
       - name: Create Gradle wrapper
         run: |
           gradle wrapper --gradle-version 8.11.1

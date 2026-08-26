@@ -4494,3 +4494,100 @@ f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.png'   // 시작화면 개구리
 > 이번에 **참조 0건인 것을 직접 확인**했지만 사장님이 주신 9장 목록에 없어서 손대지 않았다.
 > (`assets/images/` 폴더 자체가 옛 구조의 잔재로 보인다 — 지금 쓰는 그림은 전부 `assets/<주제>/images/` 아래에 있다.)
 > 다음에 정리할 때 같이 볼 것.
+
+---
+
+### 2026-08-26 — 🔐 **서명키 비밀번호 교체 + 코드에서 제거** · 아직 push 안 함
+
+**한 일**: `twa-project/app/build.gradle` 에 평문으로 박혀 있던 `abcfrog123` 을 지우고,
+**도장 파일의 비밀번호 자체를 32자 무작위로 바꿨다.** 이제 비밀번호는 저장소 밖 파일에서 읽는다.
+
+> ⛔ **도장 파일(`release-keystore.jks`)은 교체·재생성하지 않았다.** 인증서 지문이 그대로임을 확인했다
+> (SHA1 `D7:D4:…:68:29` / SHA256 `6F:DE:…:95:54` — CLAUDE.md 기록과 일치). **Play 업데이트는 그대로 된다.**
+
+#### 손대기 전에 드러난 것 3가지
+
+1. **도장 파일은 저장소 안에 없었다.** 실물은 `D:\1Game_projec\AAB, AAB_KEY\abc-frog-signing-key\release-keystore.jks` 하나뿐
+2. **2026-06-11 에 비번을 바꾸려다 만 흔적** — `_BACKUP_원본키_2026-06-11_비번교체전\` 폴더가 있는데
+   그 안의 원본과 당시 파일의 SHA256 이 **완전히 같았다** = 백업만 하고 실제로는 안 바꿨다
+3. **비번을 바꾸면 GitHub Actions 가 깨진다** — 워크플로가 `KEYSTORE_BASE64` 로 `.jks` 를 복원하고
+   비밀번호는 `build.gradle` 에 박힌 걸 썼다. **비번 Secret 이 아예 없었다.** → 워크플로도 같이 고쳤다
+
+#### 🚨 1차 시도 실패 — `-storepasswd` 가 형식을 몰래 바꾼다
+
+처음엔 `-storepasswd` → `-keypasswd` 순서로 돌렸는데 **두 번째에서 실패**했다.
+
+```
+java.lang.UnsupportedOperationException: -storetype이 PKCS12인 경우 -keypasswd 명령은 지원되지 않습니다.
+```
+
+**원인**: JDK 의 기본 저장소 형식이 PKCS12 라, `-storepasswd` 가 **JKS 를 PKCS12 로 조용히 변환**해 버린다.
+PKCS12 에는 키 비밀번호가 따로 없어(저장소 비번 = 키 비번) `-keypasswd` 자체가 없다.
+
+> 🚩 **더 나빴던 것 — 그때 새 비밀번호를 잃었다.** 스크립트가 비번을 *마지막에* 저장하도록 짜여 있어서,
+> 중간에 죽자 **저장소 비번만 알 수 없는 무작위 값으로 바뀐 채 남았다.**
+> 백업이 있어서 즉시 되돌렸고(SHA256 일치 확인), 피해는 없었다.
+> → **교훈: 되돌릴 수 없는 값은 쓰기 전에 먼저 저장한다.** 2차 시도는 이 순서를 뒤집었다.
+
+#### 2차 시도 — 사본에서 다 해보고 갈아끼우기
+
+사본으로 두 길을 비교했다.
+
+| | 형식 | 결과 |
+|---|---|---|
+| **길 A** `-storetype JKS` 명시 | JKS 유지 | storepass·keypass **둘 다 변경** · 옛 비번 완전 차단 ✅ |
+| 길 B PKCS12 로 넘어가게 둠 | PKCS12 로 변환 | storepass 만 변경. **옛 keypass 로도 개인키가 열린다**(헷갈림) ❌ |
+
+**길 A 채택.** 안전장치 3겹으로 다시 돌렸다.
+① 비밀번호를 keytool 부르기 **전에** 파일로 저장 ② 진짜 파일이 아니라 **사본**에서 작업
+③ 검사 6개를 **전부 통과했을 때만** 갈아끼움
+
+**검사 6개 전부 통과**
+- 새 비밀번호로 열린다 / 옛 비밀번호로는 안 열린다
+- 개인키를 꺼내 쓸 수 있다(= 서명 가능) / 옛 키 비밀번호로는 개인키를 못 쓴다
+- 지문 SHA1·SHA256 이 **CLAUDE.md 기록과 그대로 일치**
+
+파일 SHA256 은 `8b7e5305…` → `61f5a291…` 로 바뀌었다(**비번만 바뀌어도 파일은 달라지는 게 정상**).
+
+#### 바꾼 파일 3개 (전부 비밀정보 없음)
+
+| 파일 | 무엇 |
+|---|---|
+| `twa-project/app/build.gradle` | 평문 비번 2줄 삭제 → `keystore.properties` 에서 읽음. **파일이 없으면 `GradleException` 으로 즉시 중단**(조용히 서명 없이 빌드되면 나중에 Play 에서 거부당하므로) |
+| `.gitignore` | `keystore.properties` · `**/keystore.properties` 추가 |
+| `.github/workflows/build-aab.yml` | `Create keystore.properties from secrets` 단계 추가. Secret 이 비면 `::error::` 로 중단 |
+
+`twa-project/keystore.properties` 는 **만들었지만 커밋되지 않는다** — `git add` 를 강제해도 거부되는 것 확인.
+
+#### 확인
+
+- `keystore.properties` 의 비밀번호로 **도장이 열리고 서명까지 되는 것**을 keytool 로 직접 확인(= Gradle 이 할 일을 미리 해 본 것)
+- `build.gradle` 에 `abcfrog123` **0건**, 괄호 균형 OK, 파일 없을 때 중단 조건 성립 확인
+- 워크플로 YAML 파싱 OK(8단계), 새 단계가 키 복원 뒤·빌드 앞에 들어감
+- **⚠️ 진짜 Gradle 빌드는 확인 못 했다** — 이 PC 에 Android SDK·gradle 이 없다.
+  **검증은 GitHub Actions 를 돌려야만 가능**하고, 그러려면 push + Secret 등록이 먼저다
+
+#### 🔴 사장님이 하셔야 할 것 — GitHub Secrets 3개 (안 하면 다음 빌드가 실패한다)
+
+| Secret 이름 | 값 |
+|---|---|
+| `KEYSTORE_BASE64` | **덮어쓰기** — `_keystore\KEYSTORE_BASE64_new_20260826.txt` 내용 전체 |
+| `KEYSTORE_PASSWORD` | 새 비밀번호 |
+| `KEY_PASSWORD` | 새 비밀번호 (같은 값) |
+
+⚠️ **`KEYSTORE_BASE64` 를 안 바꾸면 안 된다** — CI 가 복원하는 `.jks` 는 옛 파일이라 새 비밀번호로 안 열린다.
+
+#### 보관 위치 (전부 저장소 밖)
+
+`D:\game 에셋 원본\abc frog 에셋 원본\_keystore\`
+- `release-keystore.jks.BEFORE-PWCHANGE-20260826` — 옛 비번(`abcfrog123`)으로 열리는 교체 전 판
+- `KEYSTORE_BASE64_new_20260826.txt` — GitHub Secret 에 넣을 값
+- `README_비밀번호_20260826.txt` — 새 비밀번호·별칭·지문·해야 할 일
+
+#### 남는 위험 (없앨 수 없는 것)
+
+**옛 커밋에는 `abcfrog123` 이 영원히 남는다.** 지우려면 이력을 다시 써야 하는데 커밋 번호가 전부 바뀌어
+지금까지의 백업태그가 다 어긋난다. **비밀번호를 바꿨으므로 그 값은 이미 쓸모없다** — 이것으로 충분하다.
+
+**되돌리는 법**: `git checkout -- .gitignore twa-project/app/build.gradle .github/workflows/build-aab.yml`
++ 도장 파일을 `_keystore\release-keystore.jks.BEFORE-PWCHANGE-20260826` 으로 되돌리기(옛 비번 복귀).

@@ -2,6 +2,45 @@ plugins {
     id 'com.android.application'
 }
 
+// ── 서명키 비밀번호 (2026-08-26) ──────────────────────────────────────────────
+// 예전에는 이 파일에 비밀번호가 그대로 적혀 있었다. 저장소가 Public 이라 누구나 볼 수 있었고,
+// 도장 파일(.jks)만 없을 뿐 방어가 한 겹뿐이었다. 이제 저장소 밖 파일에서 읽는다.
+//
+//   · 파일 위치 : twa-project/keystore.properties  (.gitignore 등록 — 절대 커밋되지 않는다)
+//   · 들어갈 내용 : storePassword / keyPassword / keyAlias
+//   · CI(GitHub Actions)는 이 파일이 없으므로 워크플로가 Secrets 로 만들어 준다
+//     (.github/workflows/build-aab.yml 의 "Create keystore.properties" 단계)
+//
+// ⚠️ 파일이 없으면 '조용히 서명 없이 빌드'되지 않고 여기서 바로 멈춘다.
+//    서명 안 된 AAB 가 만들어져 나중에 Play 에서 거부당하는 것이 훨씬 나쁘기 때문이다.
+def keystorePropsFile = rootProject.file('keystore.properties')
+if (!keystorePropsFile.exists()) {
+    throw new GradleException(
+        "\n" +
+        "=========================================================================\n" +
+        " 서명키 비밀번호 파일이 없습니다: twa-project/keystore.properties\n" +
+        "   (keystore.properties is missing - release signing cannot proceed)\n" +
+        "\n" +
+        " 이 파일은 비밀번호가 들어 있어 일부러 깃에 안 올립니다(.gitignore).\n" +
+        " 아래 3줄을 담아 twa-project/ 아래에 직접 만들어 주세요.\n" +
+        "\n" +
+        "   storePassword=<서명키 비밀번호>\n" +
+        "   keyPassword=<같은 비밀번호>\n" +
+        "   keyAlias=abc-frog\n" +
+        "\n" +
+        " 비밀번호를 잊었다면: D:\\game 에셋 원본\\abc frog 에셋 원본\\_keystore\\ 참고\n" +
+        " ⛔ 도장 파일(release-keystore.jks)은 절대 새로 만들지 마세요.\n" +
+        "    새로 만들면 Play 업데이트가 영구 차단됩니다.\n" +
+        "=========================================================================\n")
+}
+def keystoreProps = new Properties()
+keystorePropsFile.withInputStream { keystoreProps.load(it) }
+['storePassword', 'keyPassword', 'keyAlias'].each { k ->
+    if (!keystoreProps.getProperty(k)) {
+        throw new GradleException("keystore.properties 에 '${k}' 줄이 없습니다. (missing '${k}')")
+    }
+}
+
 android {
     namespace 'com.ggomzipapa.abcfrog'
     compileSdk 36
@@ -17,9 +56,9 @@ android {
     signingConfigs {
         release {
             storeFile file("release-keystore.jks")
-            storePassword "abcfrog123"
-            keyAlias "abc-frog"
-            keyPassword "abcfrog123"
+            storePassword keystoreProps.getProperty('storePassword')
+            keyAlias      keystoreProps.getProperty('keyAlias')
+            keyPassword   keystoreProps.getProperty('keyPassword')
         }
     }
 
