@@ -288,5 +288,103 @@ try {
   }
 } catch (e) {}
 </script>
+
+<!-- ★ [TEST 전용] 26글자 채우기 버튼 — test/current-ending-video.html 에서 그대로 가져왔다 (2026-08-26).
+     이 판이 고정 주소(/test/)를 받았으므로 엔딩 확인 수단도 같이 와야 한다.
+     ⚠ 라이브엔 없다. WebP 를 라이브에 반영할 때 이 블록은 가져가지 않는다. -->
+<!-- ★★★ [TEST 전용] 26글자 채우기 버튼 — 라이브엔 없다 ★★★ -->
+<style>
+#t26{position:fixed;left:10px;top:78px;z-index:99999;
+  padding:9px 13px;border:none;border-radius:10px;cursor:pointer;
+  font:700 14px/1.2 'Segoe UI',sans-serif;color:#fff;
+  background:#D500F9;box-shadow:0 3px 10px rgba(0,0,0,.35);
+  opacity:.3;pointer-events:none;transition:opacity .3s}
+#t26.on{opacity:1;pointer-events:auto}
+#t26:active{transform:scale(.93)}
+#t26note{position:fixed;left:10px;top:118px;z-index:99999;pointer-events:none;
+  background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 'Segoe UI',sans-serif;
+  padding:5px 9px;border-radius:7px;max-width:62vw;transition:opacity .5s}
+</style>
+<button id="t26" type="button">🏁 26글자 채우기</button>
+<div id="t26note">🖼️ <b>WebP 1차 판</b><br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>26글자 버튼은 게임이 시작되면 켜집니다</span></div>
+<script>
+(function(){
+  var btn  = document.getElementById('t26');
+  var note = document.getElementById('t26note');
+  var fired = false;                 // 엔딩이 이미 돌았는가
+
+  function say(html){ try{ if(note) note.innerHTML = html; }catch(e){} }
+
+  // ───── 막음 ② : stc()(엔딩)를 페이지당 한 번만 통과시킨다 ─────
+  // 게임 시작 절차의 snr() 과 버튼이 같은 순간에 걹쳐도 엔딩은 한 번만 돌게 한다.
+  // script.js 의 stc 는 전역 함수라 window.stc 를 바꾸면 pnt() 가 부를 때도 이게 불린다.
+  try{
+    if (typeof stc === 'function' && !stc.__t26){
+      var _stc = stc;
+      window.stc = function(){
+        if (fired) return;           // 두 번째 호출은 버린다
+        fired = true;
+        try{ btn.classList.remove('on'); }catch(e){}
+        say('엔딩 시작 🎉<br><span style="opacity:.8">0.3초 WELL DONE · 1.3초 MASTER · 1.5초 영상 · 2.2초 HOORAY</span>');
+        // 엔딩을 가리지 않게 버튼·안내를 치운다
+        setTimeout(function(){
+          try{ btn.style.display='none'; note.style.opacity='0'; }catch(e){}
+        }, 1800);
+        return _stc.apply(this, arguments);
+      };
+      window.stc.__t26 = 1;
+    }
+  }catch(e){}
+
+  // ───── 막음 ① : 게임이 완전히 시작된 뒤에만 눌린다 ─────
+  // gp 는 script.js 의 게임 상태다. 'playing' 이 되는 순간이 곳 시작 절차가 끝난 지점이다.
+  //   · abc · ABc : go() 의 500ms 타이머 안에서 'playing'
+  //   · ABC        : tut() 이 끝나는 약 6.8초 뒤에 'playing'
+  function ready(){
+    try{
+      if (typeof gp === 'undefined' || gp !== 'playing') return false;
+      if (typeof col === 'undefined' || typeof L === 'undefined') return false;
+      if (typeof snr !== 'function') return false;
+      return true;
+    }catch(e){ return false; }
+  }
+  setInterval(function(){
+    if (fired) return;
+    try{
+      if (ready()){
+        if (!btn.classList.contains('on')){
+          btn.classList.add('on');
+          say('누를 수 있습니다<br><span style="opacity:.8">누르면 바로 엔딩이 시작됩니다</span>');
+        }
+      } else {
+        btn.classList.remove('on');
+      }
+    }catch(e){}
+  }, 300);
+
+  // ───── 버튼 ─────
+  btn.addEventListener('click', function(){
+    if (fired) return;
+    if (!ready()){
+      say('아직 누를 수 없습니다<br><span style="opacity:.8">게임이 완전히 시작된 뒤에 켜집니다</span>');
+      return;
+    }
+    try{
+      // 26글자를 모은 상태로 만든다 (수집판·개구리 단계까지 실제와 같게)
+      var all = L.split('');
+      for (var i=0; i<all.length; i++){
+        col.add(all[i]);
+        var slot = document.getElementById('s' + all[i]);
+        if (slot) slot.classList.add('got');
+      }
+      try{ updateFrogStage(); }catch(e){}
+      ct = all[all.length-1];   // 마지막 글자를 방금 잡은 상태
+      snr();                    // → pnt() 가 null 을 돌려주면서 stc()(엔딩) 시작
+    }catch(e){
+      say('실패: ' + (e && e.message ? e.message : e));
+    }
+  });
+})();
+</script>
 </body>
 </html>

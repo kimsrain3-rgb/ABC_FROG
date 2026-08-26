@@ -4194,3 +4194,25 @@ setTimeout(()=>{
 
 **다음** — 폰 확인(`test/current-webp1.html`) → 문제 없으면 라이브 `index.html`·`script.js`·`style.css` 에
 같은 치환을 반영. 그 뒤 2차(개구리 20장 등) 검토.
+
+#### 🔁 고정 테스트 주소(`/test/`)를 WebP 판으로 돌림 (같은 날 2차)
+
+**한 일**: `test/index.html` 의 `location.replace('current.html?b=…')` → **`current-webp1.html`**.
+이제 평소 쓰던 **https://kimsrain3-rgb.github.io/ABC_FROG/test/** 와 폰 홈 화면 아이콘이 WebP 판을 연다.
+(엔딩 영상은 8/25 에 라이브 반영이 끝나 그 판이 고정 주소를 계속 잡고 있을 이유가 없어졌다.)
+
+- **앞 판들은 하나도 안 지웠다** — `current.html`(엔딩 영상) · `current-ending-video.html` · `current-ending26.html` ·
+  `current-lazyimg.html` 등 전부 그대로. 주소를 직접 치면 열린다. **밀려난 것은 '기본 주소'뿐이다**
+- **🏁 26글자 채우기 버튼을 WebP 판으로 옮겨 왔다** — `current-ending-video.html` 342\~435줄을 **그대로** 복사(94줄).
+  고정 주소를 받은 판이 엔딩 확인 수단도 같이 가져야 하기 때문. 원본 파일에서는 안 지웠다
+- 안내 쪽지 첫 문구만 바꿨다 → **`🖼️ WebP 1차 판 / 이 줄이 안 보이면 옛날 화면입니다`**.
+  옛 캐시가 남았는지를 폰에서 한눈에 가리려는 표시다(2026-08-24 왕관 `+8px ↓` 표시와 같은 목적)
+
+> ⚠️ **라이브로 옮길 때 이 버튼 블록은 가져가지 않는다.** `current-webp1.html` 안에 주석으로도 박아 뒀다.
+
+**검증 (로컬)**
+- `/test/` → `current-webp1.html?b=…` 로 이동 확인. 제목 `ABC Frog (TEST WebP 1차)`
+- 시작화면에 **`🖼️ WebP 1차 판`** 쪽지 표시 · 버튼은 잠김(흐림)
+- abc 모드 진입 → 버튼 켜짐 → 눌렀더니 **엔딩 정상**: 손흔들기 클립 → `frog_lastdance.mp4` **8.00/8.00초** →
+  `ALPHABET MASTER!!` → **PLAY AGAIN 1개**(중복 없음). 버튼은 스스로 `display:none` 이 되어 엔딩을 안 가린다
+- 라이브 `index.html`·`script.js`·`style.css` 여전히 **변경 0건**
