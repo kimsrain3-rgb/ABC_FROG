@@ -57,9 +57,9 @@ const SND_SRC={
   fly1:'assets/bugs/sounds/fly_buzz1.mp3',
   fly2:'assets/bugs/sounds/fly_buzz2.mp3',
   frog:'assets/frog/sounds/frog_tongue.mp3',
-  // ?v=20260815 = 2026-08-15 에 bgm.mp3 를 더 가벼운 파일로 교체(1,413KB→740KB).
+  // ?v=20260827 = 2026-08-27 에 bgm.mp3 를 모노 48k 로 교체(740KB→369KB). 그전 ?v=20260815 는 1,413KB→740KB.
   // 파일명이 같으면 폰에 남은 옛 파일이 그대로 쓰이므로 날짜표를 붙여 새로 받게 한다.
-  bgm:'assets/game/sounds/bgm.mp3?v=20260815',
+  bgm:'assets/game/sounds/bgm.mp3?v=20260827',
   wooweck:'assets/game/sounds/wooweck.mp3',
   bf1:'assets/bugs/sounds/butterfly_voice1.mp3',
   bf2:'assets/bugs/sounds/butterfly_voice2.mp3'
