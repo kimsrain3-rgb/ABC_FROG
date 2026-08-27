@@ -4634,3 +4634,82 @@ PKCS12 에는 키 비밀번호가 따로 없어(저장소 비번 = 키 비번) `
 > 검증 수단이 실제 사용 환경과 달랐다. 주소·프로토콜 변경은 **반드시 실제 앱**에서 확인할 것.
 
 > ⚠️ **`git revert 0df1c3c` 로 CNAME 이 되살아난다.** HTTPS 강제를 켜기 전에는 되돌리지 말 것.
+
+---
+
+### 2026-08-27 — 🌐 **앱이 여는 주소를 자체 도메인(abcfrog.kr)으로 변경** · 커밋 `30ad7ed` · 백업태그 `backup-before-domain-url-20260827`
+
+**무엇을**: `MainActivity.java:35` 의 `GAME_URL` 한 줄.
+
+```
+전: https://kimsrain3-rgb.github.io/ABC_FROG/
+후: https://abcfrog.kr/
+```
+
+**왜**: 앱이 옛 주소를 보고 있으면 도메인을 붙이는 순간 **GitHub 이 301 로 넘기고**, 그 301 이 8/26 사고의 통로였다.
+앱이 처음부터 새 주소를 보면 **301 자체가 없어진다.** 앞으로 서버를 옮길 때도 앱 심사 없이 DNS 만 바꾸면 된다.
+
+**같이 확인한 것 — 옛 주소가 박힌 곳 전수 조사**
+
+| 파일 | 건수 | 판단 |
+|---|---|---|
+| `MainActivity.java` | 1 | ✅ 고침 |
+| `AndroidManifest.xml` · `build.gradle` · `gradle.properties` | **0** | 앱 소스에 남은 주소 없음 |
+| `manifest.json` | 0 (주소는 없음) | 단 `start_url`·`scope` 가 `/ABC_FROG/` — **아래 참고** |
+| `.well-known/assetlinks.json` | 0 | 주소가 안 들어감 (지문만) |
+| `CLAUDE.md` 2곳 · `docs/CHANGELOG.md` 23곳 · `.claude/settings.local.json` 5곳 | 30 | **문서·설정이라 앱 동작과 무관.** 고칠지는 사장님 판단 |
+
+**⚠️ 지금 `abcfrog.kr` 은 404 다** — 8/26 에 `CNAME` 을 지웠기 때문. 실측:
+
+```
+https://abcfrog.kr/                      → 404
+http://abcfrog.kr/                       → 404
+https://kimsrain3-rgb.github.io/ABC_FROG/ → 200  (프로덕션 vc10 은 여기를 본다 — 정상)
+```
+
+즉 **이 코드로 지금 AAB 를 만들면 앱은 오프라인 안내화면만 뜬다.** 심사에 내면 거부된다.
+그래서 **버전을 안 올렸다**(versionCode 11 / 1.1.1 그대로). 코드만 미리 넣어 둔 상태.
+
+**빌드·제출 전 순서 (이 순서를 지켜야 한다)**
+
+1. GitHub → Settings → Pages 에 `abcfrog.kr` 등록 → 인증서 발급 대기
+2. **"Enforce HTTPS" 가 켜진 것을 먼저 확인** ← 8/26 에 빠졌던 단계
+3. `https://abcfrog.kr/` 이 **200** 인지 확인
+4. 옛 주소의 301 목적지가 **`https://`** 인지 확인 — ⚠️ **이때 프로덕션 vc10 이 여전히 옛 주소를 본다.** 여기가 http 면 지금 쓰는 아이들 앱이 또 멈춘다
+5. 그 다음 versionCode 12 로 빌드 → 프리런치 보고서 → 심사
+
+> ⚠️ **노션에 적힌 "심사가 끝난 뒤에 도메인을 붙인다" 는 순서가 거꾸로다.**
+> 도메인이 안 붙은 채로 심사에 내면 심사자 화면에도 "인터넷 연결을 확인해 주세요" 만 뜬다.
+> **도메인이 먼저 살아 있어야 한다.**
+
+**🔍 덤으로 발견한 것 ① — `assetlinks.json` 은 지금 아무 데서도 안 열린다**
+
+```
+https://kimsrain3-rgb.github.io/.well-known/assetlinks.json          → 404
+https://kimsrain3-rgb.github.io/ABC_FROG/.well-known/assetlinks.json → 404
+```
+
+원인: 저장소에 **`.nojekyll` 파일이 없어서** GitHub Pages 가 점(`.`)으로 시작하는 폴더를 통째로 건너뛴다.
+파일은 저장소에 **커밋돼 있는데 서빙만 안 되고 있었다.**
+
+**영향 없음** — 이 앱은 **TWA 가 아니라 순수 WebView** 라 `assetlinks.json` 을 쓰지 않는다.
+(TWA 는 "이 도메인이 이 앱 것"임을 증명해야 주소창이 사라지는데, WebView 는 애초에 주소창이 없다.)
+`CLAUDE.md` 에 "GitHub Pages 서빙" 이라고 적혀 있던 것은 **사실이 아니었다.**
+
+⭐ **다만 도메인을 붙이면 상황이 좋아진다.** 지금은 저장소가 `/ABC_FROG/` 아래 있어 도메인 루트가 아니지만,
+`abcfrog.kr` 을 붙이면 저장소가 곧 루트가 되어 `https://abcfrog.kr/.well-known/assetlinks.json` 이 **규격에 맞는 자리**가 된다.
+쓸 일이 생기면(TWA 전환·앱 링크) `.nojekyll` 빈 파일 하나만 만들면 된다.
+
+**🔍 덤으로 발견한 것 ② — `manifest.json` 의 `start_url`·`scope` 가 `/ABC_FROG/` 다**
+
+새 도메인에서는 게임이 `/` 에 있으므로 이 값이 어긋난다.
+**앱(WebView)에는 영향이 0** — `manifest.json` 은 브라우저의 "홈 화면에 추가" 전용이다.
+영향받는 것은 **폰 테스트용으로 홈 화면에 추가해 둔 아이콘**뿐. 고칠지는 사장님 판단.
+
+**안 한 것 (일부러)**
+
+- `CNAME` 파일 다시 만들기 — 8/26 사고 재발 방지
+- `versionCode`/`versionName` 올리기 — 첫화면 에셋 내장까지 끝난 뒤 한 번에
+
+**되돌리려면**: `git revert 30ad7ed` 또는 백업태그 `backup-before-domain-url-20260827`
+(라이브 게임 파일이 아니라 앱 소스라 **아이들 화면에는 아무 영향이 없다.** 다음 AAB 빌드부터 효력)

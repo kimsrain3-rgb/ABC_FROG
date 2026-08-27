@@ -93,7 +93,7 @@ ABC_FROG/
 - **개발자 계정 ID**: 8921467846864051720
 - **개인정보처리방침**: https://kimsrain3-rgb.github.io/ABC_FROG/privacy-policy.html
 - **연락처**: ccomzpapa@naver.com
-- **assetlinks.json**: .well-known/assetlinks.json (GitHub Pages 서빙)
+- **assetlinks.json**: 저장소엔 있으나 **웹에서는 404 — 서빙 안 되고 있다**(2026-08-27 실측 정정. `.nojekyll` 이 없어 GitHub Pages 가 점(`.`) 폴더를 건너뜀). **영향 없음 — 이 앱은 TWA 가 아니라 순수 WebView 라 안 쓴다.** 쓸 일이 생기면 `.nojekyll` 빈 파일 하나면 해결
 
 ## 알려진 이슈
 - 파리 경계 처리 — 화면 밖으로 나가는 버그 반복 발생 이력
@@ -108,7 +108,9 @@ ABC_FROG/
 - [ ] 🟢 `buildPuzzle` 비동기 race(잠재): `_im.onload`가 전역 `wpCurrent` 참조 → 빌드 겹치면 엉뚱한 과일. 실플레이 미발생, 우선순위 낮음. (※ 퍼즐이 '깨진 이미지'면 거의 항상 **로컬 테스트서버 꺼짐**이 원인, 코드버그 아님)
 - [ ] 🟡📊 **공룡·동물도 완성만 알고 중간을 모름** — 부모가 받는 신호가 `*_done` 하나뿐이라 **다음 퍼즐 시작·다시하기를 알 수 없다**(`script.js:1882` 주석 참고. 그래서 뒤로 버튼 밝기를 0.5초 폴링으로 때우고 있다). 별도 과제
 - [ ] 🔴📦 **vc11 프리런치 보고서 확인** — 2026-08-13 **심사 제출 완료(검토 시작까지 누름)**, 결과 대기 중. 프리런치 보고서는 심사와 별개로 생성되므로 **나오는 대로 크래시·ANR 확인**할 것. 크래시 있으면 롤아웃 중지 또는 vc12 준비. 통과 후 실폰 3건 확인(30분 후 복귀 시 갱신 / 비행기모드 안내화면 / 글자크기 최대에서 공룡 이름)
-- [ ] 🔴🔐 **서명키 비밀번호 교체 — 코드 작업은 끝, 사장님 몫만 남음**(2026-08-26, **아직 push 안 함**). 비번을 32자 무작위로 바꾸고 `build.gradle` 평문을 지웠다(→`keystore.properties`, gitignore). ⛔ 도장 파일은 교체 안 함 — **지문 SHA1/SHA256 이 그대로임을 확인**했다. ⚠️ **`-storepasswd` 는 JKS 를 PKCS12 로 몰래 바꿔 `-keypasswd` 를 못 쓰게 만든다 → `-storetype JKS` 를 반드시 명시할 것.** ⚠️ **Android SDK 가 없어 실제 Gradle 빌드는 미검증** — GitHub Actions 를 돌려야 확인된다. 🔴 **남은 일 = GitHub Secrets 3개**(`KEYSTORE_BASE64` **덮어쓰기** · `KEYSTORE_PASSWORD` · `KEY_PASSWORD`). 안 하면 다음 AAB 빌드가 실패한다. 값·비번·백업 = `D:\game 에셋 원본bc frog 에셋 원본\_keystore\`. 자세한 건 CHANGELOG 2026-08-26
+- [x] ✅🔐 ~~**서명키 비밀번호 교체**~~ — **끝났다**(2026-08-26 완료, 2026-08-27 실물 확인). 푸시 완료(`fc8829e`) · GitHub Secrets 3개 등록 완료 · **Build AAB #18 성공**으로 검증됨. 아래는 기록용.
+- [ ] 🔴🌐 **vc12 빌드 전 도메인 순서 — 어기면 8/26 사고 재발**(2026-08-27). 앱 주소를 `https://abcfrog.kr/` 로 바꿔 뒀다(커밋 `30ad7ed`, 백업태그 `backup-before-domain-url-20260827`). 앱 소스에 옛 주소 **0곳**. ⚠️ **지금 `abcfrog.kr` 은 404 다**(CNAME 없음) — 이 상태로 AAB 를 만들면 앱이 오프라인 안내화면만 뜬다. 그래서 **versionCode 는 일부러 11 그대로 뒀다.** 🔴 **빌드 전 순서 = ①Pages 에 도메인 등록 → ②Enforce HTTPS 켜짐 확인 → ③`abcfrog.kr` 200 확인 → ④옛 주소 301 목적지가 `https://` 인지 확인(프로덕션 vc10 이 아직 옛 주소를 본다) → ⑤그 다음 vc12 빌드.** ⚠️ 노션의 "심사 끝난 뒤 도메인을 붙인다"는 **순서가 거꾸로다** — 도메인이 먼저 살아 있어야 심사자 화면이 안 깨진다. ※ `manifest.json` 의 `start_url`·`scope` 가 `/ABC_FROG/` 라 새 도메인과 어긋나지만 **앱 영향 0**(브라우저 "홈 화면에 추가" 전용). 자세한 건 CHANGELOG 2026-08-27
+  - (기록) 서명키 상세: 비번을 32자 무작위로 바꾸고 `build.gradle` 평문을 지웠다(→`keystore.properties`, gitignore). ⛔ 도장 파일은 교체 안 함 — **지문 SHA1/SHA256 이 그대로임을 확인**했다. ⚠️ **`-storepasswd` 는 JKS 를 PKCS12 로 몰래 바꿔 `-keypasswd` 를 못 쓰게 만든다 → `-storetype JKS` 를 반드시 명시할 것.** ✅ **GitHub Secrets 3개**(`KEYSTORE_BASE64`·`KEYSTORE_PASSWORD`·`KEY_PASSWORD`) 등록 완료, Build AAB #18 로 실제 빌드까지 통과. 값·비번·백업 = `D:\game 에셋 원본bc frog 에셋 원본\_keystore\`. 자세한 건 CHANGELOG 2026-08-26
 - [ ] 🔵 refactor 브랜치(`data-word-fruits.js` 데이터 분리) main 병합 — 검증 완료, always-fresh 방식과 정합 확인 후 머지
 - [ ] 🟡🎨 **동물 퍼즐 너구리 — 에셋 재작업 필요 (366×652 → 최소 1236×2214)**. ⚠️ **용량 문제가 아니다**(2026-08-19 정정). 화면에는 412×734로 표시되는데 원본이 366×652라 **확대되어 흐리다**(다른 동물은 941×1672). 알파 채널도 있지만 **투명 픽셀이 0개**라 아무 일도 안 한다. 압축·JPG화로는 해결되지 않는다 — **사장님이 새로 그려 주셔야 한다.** (옛 기록: "JPG화로 용량↓"는 틀린 진단이었음)
   - ※ 동물 퍼즐 시즌1 10종은 **2026-06-26 본게임 통합·실유저 공개 완료**(커밋 `7c9a46b`) — 완료분이라 여기 아닌 CHANGELOG 참조.
