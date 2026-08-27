@@ -32,7 +32,10 @@ public class MainActivity extends Activity {
     private WebView webView;
     private ReviewManager reviewManager;
     private ReviewInfo reviewInfo;
-    private static final String GAME_URL = "https://kimsrain3-rgb.github.io/ABC_FROG/";
+    // 게임 주소 — 자체 도메인으로 이사 (2026-08-27, vc12 예정)
+    // ⚠️ 빌드·제출 전에 https://abcfrog.kr/ 이 200 을 주는지 반드시 확인할 것.
+    //    저장소에 CNAME 파일이 없으면 abcfrog.kr 은 404 다 → 앱은 오프라인 안내화면만 뜬다.
+    private static final String GAME_URL = "https://abcfrog.kr/";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
