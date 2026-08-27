@@ -133,7 +133,8 @@ var CUR=0;
 var SND_BASE='../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(word_*)
 var ABC_BASE='../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
 /* ── 소리 캐시 무력화(새로고침 꼬리표) ──
-   페이지 열 때 한 번 버전을 정해 모든 mp3 뒤에 ?v=... 를 붙인다.
+   페이지 열 때 한 번 버전을 정해 mp3 뒤에 ?v=... 를 붙인다.
+   ⚠ 단 배경음악(bgm.mp3)은 여기서 빠졌다(2026-08-27) — 본게임·퍼즐과 주소를 맞춰 캐시를 공유하려고. 아래 233줄 참고.
    → 앱을 껐다 켤 때마다(=매 페이지 로드) 새 주소가 되어 폰이 무조건 최신 소리를 받음.
    한 세션 안에선 같은 버전이라 재다운로드 없음. (소리 파일을 같은 이름으로 교체해도 즉시 반영) */
 var SND_VER='?v='+Date.now();
@@ -230,7 +231,10 @@ function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(
    파닉스는 음가(스·애·트)·발음(샛!)이 또렷해야 하는 학습 게임이라 볼륨을 아주 은은하게(0.13).
    자동재생 정책 때문에 시작하자마자가 아니라 첫 글자 터치/드래그 순간(startBGM)에 재생 */
 var bgm=null,bgmStarted=false,_bgmWasPlaying=false;
-try{ bgm=new Audio('../assets/game/sounds/bgm.mp3'+SND_VER); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
+// ⚠ 배경음악만 SND_VER 를 안 쓴다 — 본게임·동물·공룡과 "같은 주소" 여야 캐시를 공유해 한 번만 받는다.
+//   SND_VER 는 열 때마다 값이 달라져(Date.now) 파닉스를 열 때마다 369KB 를 새로 받게 만들었다(2026-08-27 수정).
+//   ★ bgm.mp3 를 같은 이름으로 교체한 날엔 이 날짜를 script.js:62 · animal.html · dino.html 과 함께 바꿀 것.
+try{ bgm=new Audio('../assets/game/sounds/bgm.mp3?v=20260827'); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
 function startBGM(){ if(SILENT||bgmStarted||!bgm) return; bgmStarted=true;
   try{ var p=bgm.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
 function _pauseAllSound(){                        // 홈버튼/멀티태스킹/화면끔 → 소리 정지(WebView서 앱 닫아도 BGM 계속 나오는 문제 방지)
