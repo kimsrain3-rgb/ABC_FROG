@@ -132,17 +132,28 @@ var CUR=0;
    글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sit.mp3 */
 var SND_BASE='../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(word_*)
 var ABC_BASE='../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
-/* ── 소리 캐시 무력화(새로고침 꼬리표) ──
-   페이지 열 때 한 번 버전을 정해 mp3 뒤에 ?v=... 를 붙인다.
-   ⚠ 단 배경음악(bgm.mp3)은 여기서 빠졌다(2026-08-27) — 본게임·퍼즐과 주소를 맞춰 캐시를 공유하려고. 아래 '배경음악' 블록 참고.
-   → 앱을 껐다 켤 때마다(=매 페이지 로드) 새 주소가 되어 폰이 무조건 최신 소리를 받음.
-   한 세션 안에선 같은 버전이라 재다운로드 없음. (소리 파일을 같은 이름으로 교체해도 즉시 반영) */
-var SND_VER='?v='+Date.now();
+/* ── 소리 캐시 꼬리표 ──
+   모든 mp3(음가 phoneme_* · 단어 word_* · 글자이름 letter_*) 뒤에 ?v=... 를 붙인다.
+   배경음악 bgm.mp3 도 같은 번호를 쓴다 — 아래 '배경음악' 블록 참고.
+
+   ★ 2026-08-27 부터 '날짜 상수'다. 그 전엔 `'?v='+Date.now()` 라 페이지를 열 때마다
+     주소가 달라져 캐시가 원리적으로 못 들었다 — 파닉스를 열 때마다 소리를 통째로
+     다시 받고 있었다(약 570KB/회). 세트 1(satpin)은 소리가 확정되고 라이브 배포까지
+     끝나 더 손볼 계획이 없어 고정으로 바꿨다.
+
+   ★★ 소리 파일을 "같은 이름으로" 갈아끼운 날엔 이 날짜를 반드시 바꿀 것.
+      안 바꾸면 폰에 남은 옛 소리가 계속 쓰인다(CLAUDE.md 배포/캐시 규칙 2).
+      · 새 세트(2·3·4)처럼 파일 이름이 새것이면 주소가 이미 다르므로 갱신 불필요.
+      · bgm.mp3 를 갈아끼운 날엔 여기 말고 script.js:62 · animal.html · dino.html 도 같이 바꿀 것.
+   ※ 영상은 아래 VID_VER 가 따로 관리한다. */
+var SND_VER='?v=20260827';
 /* ── 영상: assets/phonics/videos/sit_dog.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../assets/phonics/videos/';
 /* ── 영상 캐시 꼬리표 ──
    영상을 "같은 파일명으로 교체"하면 폰이 옛 영상을 계속 쓴다(CLAUDE.md 배포/캐시 규칙).
-   소리(SND_VER)처럼 매번 새로 받게 하면 편당 1.7MB라 낭비 → 날짜 상수로 둔다.
+   편당 1.7MB라 매번 새로 받게 하면 낭비 → 날짜 상수로 둔다.
+   (소리 SND_VER 도 2026-08-27 부터 같은 방식이 됐다. 다만 날짜는 서로 따로 움직인다 —
+    소리를 바꾼 날과 영상을 바꾼 날이 다르기 때문.)
    ★ 영상 파일을 갈아끼운 날엔 이 날짜를 반드시 바꿀 것. 그날 한 번만 새로 받고 이후엔 정상 캐시. */
 var VID_VER='?v=20260811';   // 2026-08-11 pan_cat.mp4 를 같은 이름으로 교체(그림체 통일) → 날짜 갱신
 /* 영상 화면 위치·크기 — 영상마다 인물·동물이 잡힌 크기가 달라 따로 맞춤.
@@ -231,8 +242,9 @@ function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(
    파닉스는 음가(스·애·트)·발음(샛!)이 또렷해야 하는 학습 게임이라 볼륨을 아주 은은하게(0.13).
    자동재생 정책 때문에 시작하자마자가 아니라 첫 글자 터치/드래그 순간(startBGM)에 재생 */
 var bgm=null,bgmStarted=false,_bgmWasPlaying=false;
-// ⚠ 배경음악만 SND_VER 를 안 쓴다 — 본게임·동물·공룡과 "같은 주소" 여야 캐시를 공유해 한 번만 받는다.
-//   SND_VER 는 열 때마다 값이 달라져(Date.now) 파닉스를 열 때마다 369KB 를 새로 받게 만들었다(2026-08-27 수정).
+// ⚠ 배경음악만 SND_VER 를 안 쓰고 날짜를 직접 적는다 — 본게임·동물·공룡과 "같은 주소" 여야
+//   캐시를 공유해 한 번만 받기 때문이다. 지금은 SND_VER 와 값이 같지만 뜻이 다르다:
+//     SND_VER  = 파닉스 소리를 갈아끼운 날 · 아래 날짜 = bgm.mp3 를 갈아끼운 날. 따로 움직인다.
 //   ★ bgm.mp3 를 같은 이름으로 교체한 날엔 이 날짜를 script.js:62 · animal.html · dino.html 과 함께 바꿀 것.
 try{ bgm=new Audio('../assets/game/sounds/bgm.mp3?v=20260827'); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
 function startBGM(){ if(SILENT||bgmStarted||!bgm) return; bgmStarted=true;
