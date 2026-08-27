@@ -38,6 +38,22 @@ jobs:
           EOF
           echo "keystore.properties 생성됨 (내용은 출력하지 않음)"
 
+      # 첫 화면 + 파리잡기를 앱 안에 담는다 (B-3, 2026-08-27).
+      # 사본을 저장소에 커밋하지 않고 여기서 만든다 — 같은 파일이 두 벌이 되는 것을 막고,
+      # 항상 "이 커밋의 원본"이 담기므로 사본이 낡을 일이 없다.
+      # ⚠️ 이 단계가 실패하면 빌드를 멈춘다. 조용히 빠지면 '앱에 아무것도 안 담긴 AAB'가
+      #    만들어지는데, 겉으로는 멀쩡해 보여서(인터넷 있으면 똑같이 동작) 아무도 못 알아챈다.
+      - name: Bake web assets into the app
+        working-directory: .
+        run: |
+          bash twa-project/bake-web-assets.sh
+          N=$(find twa-project/app/src/main/assets/web -type f | wc -l)
+          echo "담긴 파일 $N 개"
+          if [ "$N" -lt 100 ]; then
+            echo "::error::앱에 담긴 파일이 $N 개뿐입니다(정상 135개 안팎). bake-web-assets.sh 를 확인하세요."
+            exit 1
+          fi
+
       - name: Create Gradle wrapper
         run: |
           gradle wrapper --gradle-version 8.11.1

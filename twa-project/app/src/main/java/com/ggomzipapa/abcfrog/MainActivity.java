@@ -1,7 +1,12 @@
 package com.ggomzipapa.abcfrog;
 
 import android.app.Activity;
+import android.content.Context;
 import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -16,6 +21,7 @@ import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -23,6 +29,16 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.android.play.core.review.ReviewInfo;
 import com.google.android.play.core.review.ReviewManager;
@@ -116,10 +132,165 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return false;
             }
+
+            // ═══ 앱에 담은 사본 먼저 쓰기 (B-3, 2026-08-27) ═══
+            // 웹뷰가 파일을 하나 달라고 할 때마다 여기를 지나간다.
+            //   앱에 있으면 → 앱 것을 준다 (인터넷이 없어도 열리고, 있어도 훨씬 빠르다)
+            //   앱에 없으면 → null 을 돌려준다 = 지금까지처럼 인터넷에서 받는다
+            // 어디서 걸려 넘어져도 null 로 빠져나가므로 "지금보다 나빠지는" 경우는 없다.
+            //
+            // ⚠ 이 함수는 화면 그리는 스레드가 아닌 곳에서 불린다. UI 를 건드리면 안 된다.
+            @Override
+            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                return localCopyFor(request);
+            }
         });
 
         webView.setWebChromeClient(new WebChromeClient());
         webView.setBackgroundColor(Color.parseColor("#4CAF50"));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 앱에 담은 웹 파일 (B-3, 2026-08-27) — app/src/main/assets/web/ 아래
+    //
+    // [무엇을 담았나] 첫 화면 + 파리잡기에 필요한 것만 135개 4.3MB.
+    //   담는 목록은 twa-project/bake-web-assets.sh 에 있고, 그 스크립트를 다시 돌리면 갱신된다.
+    //   퍼즐(과일·동물·공룡)·파닉스·영상은 일부러 안 담았다 → 그것들은 인터넷이 있어야 한다.
+    //
+    // [규칙이 둘로 나뉜다 — 중요]
+    //   ① 그림·소리 : 언제나 앱 것이 먼저다. 빠르고, 인터넷이 없어도 돈다.
+    //        낡을 걱정은 캐시 번호가 막는다. 코드가 `bgm.mp3?v=20260827` 처럼 번호를 붙여 부르는데,
+    //        웹에서 파일을 갈아끼우고 번호를 올리면 앱에 적힌 번호(web/BAKED.txt)와 안 맞는다.
+    //        그러면 앱은 자기 사본을 버리고 인터넷 것을 받는다. → 캐시 번호 = 비상 스위치
+    //        ⚠ 그래서 앱에 담은 그림·소리를 "같은 이름으로" 바꿀 땐 반드시 ?v= 를 올리거나
+    //          파일명을 바꿔야 한다. 안 그러면 앱을 새로 낼 때까지 옛 파일이 쓰인다.
+    //
+    //   ② 코드 6개(index.html·script.js·style.css·error-tracker.js·frog-reactions.js·video-quality.js)
+    //        : 인터넷이 되면 인터넷 것을 쓴다. 앱 것은 인터넷이 없을 때만 꺼내는 구명보트다.
+    //        이유 = 이 프로젝트의 불변 규칙 "푸시하면 유저가 반드시 최신을 받는다"(CLAUDE.md 배포/캐시 규칙 1).
+    //        코드까지 앱 것으로 고정하면, 급한 버그를 고쳐도 심사(3~7일) 전엔 아이들에게 못 간다.
+    //        (2026-08-26 도메인 사고 때 몇 분 만에 되돌릴 수 있었던 것이 바로 이 성질 덕이다.)
+    // ═══════════════════════════════════════════════════════════════════════
+    private static final Set<String> CODE_FILES = new HashSet<>(Arrays.asList(
+            "index.html", "script.js", "style.css",
+            "error-tracker.js", "frog-reactions.js", "video-quality.js"));
+
+    private static final Set<String> OUR_HOSTS = new HashSet<>(Arrays.asList(
+            "abcfrog.kr", "www.abcfrog.kr", "kimsrain3-rgb.github.io"));
+
+    private Map<String, String> bakedVer;      // 경로 → 앱에 담을 당시의 캐시 번호 (web/BAKED.txt)
+
+    private synchronized Map<String, String> bakedVer() {
+        if (bakedVer != null) return bakedVer;
+        Map<String, String> m = new HashMap<>();
+        BufferedReader r = null;
+        try {
+            r = new BufferedReader(new InputStreamReader(getAssets().open("web/BAKED.txt")));
+            String line;
+            while ((line = r.readLine()) != null) {
+                int at = line.lastIndexOf(" v=");
+                if (at > 0) m.put(line.substring(0, at).trim(), line.substring(at + 3).trim());
+            }
+        } catch (Exception e) {
+            // 목록을 못 읽으면 빈 채로 둔다 → 번호가 붙은 요청은 전부 인터넷으로 (안전한 쪽)
+        } finally {
+            try { if (r != null) r.close(); } catch (Exception e) { }
+        }
+        bakedVer = m;
+        return m;
+    }
+
+    // 인터넷이 실제로 되는가. 모르겠으면 '된다'로 본다 = 지금과 똑같은 동작.
+    private boolean isOnline() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) return true;
+            Network n = cm.getActiveNetwork();
+            if (n == null) return false;
+            NetworkCapabilities c = cm.getNetworkCapabilities(n);
+            if (c == null) return false;
+            // VALIDATED 까지 봐야 '와이파이는 잡혔는데 인터넷은 안 되는' 경우를 거른다
+            return c.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    && c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    private static String mimeOf(String p) {
+        String s = p.toLowerCase(Locale.US);
+        if (s.endsWith(".html")) return "text/html";
+        if (s.endsWith(".js"))   return "application/javascript";
+        if (s.endsWith(".css"))  return "text/css";
+        if (s.endsWith(".json")) return "application/json";
+        if (s.endsWith(".svg"))  return "image/svg+xml";
+        if (s.endsWith(".webp")) return "image/webp";
+        if (s.endsWith(".png"))  return "image/png";
+        if (s.endsWith(".jpg") || s.endsWith(".jpeg")) return "image/jpeg";
+        if (s.endsWith(".mp3"))  return "audio/mpeg";
+        if (s.endsWith(".mp4"))  return "video/mp4";
+        if (s.endsWith(".webm")) return "video/webm";
+        return "application/octet-stream";
+    }
+
+    private static boolean isText(String mime) {
+        return mime.startsWith("text/") || mime.equals("application/javascript")
+                || mime.equals("application/json") || mime.equals("image/svg+xml");
+    }
+
+    private WebResourceResponse localCopyFor(WebResourceRequest request) {
+        try {
+            if (request == null) return null;
+            if (!"GET".equalsIgnoreCase(request.getMethod())) return null;
+
+            Uri u = request.getUrl();
+            if (u == null) return null;
+            String host = u.getHost();
+            if (host == null || !OUR_HOSTS.contains(host.toLowerCase(Locale.US))) return null;
+
+            String path = u.getPath();
+            if (path == null) return null;
+            // 옛 주소(github.io)는 /ABC_FROG/ 아래에 있다 — 접두사를 떼어 새 주소와 같은 모양으로
+            if (path.startsWith("/ABC_FROG/")) path = path.substring("/ABC_FROG".length());
+            if (path.startsWith("/")) path = path.substring(1);
+            if (path.isEmpty()) path = "index.html";
+            if (path.contains("..")) return null;                 // 경로 장난 차단
+
+            boolean isCode = CODE_FILES.contains(path);
+
+            // ② 코드 = 인터넷이 되면 인터넷 것. (푸시 즉시 반영 보장)
+            if (isCode && isOnline()) return null;
+
+            // ① 그림·소리 = 캐시 번호가 붙어 있으면 앱에 담을 때의 번호와 같을 때만 앱 것.
+            if (!isCode) {
+                String v = null;
+                try { v = u.getQueryParameter("v"); } catch (Exception e) { }
+                if (v != null) {
+                    String baked = bakedVer().get(path);
+                    if (baked == null || !baked.equals(v)) return null;   // 웹에서 갈아끼웠다 → 인터넷 것
+                }
+            }
+
+            InputStream in;
+            try {
+                in = getAssets().open("web/" + path);
+            } catch (Exception e) {
+                return null;                                      // 앱에 없다 → 인터넷 것
+            }
+
+            String mime = mimeOf(path);
+            WebResourceResponse res = new WebResourceResponse(mime, isText(mime) ? "utf-8" : null, in);
+            try {
+                Map<String, String> h = new HashMap<>();
+                // 앱 안에서 꺼내 주는 것이라 브라우저 캐시에 또 쌓을 이유가 없다
+                h.put("Cache-Control", "no-store");
+                res.setResponseHeaders(h);
+            } catch (Exception e) { }
+            return res;
+
+        } catch (Exception e) {
+            return null;                                          // 무슨 일이 있어도 인터넷으로 넘긴다
+        }
     }
 
     private void prepareReview() {

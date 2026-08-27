@@ -36,6 +36,11 @@ docs/.pdca-snapshots/
 # 원본은 git 태그(backup-before-video-cleanup-20260817)에도 그대로 남아 있어 언제든 되살릴 수 있다.
 _backup/
 
+# 앱에 담는 웹 파일 사본 (B-3, 2026-08-27) — 저장소에 두면 같은 파일이 두 벌이 된다(4.3MB).
+# twa-project/bake-web-assets.sh 가 빌드 직전에 저장소 원본에서 만들어 넣는다(워크플로에 단계 있음).
+# ⭐ 덤: 항상 "그 시점 저장소 원본"이 담기므로 사본이 낡을 일이 없다.
+twa-project/app/src/main/assets/web/
+
 # 루트에 흩어진 임시 이미지 (앱 이미지는 assets/ 안에 있음)
 /*.png
 /*.jpg
