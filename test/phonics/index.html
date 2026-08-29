@@ -3,23 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>ABC Frog - Phonics Proto</title>
+<title>ABC Frog - Phonics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&display=swap" rel="stylesheet">
 <!-- 전역 에러 추적(GA4 game_error) — 이 페이지엔 GA 태그가 없어, 추적기가 "에러가 실제로 났을 때만" gtag를 1회 불러온다(방문수 집계는 안 건드림). -->
 <script>window.__ETRK_WHERE='phonics';document.write('<scr' + 'ipt src="../../error-tracker.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 회선에 맞는 보상영상 화질 고르기(C-2 3단계). ★ 이 페이지는 한 칸 아래라 ../ 로 읽는다. -->
+<script>document.write('<scr' + 'ipt src="../../video-quality.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 보상 영상을 퍼즐 맞추는 동안 미리 받아두는 공용 파일(C-3). ★ video-quality.js 뒤에 읽어야 한다.
+     0단계(2026-08-20)는 PREFETCH_ON=false — 미리받기는 안 하고 '아이가 기다린 시간'만 잰다(기준선). -->
+<script>document.write('<scr' + 'ipt src="../../video-prefetch.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <style>
+  /* ★ 판 너비(--sw) — 폰 비율 고정. 아래 크기는 전부 이 값의 비율로 정한다(화면 vw 기준 아님).
+     390px 폰에서는 --sw=100vw 라 예전 vw 값과 한 픽셀도 다르지 않다. */
+  :root{--sw:min(100vw,560px,62vh)}
   html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive}
-  #stage{position:relative;width:100%;height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
+  #stage{position:relative;width:var(--sw);max-width:100%;height:100%;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
 
   /* 위쪽: 단어 보드 */
   #board{position:relative;flex:0 0 58%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vh}
   /* 영상: 위쪽 board 영역을 꽉 채움 (세로 9:16 영상) */
-  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:transparent;align-items:center;justify-content:center;color:#e0e0e0;font-size:6vw}
+  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:transparent;align-items:center;justify-content:center;color:#e0e0e0;font-size:calc(var(--sw)*0.06)}
   #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}   /* animal.html 방식: 첫 프레임 준비되면 페이드인 → 회색 블랭크 안 스침 */
-  #slots{display:flex;gap:3vw}
-  .slot{position:relative;width:19vw;height:19vw;max-width:104px;max-height:104px;border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
-  .slot .ghost{font-size:12vw;font-weight:700;color:#c5d4bb;line-height:1}
+  #slots{display:flex;gap:calc(var(--sw)*0.03)}
+  .slot{position:relative;width:calc(var(--sw)*0.19);height:calc(var(--sw)*0.19);border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
+  .slot .ghost{font-size:calc(var(--sw)*0.12);font-weight:700;color:#c5d4bb;line-height:1}
   .slot.filled{border-style:solid;border-color:#F57F17;background:#fffde7}
   .slot.filled .ghost{color:#F57F17}
   .slot.pulse{animation:pulse .45s ease}
@@ -36,17 +44,19 @@
   /* 아래쪽: 글자 조각 트레이 */
   #tray{position:relative;flex:1;background:linear-gradient(180deg,#cde6c3,#a8d19a)}
   /* 바닥 글자: 완성화면 노란 통통 글씨(#bigWord span, 27줄)와 동일한 색·3중 그림자. 흰 박스/테두리/그림자 없음. 히트영역(w/h 17vw)은 유지 */
-  .tile{position:absolute;width:26vw;height:26vw;max-width:130px;max-height:130px;display:flex;align-items:center;justify-content:center;font-size:26vw;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;cursor:grab;touch-action:none;transition:transform .15s}
+  .tile{position:absolute;width:calc(var(--sw)*0.26);height:calc(var(--sw)*0.26);display:flex;align-items:center;justify-content:center;font-size:calc(var(--sw)*0.26);font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;cursor:grab;touch-action:none;transition:transform .15s}
   .tile.drag{z-index:60;transform:scale(1.15);transition:none;cursor:grabbing}
   .tile.back{transition:left .35s cubic-bezier(.22,1,.36,1),top .35s cubic-bezier(.22,1,.36,1),transform .2s}
   .tile.placed{transition:left .18s ease-out,top .18s ease-out,opacity .15s;pointer-events:none}
 
   /* 드래그 안내 손가락: 첫 글자 위에서 첫 빈칸 쪽으로 왔다갔다. 실제로 끌기 시작하면 JS가 숨김 */
-  #hand{display:none;position:absolute;z-index:65;font-size:13vw;line-height:1;margin-left:-.5em;margin-top:-.12em;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(0,0);animation:handmove 1.5s ease-in-out infinite;will-change:transform}
+  #hand{display:none;position:absolute;z-index:65;font-size:calc(var(--sw)*0.13);line-height:1;margin-left:-.5em;margin-top:-.12em;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(0,0);animation:handmove 1.5s ease-in-out infinite;will-change:transform}
   @keyframes handmove{0%{transform:translate(0,0) scale(1)}12%{transform:translate(0,0) scale(1.14)}55%{transform:translate(var(--hdx,0),var(--hdy,0)) scale(1)}100%{transform:translate(0,0) scale(1)}}
 
-  #replay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;border:4px solid #fff;border-radius:40px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:6vw;color:#fff;background:linear-gradient(180deg,#81C784,#4CAF50);box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);cursor:pointer}
-  #tag{position:absolute;top:6px;left:10px;z-index:50;font-size:12px;color:#7a8a70;opacity:.7}
+  #replay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;border:4px solid #fff;border-radius:40px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:calc(var(--sw)*0.06);color:#fff;background:linear-gradient(180deg,#81C784,#4CAF50);box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);cursor:pointer}
+  /* 개발용 라벨 — 라이브에선 숨긴다(아이에게 의미 없는 글씨이고, 부모 화면의 뒤로 화살표와 자리가 겹친다).
+     test/phonics/index.html 쪽에는 그대로 보이게 남겨둠. */
+  #tag{display:none;position:absolute;top:6px;left:10px;z-index:50;font-size:12px;color:#7a8a70;opacity:.7}
 
   /* ══ 테스트 전용 개발 메뉴 ══ 아이 화면엔 안 나온다(주소가 /test/ 아래일 때만 표시).
      아이 손이 잘 안 가는 오른쪽 위 구석에, 게임 요소와 안 겹치게 작게. */
@@ -125,16 +135,28 @@ var CUR=0;
    글자 음가 = phoneme_s.mp3 ~ phoneme_n.mp3 / 단어 통발음 = word_sit.mp3 */
 var SND_BASE='../../assets/phonics/sounds/';       // 음가(phoneme_*)·단어(word_*)
 var ABC_BASE='../../assets/abc/sounds/';           // 글자 이름(letter_*) — 알파벳 게임 소리 재활용
-/* ── 소리 캐시 무력화(새로고침 꼬리표) ──
-   페이지 열 때 한 번 버전을 정해 모든 mp3 뒤에 ?v=... 를 붙인다.
-   → 앱을 껐다 켤 때마다(=매 페이지 로드) 새 주소가 되어 폰이 무조건 최신 소리를 받음.
-   한 세션 안에선 같은 버전이라 재다운로드 없음. (소리 파일을 같은 이름으로 교체해도 즉시 반영) */
-var SND_VER='?v='+Date.now();
+/* ── 소리 캐시 꼬리표 ──
+   모든 mp3(음가 phoneme_* · 단어 word_* · 글자이름 letter_*) 뒤에 ?v=... 를 붙인다.
+   배경음악 bgm.mp3 도 같은 번호를 쓴다 — 아래 '배경음악' 블록 참고.
+
+   ★ 2026-08-27 부터 '날짜 상수'다. 그 전엔 `'?v='+Date.now()` 라 페이지를 열 때마다
+     주소가 달라져 캐시가 원리적으로 못 들었다 — 파닉스를 열 때마다 소리를 통째로
+     다시 받고 있었다(약 570KB/회). 세트 1(satpin)은 소리가 확정되고 라이브 배포까지
+     끝나 더 손볼 계획이 없어 고정으로 바꿨다.
+
+   ★★ 소리 파일을 "같은 이름으로" 갈아끼운 날엔 이 날짜를 반드시 바꿀 것.
+      안 바꾸면 폰에 남은 옛 소리가 계속 쓰인다(CLAUDE.md 배포/캐시 규칙 2).
+      · 새 세트(2·3·4)처럼 파일 이름이 새것이면 주소가 이미 다르므로 갱신 불필요.
+      · bgm.mp3 를 갈아끼운 날엔 여기 말고 script.js:62 · animal.html · dino.html 도 같이 바꿀 것.
+   ※ 영상은 아래 VID_VER 가 따로 관리한다. */
+var SND_VER='?v=20260827';
 /* ── 영상: assets/phonics/videos/sit_dog.mp4 있으면 재생, 없으면 회색 박스 ── */
 var VID_BASE='../../assets/phonics/videos/';
 /* ── 영상 캐시 꼬리표 ──
    영상을 "같은 파일명으로 교체"하면 폰이 옛 영상을 계속 쓴다(CLAUDE.md 배포/캐시 규칙).
-   소리(SND_VER)처럼 매번 새로 받게 하면 편당 1.7MB라 낭비 → 날짜 상수로 둔다.
+   편당 1.7MB라 매번 새로 받게 하면 낭비 → 날짜 상수로 둔다.
+   (소리 SND_VER 도 2026-08-27 부터 같은 방식이 됐다. 다만 날짜는 서로 따로 움직인다 —
+    소리를 바꾼 날과 영상을 바꾼 날이 다르기 때문.)
    ★ 영상 파일을 갈아끼운 날엔 이 날짜를 반드시 바꿀 것. 그날 한 번만 새로 받고 이후엔 정상 캐시. */
 var VID_VER='?v=20260811';   // 2026-08-11 pan_cat.mp4 를 같은 이름으로 교체(그림체 통일) → 날짜 갱신
 /* 영상 화면 위치·크기 — 영상마다 인물·동물이 잡힌 크기가 달라 따로 맞춤.
@@ -223,7 +245,11 @@ function phonemeSound(ch){ loadSound(SND_BASE,'phoneme_'+ch,FREQ[ch]||440).play(
    파닉스는 음가(스·애·트)·발음(샛!)이 또렷해야 하는 학습 게임이라 볼륨을 아주 은은하게(0.13).
    자동재생 정책 때문에 시작하자마자가 아니라 첫 글자 터치/드래그 순간(startBGM)에 재생 */
 var bgm=null,bgmStarted=false,_bgmWasPlaying=false;
-try{ bgm=new Audio('../../assets/game/sounds/bgm.mp3'+SND_VER); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
+// ⚠ 배경음악만 SND_VER 를 안 쓰고 날짜를 직접 적는다 — 본게임·동물·공룡과 "같은 주소" 여야
+//   캐시를 공유해 한 번만 받기 때문이다. 지금은 SND_VER 와 값이 같지만 뜻이 다르다:
+//     SND_VER  = 파닉스 소리를 갈아끼운 날 · 아래 날짜 = bgm.mp3 를 갈아끼운 날. 따로 움직인다.
+//   ★ bgm.mp3 를 같은 이름으로 교체한 날엔 이 날짜를 script.js:62 · animal.html · dino.html 과 함께 바꿀 것.
+try{ bgm=new Audio('../../assets/game/sounds/bgm.mp3?v=20260827'); bgm.loop=true; bgm.volume=0.13; bgm.preload='auto'; }catch(e){}
 function startBGM(){ if(SILENT||bgmStarted||!bgm) return; bgmStarted=true;
   try{ var p=bgm.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){} }
 function _pauseAllSound(){                        // 홈버튼/멀티태스킹/화면끔 → 소리 정지(WebView서 앱 닫아도 BGM 계속 나오는 문제 방지)
@@ -255,9 +281,11 @@ function shuffle(arr){ for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.ra
    화면을 새로 지을 때마다 번호를 올리고, 예약된 일은 자기 번호가 아직 유효할 때만 실행한다.
    (사람이 🔄 를 눌러야만 넘어가던 때는 이런 겹침이 없었다) */
 var BUILD_ID=0;
+var _wordT0=0;   // 이 단어를 시작한 시각 — 완성까지 걸린 시간(solve_ms) 측정용. 2026-08-18
 
 function build(){
   BUILD_ID++;
+  _wordT0=Date.now();                             // 이 단어 시작 — 완성까지 걸린 시간 재기 시작
   _devSkipVideo=null;                             // (개발 메뉴) 새 화면 = 넘길 영상 없음
   var W=WORDS[CUR]; locked=false;
   slotsEl.innerHTML=''; slotsEl.style.display='flex'; trayEl.innerHTML='';
@@ -408,6 +436,15 @@ function drop(tile){
 function finish(){
   locked=true;
   var W=WORDS[CUR],i=0;
+  /* ★ 완성 신고 → 부모(script.js)가 받아 GA4 word_puzzle_complete 를 발사한다. (2026-08-18 추가)
+     공룡 `dino.html:480` · 동물과 **똑같은 방식**이다. 새 구조가 아니다.
+     파닉스는 2026-08-12 공개 후 이 신호가 없어서 "몇 명이 어디까지 했는지"를 6일간
+     하나도 몰랐다 — 2~4단계를 열지 말지 판단할 근거가 없었다.
+     ※ 여기(글자를 다 맞춘 순간) = 공룡의 '조각을 다 끼운 순간' 과 같은 층위.
+       영상 3편은 이 뒤에 나오므로 아직 안 봤지만, 공룡도 영상 전에 보낸다. 층위를 맞춘다.
+     ※ 단어 순서가 곧 진도(sit→pat→nap→pan→sip→tap)라 단어별 건수가 그대로 이탈 지점이 된다. */
+  try{ parent.postMessage({ t:'phonics_done', word:W.word,
+                            solve_ms:(_wordT0 ? Date.now()-_wordT0 : 0) }, '*'); }catch(e){}
   tiles.forEach(function(t){ if(!t.placed){ // 남은 함정 글자 사라지게(아래 자리 비움 → 단어 들어갈 자리)
     t.el.style.transition='opacity .3s'; t.el.style.opacity='0';
     setTimeout(function(){ t.el.style.display='none'; },300);
@@ -495,7 +532,14 @@ function playVideo(W, onSit, onAllDone){
     var isLast=(k===list.length-1),done=false;
     try{
       var v=document.createElement('video');
-      v.src=VID_BASE+W.word+'_'+list[k]+'.mp4'+VID_VER;   // 예: sit_dog.mp4?v=20260807
+      /* 회선에 맞는 화질 고르기(C-2 3단계). __vq 가 없거나 실패하면 원본 주소 그대로 = 기존 동작.
+         ⚠️ 순서 주의 — pick() 먼저, 캐시 꼬리표(VID_VER) 나중.
+            VID_VER 이 붙인 '?v=' 뒤에서 폴더를 바꾸면 안 된다(공룡·동물에서 확인된 순서). */
+      var _vurl=VID_BASE+W.word+'_'+list[k]+'.mp4';        // 예: ../assets/phonics/videos/sit_dog.mp4
+      v.src=((window.__vq&&window.__vq.pick)?window.__vq.pick(_vurl):_vurl)+VID_VER;   // 예: sit_dog.mp4?v=20260807
+      /* ★ C-3 0단계 (2026-08-20) — 재는 것만 한다. 동작은 한 줄도 안 바뀐다.
+         공룡·동물과 같은 지표(ready_ms)를 같은 이름으로 보낸다 → 셋을 나란히 비교할 수 있다. */
+      try{ if(window.__vp&&window.__vp.watch) window.__vp.watch(v, v.src, {puzzle:'phonics'}); }catch(_){}
       v.autoplay=true; v.playsInline=true; v.muted=true; // 무음 재생(게임 소리는 mp3로 별도) → 모바일 자동재생 보장
       v.setAttribute('playsinline',''); v.setAttribute('muted','');
       var fx=VIDFX[W.word+'_'+list[k]] || VIDFX[list[k]];   // 그 영상 전용 값 우선, 없으면 동물 공통값
@@ -516,7 +560,32 @@ function playVideo(W, onSit, onAllDone){
       /* (개발 메뉴 전용) ≫ 넘기기 = "지금 영상이 끝난 것으로 친다".
          정상 종료와 같은 길(afterSit)로 보내므로 단어 반짝·발음·다음 영상 흐름이 그대로 이어진다. */
       _devSkipVideo=function(){ try{ v.pause(); }catch(e){} afterSit(); };
-      v.addEventListener('error',function(){ if(done)return; done=true; if(stale())return; playAt(k+1); },{once:true}); // 이 영상 없음 → 앉음 없이 다음
+      /* ★ 영상 실패 시 '원본으로 1회 재시도' (2026-08-18, C-2 3단계)
+         전엔 error → 곧장 다음 영상(playAt(k+1))이었다. 즉 티어 파일이 하나라도 없거나
+         주소에 오타가 있으면 그 동물이 통째로 건너뛰어져 아이가 앉는 장면도 단어 발음도
+         못 보고, 조용히 넘어가니 알아채기도 어려웠다.
+         이제 티어 주소가 실패하면 원본 주소로 한 번 더 시도하고, 그것마저 실패할 때만 넘어간다.
+         ⚠️ {once:true} 를 쓰지 않는다 — 재시도분의 실패도 이 핸들러가 다시 받아야 한다.
+         재시도는 딱 1회(triedOriginal) — 무한 반복 방지. */
+      var triedOriginal=false;
+      v.addEventListener('error',function(){
+        if(done)return;
+        try{
+          if(!triedOriginal && window.__vq && window.__vq.original){
+            var cur=v.currentSrc||v.src||'', orig=window.__vq.original(cur);
+            if(orig && orig!==cur){
+              triedOriginal=true;
+              // GA4 에 폴백 발생 보고(관찰만 — 실패해도 아래 재시도는 그대로 진행)
+              try{ if(window.__vq.reportFallback) window.__vq.reportFallback(window.__vq.tier,'phonics'); }catch(_){}
+              v.src=orig; v.load();
+              // 재생 중 끊긴 경우(이미 화면에 붙은 뒤)를 위해 한 번 더 재생 요청. 이 영상은 항상 muted 라 자동재생 막힐 일 없다.
+              var rp=v.play(); if(rp&&rp.catch) rp.catch(function(){});
+              return;                                       // 여기서 다음 영상으로 넘어가지 않는다
+            }
+          }
+        }catch(e){}
+        done=true; if(stale())return; playAt(k+1);          // 원본까지 실패 → 앉음 없이 다음
+      });
       v.addEventListener('loadeddata',function(){
         if(stale()) return;                        // 넘어간 뒤 늦게 도착한 영상은 붙이지 않음
         videoBox.textContent=''; videoBox.appendChild(v);  // 앞 영상 치우고 새 영상 넣기
@@ -539,7 +608,7 @@ function playVideo(W, onSit, onAllDone){
 }
 /* 실측 글자 맞춤(fitWord 패턴): 공식 대신 실제 폭을 재서 줄임 */
 function fitWord(sp){
-  sp.style.fontSize='30vw';
+  sp.style.fontSize=(stage.clientWidth*0.30)+'px';   // 판 기준(옛 30vw) — 넓은 화면에서도 판 비율 유지
   var max=stage.getBoundingClientRect().width*0.86;
   for(var g=0;g<12&&sp.offsetWidth>max;g++){ // offsetWidth: 팝 애니메이션(scale) 영향 없는 실측 폭
     sp.style.fontSize=(parseFloat(getComputedStyle(sp).fontSize)*0.92)+'px';
