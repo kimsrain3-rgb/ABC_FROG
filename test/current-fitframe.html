@@ -1,20 +1,20 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<!-- ★ 테스트 빌드 — 배경음악 모노 전환 2026-08-27
-     목적: bgm.mp3 를 스테레오 96k(740KB) → 모노 48k(369KB) 로. −50%, 371KB 절약.
-     ⚠ 라이브 루트(index.html / script.js / style.css)는 한 글자도 안 건드렸다.
-     ※ 2026-08-27 라이브 반영 완료 — 그때 쓰던 사본 bgm_mono.mp3 는 지웠고 이 판도 라이브와 같은 파일을 본다.
-       이 판만 그것을 바라본다(test/script-bgmmono.js 의 SND_SRC.bgm 한 줄).
-     ⚠ 파일명이 새것이라 캐시 꼬리표(?v=)가 필요 없다 — 그래서 라이브의 ?v=20260815 도 안 건드렸다.
-     ⚠ 96k 로는 크기가 1바이트도 안 준다(크기는 비트레이트가 정한다, 채널 수가 아니라).
-       370KB 를 맞추려면 48k 여야 한다. 스테레오 96k = 채널당 48k 였으므로 채널당 비트는 그대로다.
-     확인할 것: ① 음질이 얇아졌는가 ② 63초마다 도는 이음매가 매끄러운가 ③ 볼륨이 같은가 -->
+<!-- ★ 테스트 빌드 — 퍼즐·파닉스 폰 비율 고정 2026-08-29
+     목적: 화면이 넓어져도 판은 폰과 같은 비율에서 멈추고, 남는 공간은 좌우 여백이 되게.
+       판 너비 = min(100vw, 560px, 62vh). 안쪽 글자·조각 크기는 전부 '화면' 이 아니라 '판' 기준.
+     ⚠ 라이브(index.html / script.js / style.css / animal.html / dino.html / phonics/)는 한 글자도 안 건드렸다.
+       이 판만 test/script-fitframe.js · test/style-fitframe.css · test/animal-fit.html ·
+       test/dino-fit.html · test/phonics/index.html 를 바라본다.
+     ⚠ 이 파일은 test/current-bgmmono.html 을 복사해 만들었다 — 배경음악 모노는 이미 라이브라
+       여기서 따로 시험하는 게 아니다. (2026-08-29: 이름표를 안 바꿔 '모노 판'으로 보이던 것 수정)
+     확인할 것: 파닉스·과일·동물·공룡을 한 번씩 끝까지. 폰에서는 지금과 똑같아야 정상이다. -->
 <base href="../">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>ABC Frog (TEST 배경음악 모노)</title>
+<title>ABC Frog (TEST 폰 비율 고정)</title>
 <link rel="manifest" href="test/manifest.json">
 <meta name="theme-color" content="#4CAF50">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -288,7 +288,7 @@ try {
 <style>#bgmnote{position:fixed;left:10px;top:78px;z-index:99999;pointer-events:none;
   background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 "Segoe UI",sans-serif;
   padding:6px 10px;border-radius:7px;max-width:66vw;transition:opacity 1s}</style>
-<div id="bgmnote">🎵 <b>배경음악 모노 판</b> (48k · 369KB)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>게임에 들어가면 음악이 시작됩니다</span></div>
+<div id="bgmnote">📐 <b>폰 비율 고정 판</b> (2026-08-29)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>파닉스·과일·동물·공룡을 한 번씩 해 보세요</span></div>
 <script>setTimeout(function(){try{var n=document.getElementById("bgmnote");if(n)n.style.opacity="0";}catch(e){}},15000);</script>
 </body>
 </html>
