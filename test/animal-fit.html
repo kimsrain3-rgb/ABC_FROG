@@ -28,7 +28,7 @@
      ⚠️ #screen 과 #layer 는 반드시 '같은 폭·같은 가운데정렬' 이어야 한다 —
         조각 좌표는 board(=#screen 안) 기준으로 계산되는데 조각은 #layer 에 담기기 때문. */
   :root{--sw:min(100vw,560px,62vh)}
-  html,body{margin:0;height:100%;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;width:var(--sw);margin:0 auto;display:flex;flex-direction:column;background:#fff;overflow:hidden}
   #board{position:relative;flex:0 0 62%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);overflow:hidden}
   #title{position:absolute;top:8px;left:0;width:100%;text-align:center;font-weight:700;color:#3a5a2a;font-size:15px;z-index:5;text-shadow:0 1px 2px #fff}
@@ -304,6 +304,38 @@
   function setScale(p,s){ p.scale=s; p.el.style.transform='scale('+s+')'; }
   var PZ=null;   // 현재 퍼즐 상태 {uw,uh,placedCount,total,drag}
 
+  /* ══ 화면 크기가 바뀌면 판을 다시 그린다 (2026-08-30) ═══════════════════════
+     조각 좌표·그림 크기는 만들 때 board/tray 를 한 번 재서 정하고 끝이다. 태블릿을
+     세로로 열었다가 가로로 돌리면 그 좌표가 옛 크기 그대로 남아
+       · 그림이 판 오른쪽으로 넘치고  · 조각이 화면 아래로 잘린다.
+     ※ 폰 비율 고정(8/29) 때문에 생긴 게 아니다 — 고치기 전 라이브도 같은 증상이었다
+       (768×1024 로 열고 1024×768 로 돌렸을 때 조각 5개 · 196.7px 실측).
+     ⚠️ 다 맞춘 뒤(이름·보상영상 구간)에는 절대 다시 그리지 않는다 — 영상이 통째로 날아간다.
+     ⚠️ 이미 맞춘 조각은 '몇 번째 조각인지'로 되살린다. COLS·ROWS 가 화면과 무관한
+        상수(2×3)라 다시 그려도 조각 순서가 항상 같기 때문에 안전하다. */
+  var _restorePlaced=null, _rsTimer=null,
+      _lastVW=window.innerWidth, _lastVH=window.innerHeight;
+  function onViewportChange(){
+    var w=window.innerWidth, h=window.innerHeight;
+    if(w===_lastVW && h===_lastVH) return;          // 진짜로 안 바뀌었으면 아무것도 안 함
+    _lastVW=w; _lastVH=h;
+    if(!PZ) return;                                  // 아직 안 만들어졌거나 동물 전환 중
+    if(PZ.placedCount>=PZ.total) return;             // 다 맞춤 → 이름·영상 구간. 손대지 않는다
+    if(document.getElementById('avVideo')) return;   // 보상 영상 재생 중
+    PZ.drag=null;                                    // 돌리는 순간 잡고 있던 조각은 놓은 것으로
+    var placed=[];
+    Array.prototype.slice.call(layer.querySelectorAll('.piece')).forEach(function(el,i){
+      if(el.classList.contains('placed')) placed.push(i);
+    });
+    _restorePlaced=placed;
+    var keepT0=_puzT0;                               // 푸는 데 걸린 시간(solve_ms)은 이어서 잰다
+    buildAnimal();
+    _puzT0=keepT0;                                   // buildAnimal 이 방금 새로 찍은 것을 되돌림
+  }
+  function _onResize(){ clearTimeout(_rsTimer); _rsTimer=setTimeout(onViewportChange,300); }
+  window.addEventListener('resize',_onResize);
+  window.addEventListener('orientationchange',_onResize);
+
   // === 한 동물 퍼즐 빌드 (이미지 로드 후) — 동물 바뀔 때마다 호출 ===
   /* 이 퍼즐을 시작한 시각 — 완성까지 걸린 시간(solve_ms) 측정용. C-3 0단계 2026-08-20.
      파닉스가 2026-08-18 에 먼저 쓴 것과 같은 방식(_wordT0). 관찰만, 게임 로직 미변경. */
@@ -418,6 +450,18 @@
 
     // 이 동물 퍼즐 상태를 전역 드래그 핸들러에 연결
     PZ={ uw:uw, uh:uh, placedCount:0, total:total, drag:null };
+
+    // 화면 크기가 바뀌어 다시 그린 것이면, 아까 맞춰 둔 조각을 그대로 되살린다
+    // (demoDone 은 건드리지 않는다 — 시범이 이미 돌았으면 그 조각도 placed 라 여기서 같이 살아난다)
+    if(_restorePlaced){
+      var _rp=_restorePlaced; _restorePlaced=null;
+      _rp.forEach(function(i){
+        var p=list[i]; if(!p||p.placed) return;
+        p.el.classList.add('placed'); p.placed=true; p.el.style.zIndex=10;
+        setScale(p,1); setPos(p, p.homeLeft, p.homeTop);
+        PZ.placedCount++;
+      });
+    }
 
     // === 첫 퍼즐에서만: 조각 하나가 스르륵 제자리로 들어가는 시범(무슨 게임인지 보여주기) ===
     if(!demoDone){ demoDone=true;

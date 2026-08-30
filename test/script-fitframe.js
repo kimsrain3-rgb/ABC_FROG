@@ -1964,6 +1964,58 @@ const WP_TF='translate(100,100) scale(1.28) translate(-100,-100)';
 const WP_X0=8, WP_X1=192, WP_Y0=0, WP_Y1=200, WP_GC=3, WP_GR=3;
 let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
 
+/* ══ 화면 크기가 바뀌면 과일 퍼즐판을 다시 그린다 (2026-08-30) ══════════════
+   조각 자리·판 크기는 만들 때 wpStage 를 한 번 재서 정하고 끝이다. 태블릿을 세로로
+   열었다가 가로로 돌리면 옛 크기 좌표가 그대로 남아 조각이 판 밖으로 밀려난다
+   (768×1024 → 1024×768 실측: 조각 2개가 판 밖, 아래로 154.3px).
+   ⚠️ 과일 퍼즐 화면일 때만 움직인다 — 파리잡기는 지금도 화면에 잘 맞으므로 안 건드린다.
+   ⚠️ 다 맞춘 뒤(글자·보상영상 구간)에는 다시 그리지 않는다.
+   ⚠️ 이미 맞춘 조각은 '몇 번째 조각인지'로 되살린다. 조각 격자(wpLevelFor)가 화면 크기와
+      무관해 다시 그려도 순서·개수가 같다. 그래도 개수를 대조해 다르면 되살리기를 포기한다. */
+var _wpRestore=null, _wpRsT=null, _wpLastW=window.innerWidth, _wpLastH=window.innerHeight;
+function wpOnViewportChange(){
+  try{
+    var w=window.innerWidth, h=window.innerHeight;
+    if(w===_wpLastW && h===_wpLastH) return;
+    _wpLastW=w; _wpLastH=h;
+    var wpEl=document.getElementById('wp');
+    if(!wpEl || !wpEl.classList.contains('show')) return;   // 과일 퍼즐 화면이 아니면 무시
+    if(!wpTotal || wpPlaced>=wpTotal) return;               // 안 만들었거나 다 맞춤
+    if(document.getElementById('wpVideo')) return;          // 보상 영상 재생 중
+    var all=Array.prototype.slice.call(document.querySelectorAll('.wp-piece'));
+    var idx=[];
+    all.forEach(function(el,i){ if(el.classList.contains('placed')) idx.push(i); });
+    _wpRestore={idx:idx, count:all.length};
+    var keepT0=_wpT0;                                       // 푸는 데 걸린 시간은 이어서 잰다
+    buildPuzzle(wpCurrent);
+    _wpT0=keepT0;
+    wpApplyRestore(0);
+  }catch(e){ _wpRestore=null; }
+}
+function wpApplyRestore(tries){
+  try{
+    if(!_wpRestore) return;
+    var ps=Array.prototype.slice.call(document.querySelectorAll('.wp-piece'));
+    if(ps.length!==_wpRestore.count){                       // 아직 다 안 그려졌으면 잠깐 기다린다
+      if(tries<40){ setTimeout(function(){ wpApplyRestore(tries+1); },50); return; }
+      _wpRestore=null; return;                              // 끝내 다르면 포기(진행만 잃고 판은 정상)
+    }
+    var r=_wpRestore; _wpRestore=null;
+    if(!wpGeo) return;
+    r.idx.forEach(function(i){
+      var el=ps[i]; if(!el || el.classList.contains('placed')) return;
+      el.style.left=wpGeo.boardLeft+'px'; el.style.top=wpGeo.boardTop+'px';
+      el.classList.add('placed'); el.style.zIndex=10;
+      wpPlaced++;
+    });
+  }catch(e){ _wpRestore=null; }
+}
+(function(){
+  var fire=function(){ clearTimeout(_wpRsT); _wpRsT=setTimeout(wpOnViewportChange,300); };
+  window.addEventListener('resize',fire);
+  window.addEventListener('orientationchange',fire);
+})();
+
 function goWordPuzzle(){
   document.getElementById('wp').classList.add('show');
   syncBackGuard();                                      // 놀이 화면 진입 → 뒤로가기 보호 켜기
