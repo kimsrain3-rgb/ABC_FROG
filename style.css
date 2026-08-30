@@ -238,28 +238,11 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
 .wc-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* === 단어 퍼즐 화면 (그림 직소 퍼즐) === */
-/* ★ 과일 퍼즐 — 폰 비율 고정 + 초록 여백 (2026-08-30)
-   판 너비 = 560px 과 화면높이 62% 중 작은 쪽. 남는 공간은 첫 화면과 같은 초록 단색.
-   ⚠️ position 을 absolute→fixed 로 바꿨다. absolute 면 #gc(max-width 500/768px) 안에 갇혀
-      바깥은 body 의 초록 '그러데이션', 안은 '단색' 이 되어 초록이 띠처럼 갈린다(실측).
-      #wp 조상에 transform/filter 가 0건임을 확인하고 바꿨다(있으면 fixed 가 그 안에 갇힌다).
-   ⚠️ 판을 좁히지 말고 '배경색만' 바꿀 것 — 좁히면 뒤에 깔린 Word 메뉴(.wc)의 뒤로 화살표가
-      여백에 비쳐 화살표가 두 개로 보인다(2026-08-29 실측). 크림색 판은 ::before 로 깐다.
-   ⚠️ ::before 의 z-index:-1 은 '.wp 배경보다 위, 제목·조각보다 아래' 에 놓인다.
-   높이 단위는 #gc 와 같은 dvh (vh 와 섞으면 폰 주소창에서 어긋난다). */
-.wp{position:fixed;inset:0;background:#2E7D32;display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}
-.wp::before{content:'';position:absolute;top:0;bottom:0;left:0;right:0;margin:0 auto;width:min(560px,62dvh);max-width:100%;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);z-index:-1;pointer-events:none}
+.wp{position:absolute;inset:0;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}
 .wp.show{display:flex}
-/* 뒤로 화살표는 화면 왼쪽이 아니라 '크림색 판' 왼쪽 끝에 — 안 그러면 초록 여백 위에 홀로 뜬다.
-   폰에서는 50% - 50vw = 0 이라 예전과 똑같은 left:14px 이 된다. */
-.wp-back{z-index:140;left:calc(50% - min(50vw,280px,31dvh) + 14px)}
-/* 제목 폭 = 판 기준(예전엔 화면 전체 기준이라 판이 좁아지면 뒤로 화살표와 겹쳤다).
-   ⚠️ 폭만 바꿔서는 안 겹치게 못 만든다 — 844×390 이면 판 242px 인데 제목 글자만 226.7px 라
-      화살표(66px)와 물리적으로 나란히 못 선다. script.js 의 wpFitTitle() 이 실측으로 줄이고,
-      그래도 안 되면 화살표 아래로 내린다. */
-.wp-title{font-size:clamp(15px,4.8vw,26px);color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto;width:min(560px,62dvh);max-width:100%;box-sizing:border-box;padding:0 56px;white-space:nowrap}
-/* 조각·완성글자는 전부 wpStage 실측 기준이라 이 줄 하나로 안쪽이 다 따라온다 */
-.wp-stage{position:relative;width:min(560px,62dvh);max-width:100%;margin:0 auto;flex:1 1 auto;touch-action:none}
+.wp-back{z-index:140}
+.wp-title{font-size:clamp(15px,4.8vw,26px);color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto;width:100%;box-sizing:border-box;padding:0 56px;white-space:nowrap}
+.wp-stage{position:relative;width:100%;flex:1 1 auto;touch-action:none}
 
 /* 정답 자리 안내(점선 윤곽 + 흐린 그림) */
 .wp-ghost{position:absolute;pointer-events:none;transition:opacity .4s;z-index:1}
@@ -289,25 +272,22 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
 .wp-replay:active{transform:translateX(-50%) scale(.92)}
 
 /* === 마지막 완성 축하 영상(개구리 과일바구니) === */
-.wp-video{position:absolute;inset:0;width:min(560px,62dvh);max-width:100%;margin:0 auto;display:flex;align-items:center;justify-content:center;background:#fff;z-index:135;cursor:pointer}
+.wp-video{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff;z-index:135;cursor:pointer}
 .wp-video video,.wp-video .wp-still{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain}
 /* 영상 검은 surface 가리는 불투명 덮개 — 영상이 진짜 재생 시작하면 .hide로 페이드아웃 후 제거 */
 .wp-video .wp-vcover{position:absolute;inset:0;background:#fff;z-index:2;transition:opacity .35s ease}
 .wp-video .wp-vcover.hide{opacity:0;pointer-events:none}
 /* 정지그림(캔버스)은 즉시 표시 → 영상→그림 교체 시 깜빡임 없음 */
 
-/* === 가로 방향 안내(#rotate-warn) 제거 — 2026-08-30 ==========================
-   옛 조건: @media (max-width:920px) and (orientation:landscape)
-   없앤 근거(전부 실측): 844×390 에서 파리잡기·과일 둘 다 안 깨진다(벌레 540샘플 이탈 0 ·
-   알파벳 26줄 잘림 0 · 과일 4/4). 동물은 811×390 정상. 앱은 세로 고정(screenOrientation=portrait)
-   이고 태블릿 가로는 1024px 라 920 조건에 애초에 안 걸렸다. 과일에서만 뜨던 것도 의도가 아니라
-   z-index 탓(오버레이 99999 > 안내 9999 > .wp 120).
-   🔴 알려진 것: 안내가 사라지면 '가로 시작화면' 에서 Word·Phonics 가 화면 밖으로 나가 안 눌린다
-      (844×390 에서 74px·166px). 앱은 세로 고정이라 안 겪고 브라우저에서만 보인다. 별건으로 처리.
-   ⚠️ 아래 display:none 한 줄은 일부러 남긴다 — 폰에 옛 index.html 이 캐시돼 있으면 마크업만
-      남는데, 이 줄이 없으면 안내 문구가 화면에 그냥 찍힌다. (index.html 은 캐시버스터가 없다)
-   되살리려면 옛 규칙 + index.html 의 <div id="rotate-warn"> 4줄을 함께 되돌린다. */
+/* === 가로 방향 안내(세로 고정 유도) === */
 #rotate-warn{display:none}
+@media (max-width:920px) and (orientation:landscape){
+  #rotate-warn{display:flex;position:fixed;inset:0;z-index:9999;background:linear-gradient(180deg,#4CAF50,#2E7D32);color:#fff;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-family:'Fredoka','Comic Sans MS',cursive;padding:20px;gap:12px}
+  #rotate-warn .rw-icon{font-size:64px;animation:rwSpin 1.6s ease-in-out infinite}
+  #rotate-warn .rw-t1{font-size:24px;font-weight:bold}
+  #rotate-warn .rw-t2{font-size:18px;opacity:.9}
+}
+@keyframes rwSpin{0%,100%{transform:rotate(-90deg)}50%{transform:rotate(0)}}
 
 /* === 5단계 개구리 이미지 === */
 .frog-img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:none}

@@ -14,20 +14,17 @@
      0단계(2026-08-20)는 PREFETCH_ON=false — 미리받기는 안 하고 '아이가 기다린 시간'만 잰다(기준선). -->
 <script>document.write('<scr' + 'ipt src="../video-prefetch.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
 <style>
-  /* ★ 판 너비(--sw) — 폰 비율 고정. 아래 크기는 전부 이 값의 비율로 정한다(화면 vw 기준 아님).
-     390px 폰에서는 --sw=100vw 라 예전 vw 값과 한 픽셀도 다르지 않다. */
-  :root{--sw:min(100vw,560px,62vh)}
-  html,body{margin:0;height:100%;overscroll-behavior:none;background:#2E7D32;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive}
-  #stage{position:relative;width:var(--sw);max-width:100%;height:100%;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
+  html,body{margin:0;height:100%;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none;font-family:'Fredoka','Comic Sans MS','Chalkboard SE',cursive}
+  #stage{position:relative;width:100%;height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden}
 
   /* 위쪽: 단어 보드 */
   #board{position:relative;flex:0 0 58%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vh}
   /* 영상: 위쪽 board 영역을 꽉 채움 (세로 9:16 영상) */
-  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:transparent;align-items:center;justify-content:center;color:#e0e0e0;font-size:calc(var(--sw)*0.06)}
+  #videoBox{display:none;position:absolute;inset:0;z-index:5;overflow:hidden;background:transparent;align-items:center;justify-content:center;color:#e0e0e0;font-size:6vw}
   #videoBox video{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s ease}   /* animal.html 방식: 첫 프레임 준비되면 페이드인 → 회색 블랭크 안 스침 */
-  #slots{display:flex;gap:calc(var(--sw)*0.03)}
-  .slot{position:relative;width:calc(var(--sw)*0.19);height:calc(var(--sw)*0.19);border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
-  .slot .ghost{font-size:calc(var(--sw)*0.12);font-weight:700;color:#c5d4bb;line-height:1}
+  #slots{display:flex;gap:3vw}
+  .slot{position:relative;width:19vw;height:19vw;max-width:104px;max-height:104px;border:4px dashed #b8c9ae;border-radius:16px;background:rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center}
+  .slot .ghost{font-size:12vw;font-weight:700;color:#c5d4bb;line-height:1}
   .slot.filled{border-style:solid;border-color:#F57F17;background:#fffde7}
   .slot.filled .ghost{color:#F57F17}
   .slot.pulse{animation:pulse .45s ease}
@@ -44,16 +41,16 @@
   /* 아래쪽: 글자 조각 트레이 */
   #tray{position:relative;flex:1;background:linear-gradient(180deg,#cde6c3,#a8d19a)}
   /* 바닥 글자: 완성화면 노란 통통 글씨(#bigWord span, 27줄)와 동일한 색·3중 그림자. 흰 박스/테두리/그림자 없음. 히트영역(w/h 17vw)은 유지 */
-  .tile{position:absolute;width:calc(var(--sw)*0.26);height:calc(var(--sw)*0.26);display:flex;align-items:center;justify-content:center;font-size:calc(var(--sw)*0.26);font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;cursor:grab;touch-action:none;transition:transform .15s}
+  .tile{position:absolute;width:26vw;height:26vw;max-width:130px;max-height:130px;display:flex;align-items:center;justify-content:center;font-size:26vw;font-weight:700;color:#FFEB3B;text-shadow:3px 3px 0 #F57F17,5px 5px 0 rgba(0,0,0,.25),0 0 2px #B25800;line-height:1;cursor:grab;touch-action:none;transition:transform .15s}
   .tile.drag{z-index:60;transform:scale(1.15);transition:none;cursor:grabbing}
   .tile.back{transition:left .35s cubic-bezier(.22,1,.36,1),top .35s cubic-bezier(.22,1,.36,1),transform .2s}
   .tile.placed{transition:left .18s ease-out,top .18s ease-out,opacity .15s;pointer-events:none}
 
   /* 드래그 안내 손가락: 첫 글자 위에서 첫 빈칸 쪽으로 왔다갔다. 실제로 끌기 시작하면 JS가 숨김 */
-  #hand{display:none;position:absolute;z-index:65;font-size:calc(var(--sw)*0.13);line-height:1;margin-left:-.5em;margin-top:-.12em;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(0,0);animation:handmove 1.5s ease-in-out infinite;will-change:transform}
+  #hand{display:none;position:absolute;z-index:65;font-size:13vw;line-height:1;margin-left:-.5em;margin-top:-.12em;pointer-events:none;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transform:translate(0,0);animation:handmove 1.5s ease-in-out infinite;will-change:transform}
   @keyframes handmove{0%{transform:translate(0,0) scale(1)}12%{transform:translate(0,0) scale(1.14)}55%{transform:translate(var(--hdx,0),var(--hdy,0)) scale(1)}100%{transform:translate(0,0) scale(1)}}
 
-  #replay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;border:4px solid #fff;border-radius:40px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:calc(var(--sw)*0.06);color:#fff;background:linear-gradient(180deg,#81C784,#4CAF50);box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);cursor:pointer}
+  #replay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:70;border:4px solid #fff;border-radius:40px;padding:10px 26px;font-family:inherit;font-weight:700;font-size:6vw;color:#fff;background:linear-gradient(180deg,#81C784,#4CAF50);box-shadow:0 5px 0 #388E3C,0 7px 14px rgba(0,0,0,.3);cursor:pointer}
   /* 개발용 라벨 — 라이브에선 숨긴다(아이에게 의미 없는 글씨이고, 부모 화면의 뒤로 화살표와 자리가 겹친다).
      test/phonics/index.html 쪽에는 그대로 보이게 남겨둠. */
   #tag{display:none;position:absolute;top:6px;left:10px;z-index:50;font-size:12px;color:#7a8a70;opacity:.7}
@@ -608,7 +605,7 @@ function playVideo(W, onSit, onAllDone){
 }
 /* 실측 글자 맞춤(fitWord 패턴): 공식 대신 실제 폭을 재서 줄임 */
 function fitWord(sp){
-  sp.style.fontSize=(stage.clientWidth*0.30)+'px';   // 판 기준(옛 30vw) — 넓은 화면에서도 판 비율 유지
+  sp.style.fontSize='30vw';
   var max=stage.getBoundingClientRect().width*0.86;
   for(var g=0;g<12&&sp.offsetWidth>max;g++){ // offsetWidth: 팝 애니메이션(scale) 영향 없는 실측 폭
     sp.style.fontSize=(parseFloat(getComputedStyle(sp).fontSize)*0.92)+'px';
