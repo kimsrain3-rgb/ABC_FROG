@@ -240,9 +240,25 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
 .wc-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 /* === 단어 퍼즐 화면 (그림 직소 퍼즐) === */
-.wp{position:absolute;inset:0;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}
+/* ★ 과일 퍼즐 여백 = 첫 화면과 같은 초록 단색(#2E7D32). 2026-08-30
+   ⚠️ .wp 는 여전히 화면을 꽉 채운다 — 좁히면 뒤에 깔린 Word 메뉴(.wc)의 뒤로 화살표가
+      여백에 비쳐 화살표가 두 개로 보인다(8/29 실측). 좁히는 대신 '배경색만' 바꾸고,
+      크림색 판은 아래 ::before 로 판 너비만큼만 깐다.
+   ⚠️ position 을 absolute→fixed 로 바꿨다. absolute 면 #gc(max-width 500/768px) 안에 갇혀
+      바깥쪽은 body 의 초록 '그러데이션', 안쪽은 '단색' 이 되어 초록이 띠처럼 갈린다(실측).
+      fixed 면 #gc 의 overflow 를 벗어나 화면 전체가 한 가지 초록이 된다.
+      ※ #wp 조상에 transform/filter 가 하나도 없음을 확인하고 바꿨다(있으면 fixed 가 그 안에 갇힌다).
+      ※ 이 때문에 판 너비가 #gc 가 아니라 화면 기준이 된다 — 595·768px 폭에서 판이
+        500 → 523·560 으로 커져 동물·공룡·파닉스와 같은 크기가 된다. 폰(390)은 변화 없음.
+   ⚠️ ::before 의 z-index:-1 은 '.wp 배경보다 위, 제목·조각보다 아래' 에 놓인다.
+      (8/29 에 이걸 바깥 여백을 덮는 데 쓰려다 판까지 초록으로 덮은 적 있다 — 이번엔
+       판 '안쪽' 을 칠하는 용도라 그 함정이 없다) */
+.wp{position:fixed;inset:0;background:#2E7D32;display:none;flex-direction:column;align-items:center;z-index:120;overflow:hidden}
+.wp::before{content:'';position:absolute;top:0;bottom:0;left:0;right:0;margin:0 auto;width:min(560px,62dvh);max-width:100%;background:linear-gradient(180deg,#FFF8E1,#FFE0B2);z-index:-1;pointer-events:none}
 .wp.show{display:flex}
-.wp-back{z-index:140}
+/* 뒤로 화살표는 화면 왼쪽이 아니라 '크림색 판' 왼쪽 끝에 — 안 그러면 초록 여백 위에 홀로 뜬다.
+   폰에서는 50% - 50vw = 0 이라 예전과 똑같은 left:14px 이 된다. */
+.wp-back{z-index:140;left:calc(50% - min(50vw,280px,31dvh) + 14px)}
 .wp-title{font-size:clamp(15px,4.8vw,26px);color:#E65100;margin-top:18px;margin-bottom:4px;text-shadow:1px 1px 0 rgba(255,255,255,.5);text-align:center;flex:0 0 auto;width:100%;box-sizing:border-box;padding:0 56px;white-space:nowrap}
 /* ★ 과일 퍼즐판 — 폰 비율 고정: 560px 과 화면높이의 62% 중 작은 쪽. 남는 공간은 좌우 여백.
    ⚠️ 바깥 상자(.wp)는 일부러 안 줄였다 — 줄이면 뒤에 깔린 Word 메뉴(.wc)의 뒤로 화살표가

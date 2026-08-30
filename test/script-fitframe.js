@@ -2049,7 +2049,7 @@ function goAnimalPuzzle(){
     if(_apOverlay) return;                       // 중복 열기 방지
     var ov=document.createElement('div');
     ov.id='apOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#2E7D32;';   // 첫 화면과 같은 초록 단색(iframe 뜨기 전 검은 깜빡임 방지)
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
@@ -2089,7 +2089,7 @@ function goDinoPuzzle(){
     if(_dpOverlay) return;                       // 중복 열기 방지
     var ov=document.createElement('div');
     ov.id='dpOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#2E7D32;';   // 첫 화면과 같은 초록 단색(iframe 뜨기 전 검은 깜빡임 방지)
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
@@ -2228,7 +2228,7 @@ function openPhonicsGame(setNo){
     try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(e){}
     var ov=document.createElement('div');
     ov.id='phOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#2E7D32;';   // 첫 화면과 같은 초록 단색(iframe 뜨기 전 검은 깜빡임 방지)
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';

@@ -9,7 +9,8 @@
        test/dino-fit.html · test/phonics/index.html 를 바라본다.
      ⚠ 이 파일은 test/current-bgmmono.html 을 복사해 만들었다 — 배경음악 모노는 이미 라이브라
        여기서 따로 시험하는 게 아니다. (2026-08-29: 이름표를 안 바꿔 '모노 판'으로 보이던 것 수정)
-     ── 2026-08-30 추가: 화면을 돌리면 퍼즐판을 다시 그린다(동물·공룡·과일).
+     ── 2026-08-30 추가 ①: 화면을 돌리면 퍼즐판을 다시 그린다(동물·공룡·과일).
+     ── 2026-08-30 추가 ②: 판 바깥 여백을 검정 → 첫 화면과 같은 초록 단색(#2E7D32)으로.
        세로로 열었다가 가로로 돌리면 조각이 옛 좌표에 남아 화면 밖으로 잘리던 것.
      ⚠️ 이름표(아래 #bgmnote)와 이 주석의 날짜는 '이 파일'이 아니라 **이 판이 부르는 파일들**
        (script-fitframe.js · animal-fit.html · dino-fit.html · phonics/)이 바뀌어도 반드시 같이 올릴 것.
@@ -296,7 +297,7 @@ try {
 <style>#bgmnote{position:fixed;left:10px;top:78px;z-index:99999;pointer-events:none;
   background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 "Segoe UI",sans-serif;
   padding:6px 10px;border-radius:7px;max-width:66vw;transition:opacity 1s}</style>
-<div id="bgmnote">📐 <b>폰 비율 + 회전 대응 판</b> (2026-08-30)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>세로로 조각 몇 개 맞춘 뒤 가로로 돌려 보세요</span></div>
+<div id="bgmnote">📐 <b>폰 비율 + 회전 + 초록 여백</b> (2026-08-30)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>판 바깥 여백이 첫 화면과 같은 초록인가 · 돌려도 조각이 남는가</span></div>
 <script>setTimeout(function(){try{var n=document.getElementById("bgmnote");if(n)n.style.opacity="0";}catch(e){}},15000);</script>
 </body>
 </html>

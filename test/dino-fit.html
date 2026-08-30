@@ -28,7 +28,7 @@
      ⚠️ #screen 과 #layer 는 반드시 '같은 폭·같은 가운데정렬' 이어야 한다 —
         조각 좌표는 board(=#screen 안) 기준으로 계산되는데 조각은 #layer 에 담기기 때문. */
   :root{--sw:min(100vw,560px,62vh)}
-  html,body{margin:0;height:100%;overflow:hidden;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#000;touch-action:none;user-select:none;-webkit-user-select:none}
+  html,body{margin:0;height:100%;overflow:hidden;font-family:'Segoe UI',sans-serif;overscroll-behavior:none;background:#2E7D32;touch-action:none;user-select:none;-webkit-user-select:none}
   #screen{position:fixed;inset:0;width:var(--sw);margin:0 auto;display:flex;flex-direction:column;background:#fff;overflow:hidden}
   #board{position:relative;flex:0 0 62%;background:linear-gradient(180deg,#eef6e8,#e0ecd9);overflow:hidden}
   #title{position:absolute;top:8px;left:0;width:100%;text-align:center;font-weight:700;color:#3a5a2a;font-size:15px;z-index:5;text-shadow:0 1px 2px #fff}
