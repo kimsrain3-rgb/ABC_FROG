@@ -5501,3 +5501,29 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 푸시 약 1분 뒤 `https://abcfrog.kr/script.js` 에 `wpFitTitle` · `dino.html` 에 `2E7D32` 가 나오는 것 확인(배포 완료). 8/30 에 라이브 배포본으로 한 폰·태블릿 3크기 검증은 코드가 동일하므로 되풀이하지 않았다.
 
 ⚠️ 8/30 항목의 **"함께 나간 알려진 문제"(가로 시작화면에서 Word·Phonics 안 눌림 — 브라우저 한정, 앱은 세로 고정)** 도 그대로 다시 나갔다. 사장님 판단(실기기에서는 그 비율이 안 나온다)으로 유지.
+
+### 2026-08-31 — 👆 **파리잡기 모드 버튼 '두 번 탭' 오터치 수정 — `test/` 판** · **라이브 미변경**
+
+**증상**(사장님 폰 재현): 파리잡기 메뉴(`#ms`)에서 ABC/abc/ABc 를 빠르게 두 번 누르면 두 번째 탭이 뒤에 드러난 시작화면(`#ss`)의 'ABC 파리잡기' 버튼에 떨어진다 → 메뉴가 다시 열리고 게임은 그 뒤에서 돈다(소리·개구리만). 한 번만 눌러도 시작화면이 스친다. 퍼즐·파닉스는 정상.
+
+**원인**(코드 확인): `goMode()` 가 `.ms` 의 `.show` 를 **즉시** 걷고, `go()` 는 `.ss` 를 `opacity 0` → 500ms 뒤 `display:none` 으로 지운다(`style.css` `.ss{z-index:100;transition:opacity .5s}` · `.ms{z-index:115}`). opacity 는 터치를 막지 않아 0.5초 동안 `.ss` 버튼이 눌린다. 퍼즐·파닉스는 z 100000 오버레이로 **덮는** 방식이라 노출 구간이 없다. ※ `go()` 가 두 번 도는 것은 아니다(`game_start` 1회 실측) — 파리 속도 건과 별개.
+
+**수정**(`test/script-modefix.js` = 라이브 `script.js` + 2곳. `index.html`·`style.css`·퍼즐·파닉스·`gcBack()`/`location.reload` 경로 미변경):
+1. `go()` 진입 즉시 `ss.style.pointerEvents='none'` (500ms 뒤 `display:none` 이라 해제 불필요)
+2. `goMode()`: `.ms` 에 `pointer-events:none` 을 걸고 **`.show` 제거를 500ms 타이머로** — `go()` 보다 먼저 걸어 같은 시각에 먼저 실행(ms 걷기 → ss 숨김. 그 사이 ss 는 이미 투명+터치 차단). `go()` 안 기존 로직은 순서·내용 그대로.
+
+**테스트 판**: `test/current-modefix.html`(`current-fitframe.html` 복사, 로더만 교체) · 고정주소 `/test/` → 이 판. ⭐ **CSS·퍼즐·파닉스는 라이브 파일을 그대로 부른다** — 8/30 5건이 8/31 라이브에 다시 올라가 `style-fitframe.css`·`animal-fit.html`·`dino-fit.html`·`test/phonics/` 사본이 더 이상 필요 없다(라이브 `style.css` 가 test 사본의 상위집합임을 주석 제거·`../` 정규화 후 diff 로 확인 — 차이는 `#rotate-warn{display:none}` 한 줄뿐).
+
+**검증**(로컬 + Playwright, GA4 차단, **미디어 음소거**(`addInitScript` 로 `play()` 를 muted 로) — 8/31 오전 검증 때 BGM 이 사장님 PC 에 계속 남았던 것 재발 방지, 390×844, `page.mouse.click` 실제 히트테스트, 두 번째 탭 = 120ms 뒤, 16ms 간격 표본 22개):
+
+| | 라이브(전) ABC / abc / ABc | 수정판(후) ABC / abc / ABc |
+|---|---|---|
+| 시작화면이 위에 드러난 프레임 | **5 / 14 / 15** | **0 / 0 / 0** |
+| 'ABC 파리잡기' 자리를 찍으면 시작화면이 맞는 프레임 | **5 / 5 / 6** | **0 / 0 / 0** |
+| 두 번째 탭이 `goModeSelect()` 를 부름 | **ABC 에서 재현**(메뉴 다시 열림 `ms.show=true`) | 0 |
+| `game_start` 횟수 | 1 | 1 |
+| JS 에러 | 0 | 0 |
+
+한 번 탭 비교(ABC·abc): 0.7초·4초·10초 시점의 말풍선·파리 수·배경색 **동일**(ABC: hungry → 튜토리얼 파리 1 / abc: 파리 3·목표 글자). 차이는 0.3초 시점에 전은 `ss` 가 opacity 0.11 로 드러나고 후는 `.ms` 가 덮고 있다는 것뿐. `.ms` 의 `pointer-events` 는 500ms 뒤 `''` 로 복원 확인.
+
+**다음** = 사장님 폰 확인(①세 모드 빠른 두 번 탭 ②한 번 탭 동일 ③스침 없음 ④전환 느낌) → 라이브 `script.js` 에 **같은 2곳만** 적용(테스트 판 복사 금지).

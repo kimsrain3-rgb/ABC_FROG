@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<!-- ★ 테스트 빌드 — 파리잡기 모드 버튼 '두 번 탭' 오터치 수정 (2026-08-31)
+     증상: 파리잡기 메뉴(.ms)에서 ABC/abc/ABc 를 빠르게 두 번 누르면 두 번째 탭이 뒤에 드러난 시작화면(.ss)의
+       'ABC 파리잡기' 버튼에 떨어져 메뉴가 다시 열리고, 게임은 그 뒤에서 돈다(소리·개구리 액션만 들림). 한 번 눌러도 시작화면이 스친다.
+     원인: goMode() 가 .ms 를 즉시 걷고 go() 는 .ss 를 0.5초 페이드로 지운다. opacity 는 터치를 안 막는다.
+     수정(script.js 만, 2곳): ① go() 진입 즉시 .ss 에 pointer-events:none  ② .ms 걷는 시점을 500ms 뒤로(그동안 .ms 도 터치 차단).
+     ⚠ 라이브(index.html / script.js / style.css / animal.html / dino.html / phonics/)는 한 글자도 안 건드렸다.
+       이 판은 test/script-modefix.js(= 라이브 script.js + 위 2곳) 만 다르고, CSS·퍼즐·파닉스는 라이브 파일을 그대로 부른다
+       (8/30 폰 비율 고정 5건이 8/31 라이브에 다시 올라가 test 사본이 더 이상 필요 없다).
+     ⚠ 이 파일은 test/current-fitframe.html 을 복사해 만들었다. 이름표(#bgmnote)는 아래에서 바꿨다.
+     확인할 것: ① 파리잡기 메뉴에서 모드 버튼을 빠르게 두 번 — ABC·abc·ABc 전부 게임이 정상 시작하는가
+               ② 한 번만 눌렀을 때 지금과 똑같은가(튜토리얼·소리·파리 속도)
+               ③ 전환 순간 시작화면이 스치지 않는가  ④ 화면 바뀌는 느낌이 어색하지 않은가(메뉴가 덮은 채 바뀐다) -->
+<base href="../">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ABC Frog (TEST 모드 두 번 탭 수정)</title>
+<link rel="manifest" href="test/manifest.json">
+<meta name="theme-color" content="#4CAF50">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABC Frog">
+<link rel="apple-touch-icon" href="assets/ui/icons/icon-192x192.png">
+<meta name="description" content="A fun alphabet learning game for kids! Help the hungry frog catch flies with letters.">
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기(버전번호 수동관리 불필요) -->
+<script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>  <!-- 라이브 CSS 그대로(이 판은 CSS 변경 없음) -->
+<!-- 테스트 빌드라 GA4·에러추적 없음(테스트 플레이가 실유저 통계에 안 섞이게). script.js 가 gtag 를 부르므로 빈 함수만 세워둔다. -->
+<script>window.gtag=window.gtag||function(){};</script>
+<!-- ★ 부팅 가드 — script.js 가 도착하기 전에 눌린 버튼을 기억했다가, 도착 즉시 자동 실행한다.
+     [문제] 시작화면 버튼은 HTML 만으로 즉시 보이고 눌린다. 그런데 그 버튼을 처리하는 함수
+       (goModeSelect 등 11개)는 body 맨 끝의 script.js 가 다 받아진 뒤에야 생긴다.
+       느린 네트워크에서 그 틈에 아이가 누르면 "Uncaught ReferenceError: goModeSelect is not defined"
+       가 나고, script.js 의 window.onerror 가 이를 삼켜서 화면은 그냥 무반응이 됐다.
+       (2026-08-05 GA4 game_error 실측: error_where=init 12건, 멕시코·필리핀·네팔에 집중)
+     [원리] 진짜 함수가 오기 전까지 같은 이름의 '대기표' 함수를 미리 만들어 둔다.
+       대기표가 불리면 무엇을 눌렀는지 기억만 해 두고, script.js 가 실행되면서 진짜 함수가
+       대기표를 덮어쓴다(script.js 의 함수는 전부 function 선언이라 자동으로 덮어씀).
+       그 직후 body 끝의 __bootFlush() 가 기억해 둔 것을 한 번 실행한다.
+     [안전] 진짜 함수가 끝내 안 오면(로드 실패) 아무것도 실행하지 않는다 — 지금과 같은 상태로 남을 뿐,
+       더 나빠지지 않는다. 전체가 try-catch 라 가드가 고장나도 게임은 그대로 돈다. -->
+<script>
+(function () {
+  'use strict';
+  try {
+    var NAMES = ['goModeSelect','goWordCat','goWordPuzzle','goAnimalPuzzle','goDinoPuzzle',
+                 'goMode','wcBack','wcLocked','msBack','wpBack','gcBack','goPhonics'];
+    var stubs = {}, pending = null, dotsEl = null, ready = false;
+
+    // 기다리는 중 표시(개구리 인사말 아래 점점점). style.css 가 아직 안 왔어도 보이게 인라인 스타일만 사용.
+    function showDots() {
+      try {
+        if (dotsEl || ready) return;
+        var host = document.querySelector('.ss .sub') || document.querySelector('.ss');
+        if (!host) return;
+        var st = document.createElement('style');
+        st.textContent = '@keyframes bootBlink{0%,100%{opacity:.25}50%{opacity:.95}}';
+        (document.head || document.documentElement).appendChild(st);
+        dotsEl = document.createElement('div');
+        dotsEl.id = 'bootWait';
+        dotsEl.textContent = '• • •';
+        dotsEl.style.cssText = 'font:700 22px/1 system-ui,sans-serif;color:#fff;text-align:center;' +
+          'margin-top:8px;letter-spacing:3px;animation:bootBlink 1s infinite;' +
+          'text-shadow:0 1px 3px rgba(0,0,0,.35);pointer-events:none';
+        if (host.parentNode) host.parentNode.insertBefore(dotsEl, host.nextSibling);
+      } catch (e) {}
+    }
+    function hideDots() {
+      try { if (dotsEl && dotsEl.parentNode) dotsEl.parentNode.removeChild(dotsEl); } catch (e) {}
+      dotsEl = null;
+    }
+
+    // 대기표 함수 등록 — 마지막에 누른 것 하나만 기억(연타해도 한 번만 실행)
+    for (var i = 0; i < NAMES.length; i++) {
+      (function (n) {
+        if (typeof window[n] === 'function') return;   // 이미 진짜가 있으면 절대 건드리지 않음
+        stubs[n] = function () { pending = { n: n, a: [].slice.call(arguments) }; showDots(); };
+        window[n] = stubs[n];
+      })(NAMES[i]);
+    }
+
+    // 눌렀다는 느낌은 줘야 하므로 살짝 눌린 표시(로딩 중일 때만)
+    document.addEventListener('click', function (ev) {
+      try {
+        if (ready) return;
+        var t = ev && ev.target;
+        var b = (t && t.closest) ? t.closest('.game-card,.gbk,.mbtn') : null;
+        if (!b) return;
+        b.style.transform = 'scale(.94)'; b.style.opacity = '.75';
+        setTimeout(function () { try { b.style.transform = ''; b.style.opacity = ''; } catch (e) {} }, 200);
+      } catch (e) {}
+    }, true);
+
+    // script.js(+frog-reactions.js) 실행 직후 호출 — 기억해 둔 버튼을 실행한다.
+    // document.write 로 넣은 스크립트는 파서를 멈추고 동기 실행되므로, 이 함수가 불릴 시점엔 이미 로드가 끝나 있다.
+    window.__bootFlush = function () {
+      try {
+        ready = true;
+        hideDots();
+        if (!pending) return;
+        var p = pending; pending = null;
+        var f = window[p.n];
+        if (typeof f === 'function' && f !== stubs[p.n]) f.apply(null, p.a);   // 대기표가 아직 그대로면 실행 안 함
+      } catch (e) {}
+    };
+    window.__bootState = function () { return { ready: ready, pending: pending && pending.n }; };  // 테스트 확인용
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="gc">
+  <div class="ss" id="ss">
+    <img class="sf" src="assets/frog/images/frog_4a.webp" alt="ABC Frog">
+    <h1>ABC Frog</h1>
+    <div class="sub">I'm hungry~</div>
+    <div class="mode-buttons">
+      <button class="game-card wc-card card-abc" onclick="goModeSelect()">
+        <span class="card-icon"><img src="assets/bugs/images/fly_front.webp" alt="catch"></span>
+        <span class="card-label">ABC</span>
+      </button>
+      <button class="game-card wc-card card-word" onclick="goWordCat()">
+        <!-- 버튼 전용 작은 아이콘(127x150, 21KB). 2026-08-14 이전엔 퍼즐용 원본
+             fruit_apple_image.png(1019x1200, 974KB)를 그대로 썼는데 버튼은 34x34px 로 보인다(style.css:279).
+             ⚠️ 퍼즐용 원본은 그대로 둘 것 — script.js 의 WP_WORDS.apple.img 가 퍼즐 그림으로 쓴다. -->
+        <span class="card-icon" id="wordBtnIcon"><img src="assets/fruit/images/fruit_apple_icon.png?v=1" alt="Word"></span>
+        <span class="card-label">Word</span>
+      </button>
+      <!-- 파닉스(satpin) — 2026-08-12 잠금 해제. wc-locked·🔒 배지를 떼면 아이콘이 제 색으로 나오고
+           .card-phonics 보라색이 적용된다. 누르면 phonics/index.html 이 전체화면 오버레이로 열림.
+           아이콘: 🗣️ 이모지 → 인라인 SVG(입 벌린 옆얼굴 + 소리 물결 2줄).
+           ⚠️ 눈동자 #7F5BC2 = 카드 그라데이션(#9575CD→#5E35B1)의 '눈 높이' 지점 색 실측값.
+              카드 색이나 아이콘 위치를 바꾸면 이 값도 다시 재야 한다. -->
+      <button class="game-card wc-card card-phonics" onclick="goPhonics()">
+        <span class="card-icon">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">
+            <path d="M42 52 L67 40 A28 28 0 1 0 67 64 Z" fill="#fff"/>
+            <circle cx="32" cy="30" r="10" fill="#fff"/>
+            <circle cx="32" cy="28" r="4" fill="#7F5BC2"/>
+            <path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="card-label">Phonics</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 단어 퍼즐 카테고리 선택 (과일 / 동물 / 채소) -->
+  <div class="wc" id="wc">
+    <button class="wc-back gbk" onclick="wcBack()" aria-label="back"></button>
+    <img class="wc-frog" src="assets/frog/images/frog_4a.webp" alt="frog">
+    <h2 class="wc-title">Pick a puzzle! 🧩</h2>
+    <div class="wc-cards">
+      <button class="game-card wc-card wc-fruit" onclick="goWordPuzzle()">
+        <span class="card-icon">🍎</span>
+        <span class="card-label">Fruit</span>
+      </button>
+      <button class="game-card wc-card wc-animal" onclick="goAnimalPuzzle()">
+        <span class="card-icon"><span class="ic-mask" role="img" aria-label="animal"></span></span>
+        <span class="card-label">Animal</span>
+      </button>
+      <button class="game-card wc-card wc-dino" onclick="goDinoPuzzle()">
+        <span class="card-icon"><span class="dino-sil-ic" role="img" aria-label="dino"></span></span>
+        <span class="card-label">Dino</span>
+      </button>
+      <button class="game-card wc-card wc-locked" onclick="wcLocked(this)">
+        <span class="card-icon">🥕</span>
+        <span class="card-label">Vegetable</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+      <button class="game-card wc-card wc-locked wc-insect" onclick="wcLocked(this)">
+        <span class="card-icon"><img class="insect-sil-ic" src="assets/ui/icons/insect_silhouette.svg" alt="insect"></span>
+        <span class="card-label">Insect</span>
+        <span class="wc-lock">🔒</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 단어 퍼즐 화면 (그림 직소 퍼즐) -->
+  <div class="wp" id="wp">
+    <button class="wp-back gbk gbk-dim" onclick="wpBack()" aria-label="back"></button>
+    <h2 class="wp-title" id="wpTitle">🧩 Make the apple!</h2>
+    <div class="wp-stage" id="wpStage"></div>
+  </div>
+
+  <!-- ABC 모드 선택 화면 (파리 잡기 글자 모드 고르기) -->
+  <div class="ms" id="ms">
+    <button class="ms-back gbk" onclick="msBack()" aria-label="back"></button>
+    <img class="ms-frog" src="assets/frog/images/frog_4a.webp" alt="frog">
+    <h2 class="ms-title">Which letter?</h2>
+    <div class="ms-buttons">
+      <button class="mbtn mbtn-abc" onclick="goMode('ABC')"><span class="mbtn-label">ABC</span></button>
+      <button class="mbtn mbtn-lower" onclick="goMode('abc')"><span class="mbtn-label">abc</span></button>
+      <button class="mbtn mbtn-mix" onclick="goMode('ABc')"><span class="mbtn-label">ABc</span></button>
+    </div>
+  </div>
+  <!-- 알파벳 게임 화면 뒤로 버튼 (기존엔 없어서 물리 뒤로 버튼밖에 못 나갔음) -->
+  <button class="gbk gbk-dim gc-back" id="gcBack" onclick="gcBack()" aria-label="back" style="z-index:150"></button>
+  <div class="sc" id="sc">🌟 0</div>
+  <div class="cb" id="cb"></div>
+  <div class="bubble" id="bbl"></div>
+  <!-- 잠긴 카드 안내 토스트 — 시작화면·퍼즐메뉴 양쪽에서 쓰려고 #gc 직속으로 둔다.
+       .wc 안에 두면 그 화면이 display:none 이라 시작화면에서 눌러도 토스트가 부모째 숨겨져 안 보인다.
+       .wc 가 #gc 와 같은 박스(position:absolute;inset:0)라 옮겨도 화면상 위치는 그대로. -->
+  <div class="wc-toast" id="wcToast">Coming soon! 곧 나와요 🔜</div>
+
+  <div class="lilypad"><img src="assets/ui/images/lilypad.webp" alt="lilypad"></div>
+  <div class="stump"><img src="assets/ui/images/bg_5-1.webp" alt="stump"></div>
+
+  <!-- ★ 개구리 지연 로딩 (2026-08-14) — 18장은 `src` 가 아니라 `data-src` 다.
+       [왜] 이 20장은 시작화면에서 한 장도 안 보인다(.frog z-index 22 가 .ss z-index 100 에 완전히 가려짐).
+            그런데 `<img src>` 라서 브라우저가 첫 화면에서 20장(1,962KB)을 전부 받고 있었다.
+            시작화면 개구리는 여기가 아니라 위쪽 `.sf` 이고, script.js 맨 위 IIFE 가 frog_4a↔frog_4b 만 바꾼다.
+       [언제 받나] script.js 의 `preloadFrogImgs()` 가 게임 들어갈 때(ABC 카드 누른 순간) 순서대로 받는다.
+       [src 를 남긴 2장]
+         fs1a — 게임은 항상 1단계로 시작(script.js `go()`). 없으면 느린 네트워크에서 '크기가 틀린 개구리'가 보인다.
+         fs4a — frog_4a.png 는 `.sf`·`.wc-frog`·`.ms-frog` 가 어차피 받으므로 추가 비용 0.
+                frog-reactions.js 가 '로딩된 개구리 PNG' 로 발 위치를 재기 때문에 항상 한 장은 있어야 한다.
+       ⚠️ `loading="lazy"` 로 바꾸지 말 것 — 20장 전부 display:none(style.css)이라 화면에 안 걸려서
+          브라우저가 영영 안 받는다. 게임에 들어가도 개구리가 안 나온다. -->
+  <div class="frog" id="frog">
+    <!-- 5단계 개구리 (각 단계: a=숨쉬기A, b=숨쉬기B, open=입벌림) -->
+    <!-- 1단계 (홀쭉) — fs1a 만 src 유지(위 설명 참고) -->
+    <img id="fs1a" class="frog-img active" src="assets/frog/images/frog_1a.webp" alt="frog1a" data-stage="1" data-pose="a">
+    <img id="fs1b" class="frog-img" data-src="assets/frog/images/frog_1b.webp" alt="frog1b" data-stage="1" data-pose="b">
+    <img id="fs1o" class="frog-img" data-src="assets/frog/images/frog_1_open.webp" alt="frog1open" data-stage="1" data-pose="open">
+    <img id="fs1y" class="frog-img" data-src="assets/frog/images/frog_1_yuck.webp" alt="frog1yuck" data-stage="1" data-pose="yuck">
+    <!-- 2단계 (조금) -->
+    <img id="fs2a" class="frog-img" data-src="assets/frog/images/frog_2a.webp" alt="frog2a" data-stage="2" data-pose="a">
+    <img id="fs2b" class="frog-img" data-src="assets/frog/images/frog_2b.webp" alt="frog2b" data-stage="2" data-pose="b">
+    <img id="fs2o" class="frog-img" data-src="assets/frog/images/frog_2b_open.webp" alt="frog2open" data-stage="2" data-pose="open">
+    <img id="fs2y" class="frog-img" data-src="assets/frog/images/frog_2_yuck.webp" alt="frog2yuck" data-stage="2" data-pose="yuck">
+    <!-- 3단계 (통통) -->
+    <img id="fs3a" class="frog-img" data-src="assets/frog/images/frog_3a.webp" alt="frog3a" data-stage="3" data-pose="a">
+    <img id="fs3b" class="frog-img" data-src="assets/frog/images/frog_3b.webp" alt="frog3b" data-stage="3" data-pose="b">
+    <img id="fs3o" class="frog-img" data-src="assets/frog/images/frog_3_open.webp" alt="frog3open" data-stage="3" data-pose="open">
+    <img id="fs3y" class="frog-img" data-src="assets/frog/images/frog_3_yuck.webp" alt="frog3yuck" data-stage="3" data-pose="yuck">
+    <!-- 4단계 (뚜뚜) — fs4a 만 src 유지(위 설명 참고) -->
+    <img id="fs4a" class="frog-img" src="assets/frog/images/frog_4a.webp" alt="frog4a" data-stage="4" data-pose="a">
+    <img id="fs4b" class="frog-img" data-src="assets/frog/images/frog_4b.webp" alt="frog4b" data-stage="4" data-pose="b">
+    <img id="fs4o" class="frog-img" data-src="assets/frog/images/frog_4_open.webp" alt="frog4open" data-stage="4" data-pose="open">
+    <img id="fs4y" class="frog-img" data-src="assets/frog/images/frog_4_yuck.webp" alt="frog4yuck" data-stage="4" data-pose="yuck">
+    <!-- 5단계 (만삭) -->
+    <img id="fs5a" class="frog-img" data-src="assets/frog/images/frog_5a.webp" alt="frog5a" data-stage="5" data-pose="a">
+    <img id="fs5b" class="frog-img" data-src="assets/frog/images/frog_5b.webp" alt="frog5b" data-stage="5" data-pose="b">
+    <img id="fs5o" class="frog-img" data-src="assets/frog/images/frog_5_open.webp" alt="frog5open" data-stage="5" data-pose="open">
+    <img id="fs5y" class="frog-img" data-src="assets/frog/images/frog_5_yuck.webp" alt="frog5yuck" data-stage="5" data-pose="yuck">
+  </div>
+
+  <div class="tongue" id="tng"></div>
+  <div id="fc"></div>
+  <div class="cbar" id="cb2"></div>
+</div>
+
+<!-- 가로 방향 안내(#rotate-warn) 삭제 — 2026-08-30. 근거는 style.css 의 같은 자리 주석 참고 -->
+
+<!-- 회선에 맞는 영상 화질 고르기(공용). 알파벳 26글자 엔딩 축하 영상이 __vq.pick() 을 쓰므로
+     script.js 보다 먼저 온다. 없어도 게임은 그대로 돌아간다(script.js 가 없으면 원본을 쓴다). -->
+<script>document.write('<scr' + 'ipt src="video-quality.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 script.js 받기(푸시 즉시 전 유저 반영) -->
+<script>document.write('<scr' + 'ipt src="test/script-modefix.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- 개구리 반응 클립 + 글자 반짝 효과 + 온보딩(튜토리얼 데모/손가락 안내). test/에서 검증 후 이식, script.js 전역함수를 감싸는 애드온이라 script.js 뒤에 로드. -->
+<script>document.write('<scr' + 'ipt src="frog-reactions.js?b=' + Date.now() + '"><\/scr' + 'ipt>');</script>
+<!-- ★ 부팅 가드 마무리 — 위 두 스크립트가 동기 로드라 여기 오면 진짜 함수가 이미 준비됐다.
+     로딩 중에 눌러 둔 버튼이 있으면 지금 한 번 실행한다(없으면 아무 일도 안 함). -->
+<script>try{ if(window.__bootFlush) window.__bootFlush(); }catch(e){}</script>
+<script>
+// 캐시 도우미(서비스워커) 사용 안 함 — 앱은 항상 서버 최신을 직접 로드(푸시 즉시 반영).
+// 과거에 등록된 서비스워커/캐시가 있으면 깨끗이 정리(자가 복구). 새로 등록은 하지 않음.
+try {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(reg){ try { reg.unregister(); } catch (e) {} });
+    }).catch(function(){});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function(keys){
+      keys.forEach(function(k){ try { caches.delete(k); } catch (e) {} });
+    }).catch(function(){});
+  }
+} catch (e) {}
+</script>
+<!-- ★ [TEST 전용] 판 표시 — 라이브 반영 때 가져가지 않는다 -->
+<style>#bgmnote{position:fixed;left:10px;top:78px;z-index:99999;pointer-events:none;
+  background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 "Segoe UI",sans-serif;
+  padding:6px 10px;border-radius:7px;max-width:66vw;transition:opacity 1s}</style>
+<div id="bgmnote">👆 <b>모드 버튼 두 번 탭 수정</b> (2026-08-31)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>ABC/abc/ABc 를 빠르게 두 번 눌러도 게임이 정상 시작해야 합니다</span></div>
+<script>setTimeout(function(){try{var n=document.getElementById("bgmnote");if(n)n.style.opacity="0";}catch(e){}},15000);</script>
+</body>
+</html>
