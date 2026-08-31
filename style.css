@@ -178,6 +178,9 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
    또렷해지는 시점 = 알파벳 26글자 엔딩 / 퍼즐 10종 시즌 완주 엔딩(한 개 완성으론 안 밝아짐).
    ※ .ms-back 등 클래스 2개 규칙과 우선순위가 같아지지 않도록 클래스 2개(.gbk.gbk-dim)로 둠. */
 .gbk.gbk-dim{opacity:.3}
+/* 파리잡기(#gcBack, .gc-back)만 덜 흐리게 — 0.3 은 배경 그림과 구분이 안 된다(사장님 8/31, 테스트 판 0.5→0.6 폰 확인 뒤 확정).
+   퍼즐·파닉스 화살표는 위 .3 그대로. 클래스 3개라 위 규칙을 이긴다(줄 순서에 안 기댐). */
+.gbk.gc-back.gbk-dim{opacity:.6}
 
 .ms-back{z-index:5}
 .ms-title{font-size:30px;color:#FFEB3B;text-shadow:2px 2px 0 #F57F17,3px 3px 0 rgba(0,0,0,.2);margin-bottom:6px}
