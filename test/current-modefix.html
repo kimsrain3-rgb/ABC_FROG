@@ -28,9 +28,9 @@
 <!-- 캐시 무력화: 매 실행마다 다른 주소로 불러 항상 최신 CSS 받기(버전번호 수동관리 불필요) -->
 <script>document.write('<link rel="stylesheet" href="style.css?b=' + Date.now() + '">');</script>  <!-- 라이브 CSS 그대로 + 아래 한 줄만 추가 -->
 <!-- ★ 2026-08-31 파리잡기 뒤로 화살표(좌하단) 흐림 완화 — 사장님: "너무 투명해 배경과 구분이 안 된다, 20% 정도만 더 진하게".
-     라이브 style.css 는 .gbk.gbk-dim{opacity:.3} 하나로 파리잡기·퍼즐 화살표를 같이 흐리게 한다. 파리잡기 것(.gc-back)만 .3 → .5.
+     라이브 style.css 는 .gbk.gbk-dim{opacity:.3} 하나로 파리잡기·퍼즐 화살표를 같이 흐리게 한다. 파리잡기 것(.gc-back)만 .3 → .6 (8/31 .5 로 봤다가 "투명도 40%" 지시로 .6).
      퍼즐·파닉스 화살표(.3)는 그대로. ⚠️ 라이브 반영 시 = style.css 의 .gbk.gbk-dim 줄 아래에 이 규칙을 추가(테스트 판 복사 금지). -->
-<style>.gbk.gc-back.gbk-dim{opacity:.5}</style>
+<style>.gbk.gc-back.gbk-dim{opacity:.6}</style>
 <!-- 테스트 빌드라 GA4·에러추적 없음(테스트 플레이가 실유저 통계에 안 섞이게). script.js 가 gtag 를 부르므로 빈 함수만 세워둔다. -->
 <script>window.gtag=window.gtag||function(){};</script>
 <!-- ★ 부팅 가드 — script.js 가 도착하기 전에 눌린 버튼을 기억했다가, 도착 즉시 자동 실행한다.
@@ -291,7 +291,7 @@ try {
 <style>#bgmnote{position:fixed;left:10px;top:78px;z-index:99999;pointer-events:none;
   background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 "Segoe UI",sans-serif;
   padding:6px 10px;border-radius:7px;max-width:66vw;transition:opacity 1s}</style>
-<div id="bgmnote">👆 <b>모드 버튼 두 번 탭 수정</b> (2026-08-31)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>ABC/abc/ABc 를 빠르게 두 번 눌러도 게임이 정상 시작해야 합니다<br>좌하단 뒤로 화살표 흐림 0.3 → 0.5</span></div>
+<div id="bgmnote">👆 <b>모드 버튼 두 번 탭 수정</b> (2026-08-31)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>ABC/abc/ABc 를 빠르게 두 번 눌러도 게임이 정상 시작해야 합니다<br>좌하단 뒤로 화살표 흐림 0.3 → 0.6 (투명도 40%)</span></div>
 <script>setTimeout(function(){try{var n=document.getElementById("bgmnote");if(n)n.style.opacity="0";}catch(e){}},15000);</script>
 </body>
 </html>
