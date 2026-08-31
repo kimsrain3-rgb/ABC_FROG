@@ -1964,6 +1964,73 @@ const WP_TF='translate(100,100) scale(1.28) translate(-100,-100)';
 const WP_X0=8, WP_X1=192, WP_Y0=0, WP_Y1=200, WP_GC=3, WP_GR=3;
 let wpGeo=null, wpPlaced=0, wpTotal=0, wpCurrent='apple';
 
+/* ══ 화면 크기가 바뀌면 과일 퍼즐판을 다시 그린다 (2026-08-30) ══════════════
+   조각 자리·판 크기는 만들 때 wpStage 를 한 번 재서 정하고 끝이다. 태블릿을 세로로
+   열었다가 가로로 돌리면 옛 크기 좌표가 그대로 남아 조각이 판 밖으로 밀린다
+   (768×1024 → 1024×768 실측: 조각 2개가 판 밖, 아래로 154.3px).
+   ⚠️ 과일 퍼즐 화면일 때만 움직인다 — 파리잡기는 지금도 화면에 잘 맞으므로 안 건드린다.
+   ⚠️ 다 맞춘 뒤(글자·보상영상 구간)에는 다시 그리지 않는다.
+   ⚠️ 이미 맞춘 조각은 '몇 번째 조각인지'로 되살린다. 조각 격자(wpLevelFor)가 화면 크기와
+      무관해 다시 그려도 순서·개수가 같다. 그래도 개수를 대조해 다르면 되살리기를 포기한다. */
+var _wpRestore=null, _wpRsT=null, _wpLastW=window.innerWidth, _wpLastH=window.innerHeight;
+function wpOnViewportChange(){
+  try{
+    var w=window.innerWidth, h=window.innerHeight;
+    if(w===_wpLastW && h===_wpLastH) return;
+    _wpLastW=w; _wpLastH=h;
+    var wpEl=document.getElementById('wp');
+    if(!wpEl || !wpEl.classList.contains('show')) return;   // 과일 퍼즐 화면이 아니면 무시
+    if(!wpTotal || wpPlaced>=wpTotal) return;               // 안 만들었거나 다 맞춤
+    if(document.getElementById('wpVideo')) return;          // 보상 영상 재생 중
+    var all=Array.prototype.slice.call(document.querySelectorAll('.wp-piece'));
+    var idx=[];
+    all.forEach(function(el,i){ if(el.classList.contains('placed')) idx.push(i); });
+    _wpRestore={idx:idx, count:all.length};
+    var keepT0=_wpT0;                                       // 푸는 데 걸린 시간은 이어서 잰다
+    buildPuzzle(wpCurrent);
+    _wpT0=keepT0;
+    wpApplyRestore(0);
+  }catch(e){ _wpRestore=null; }
+}
+function wpApplyRestore(tries){
+  try{
+    if(!_wpRestore) return;
+    var ps=Array.prototype.slice.call(document.querySelectorAll('.wp-piece'));
+    if(ps.length!==_wpRestore.count){                       // 아직 다 안 그려졌으면 잠깐 기다린다
+      if(tries<40){ setTimeout(function(){ wpApplyRestore(tries+1); },50); return; }
+      _wpRestore=null; return;                              // 끝내 다르면 포기(진행만 잃고 판은 정상)
+    }
+    var r=_wpRestore; _wpRestore=null;
+    if(!wpGeo) return;
+    r.idx.forEach(function(i){
+      var el=ps[i]; if(!el || el.classList.contains('placed')) return;
+      el.style.left=wpGeo.boardLeft+'px'; el.style.top=wpGeo.boardTop+'px';
+      el.classList.add('placed'); el.style.zIndex=10;
+      wpPlaced++;
+    });
+  }catch(e){ _wpRestore=null; }
+}
+(function(){
+  var fire=function(){ clearTimeout(_wpRsT); _wpRsT=setTimeout(wpOnViewportChange,300); };
+  window.addEventListener('resize',fire);
+  window.addEventListener('orientationchange',fire);
+})();
+/* 웹폰트(Fredoka)가 늦게 오면 제목 글자 폭이 달라진다 → 제목 크기·위치가 바뀌고 판 높이도 바뀐다.
+   wpFitTitle() 만 다시 부르면 조각은 옛 높이 그대로라 어긋나므로, 퍼즐을 통째로 한 번 다시 그린다.
+   fonts.ready 는 딱 한 번만 풀리므로 되돌이표가 생기지 않는다. */
+(function(){
+  try{
+    if(!document.fonts || !document.fonts.ready) return;
+    document.fonts.ready.then(function(){
+      try{
+        var wpEl=document.getElementById('wp');
+        if(wpEl && wpEl.classList.contains('show') && wpTotal && wpPlaced<wpTotal
+           && !document.getElementById('wpVideo')) buildPuzzle(wpCurrent);
+      }catch(e){}
+    });
+  }catch(e){}
+})();
+
 function goWordPuzzle(){
   document.getElementById('wp').classList.add('show');
   syncBackGuard();                                      // 놀이 화면 진입 → 뒤로가기 보호 켜기
@@ -1997,7 +2064,7 @@ function goAnimalPuzzle(){
     if(_apOverlay) return;                       // 중복 열기 방지
     var ov=document.createElement('div');
     ov.id='apOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#2E7D32;';   // 첫 화면과 같은 초록 단색(iframe 뜨기 전 검은 깜빡임 방지)
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
@@ -2007,7 +2074,7 @@ function goAnimalPuzzle(){
     bk.onclick=closeAnimalPuzzle;
     bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=퍼즐하는 중(흐리게)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
-    bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
+    bk.style.cssText='position:fixed;top:14px;left:calc(50vw - min(50vw,280px,31vh) + 14px);z-index:100000';   // 화면 왼쪽이 아니라 '판' 왼쪽 끝
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _apOverlay=ov;
@@ -2037,7 +2104,7 @@ function goDinoPuzzle(){
     if(_dpOverlay) return;                       // 중복 열기 방지
     var ov=document.createElement('div');
     ov.id='dpOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#2E7D32;';   // 첫 화면과 같은 초록 단색(iframe 뜨기 전 검은 깜빡임 방지)
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
@@ -2047,7 +2114,7 @@ function goDinoPuzzle(){
     bk.onclick=closeDinoPuzzle;
     bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=퍼즐하는 중(흐리게)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
-    bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
+    bk.style.cssText='position:fixed;top:14px;left:calc(50vw - min(50vw,280px,31vh) + 14px);z-index:100000';   // 화면 왼쪽이 아니라 '판' 왼쪽 끝
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _dpOverlay=ov;
@@ -2176,7 +2243,7 @@ function openPhonicsGame(setNo){
     try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(e){}
     var ov=document.createElement('div');
     ov.id='phOverlay';
-    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#000;';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:#2E7D32;';   // 첫 화면과 같은 초록 단색(iframe 뜨기 전 검은 깜빡임 방지)
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
@@ -2186,7 +2253,7 @@ function openPhonicsGame(setNo){
     bk.onclick=closePhonics;
     bk.className='gbk gbk-dim';                   // 모양은 공용 클래스, gbk-dim=노는 중(흐리게)
     // .gbk 이 position:absolute 이므로 fixed 를 뒤에 덮어써야 함(오버레이 기준 고정)
-    bk.style.cssText='position:fixed;top:14px;left:14px;z-index:100000';
+    bk.style.cssText='position:fixed;top:14px;left:calc(50vw - min(50vw,280px,31vh) + 14px);z-index:100000';   // 화면 왼쪽이 아니라 '판' 왼쪽 끝
     ov.appendChild(fr); ov.appendChild(bk);
     document.body.appendChild(ov);
     _phOverlay=ov;
@@ -2621,6 +2688,13 @@ function buildPuzzle(key){
   var data=WP_WORDS[wpCurrent];
   var stage=document.getElementById('wpStage');
   stage.innerHTML='';
+  /* ★ 제목을 '판 높이를 재기 전' 에 확정한다 (2026-08-30).
+     좁은 화면에서는 wpFitTitle() 이 제목을 화살표 아래로 내리는데, 그러면 판(wpStage) 높이가
+     줄어든다. 아래 SH 를 먼저 재면 옛 높이로 조각 자리를 잡아 조각이 판 밖으로 밀린다
+     (844×390 에서 2개가 밖으로 나가는 것을 실측). 순서가 곧 버그였던 자리. */
+  var tEl0=document.getElementById('wpTitle');
+  if(tEl0) tEl0.textContent='🧩 Make the '+data.word.toLowerCase()+'!';
+  wpFitTitle();
   var SW=stage.clientWidth, SH=stage.clientHeight;
   if(SW<10||SH<10){
     var wpEl=document.getElementById('wp');
@@ -2685,7 +2759,7 @@ function buildPuzzle(key){
   wpGeo={boardLeft:boardLeft,boardTop:boardTop,board:board};
   var mask=data._mask;                        // PNG 과일이면 조각별 사용여부, 아니면 undefined
   wpPlaced=0; wpTotal=mask?mask.filter(Boolean).length:pieces.length;
-  var tEl=document.getElementById('wpTitle'); if(tEl) tEl.textContent='🧩 Make the '+data.word.toLowerCase()+'!';
+  // (제목은 이 함수 맨 위에서 이미 확정했다 — 판 높이를 재기 전에 끝내야 하기 때문)
 
   // 자르기 격자 모서리(안쪽만 살짝 흔들어 자연스러운 곡선)
   var cw=(WP_X1-WP_X0)/gc, ch=(WP_Y1-WP_Y0)/gr;
@@ -2966,6 +3040,51 @@ function wpLoadLetter(ch){
 //    안전배율 1.30 + 좌우 여백 16px → 최고점에서 화면의 약 90%. (dino.html 과 같은 값)
 //  [상한(capPx)] 호출한 쪽이 준다. 짧은 단어가 과하게 커지지 않게 막는 뚜껑이다.
 //    늘리기도 하고 줄이기도 하되 절대 capPx 를 넘지 않는다.
+/* ── 퍼즐 제목을 판에 맞추기 (2026-08-30) ─────────────────────────────────
+   뒤로 화살표를 '판 왼쪽 끝' 으로 옮기면서 제목(화면 전체 기준 가운데)과 겹치게 됐다.
+   ⚠️ 폭을 판 기준으로 바꾸는 것만으로는 안 된다 — 844×390 이면 판 242px 안에
+      제목 226.7px 와 화살표 66px 가 동시에 못 들어간다(가운데를 지키려면 9px 이하여야 한다).
+      그래서 ①옆에 세워보고 ②안 되면 화살표 아래로 내린다.
+   ⚠️ 글자수×추정폭 같은 공식을 쓰지 말 것(CLAUDE.md 안정성 규칙 8번). 실측한다.
+   폰(390×844)에서는 여유가 충분해 한 번도 안 줄어든다 = 지금과 완전히 같다. */
+function wpFitTitle(){
+  try{
+    var el=document.getElementById('wpTitle'); if(!el || !el.textContent) return;
+    var wp=document.getElementById('wp'); if(!wp) return;
+    el.style.fontSize=''; el.style.marginTop='';                 // 항상 CSS 기본값에서 다시 시작
+    el.style.paddingLeft=''; el.style.paddingRight='';           // (작아진 채/내려간 채 굳지 않게)
+    var bk=document.querySelector('.wp-back');
+    var rg=document.createRange();
+    var MIN=14;                                                  // 이보다 작으면 아이가 못 읽는다
+    function textW(){ rg.selectNodeContents(el); return rg.getBoundingClientRect().width; }
+    function shrink(allow){                                      // 실측으로 줄이기. 들어가면 true
+      if(!(allow>0)) return false;
+      for(var i=0;i<8;i++){
+        var w=textW(); if(!w || w<=allow) return true;
+        var fs=parseFloat(getComputedStyle(el).fontSize)||16;
+        var next=fs*(allow/w);
+        if(next<MIN){ el.style.fontSize=MIN+'px'; return textW()<=allow; }
+        if(Math.abs(next-fs)<0.3) return textW()<=allow;
+        el.style.fontSize=next+'px';
+      }
+      return textW()<=allow;
+    }
+    var reserve=56;                                              // 화살표가 없으면 CSS padding 과 같은 값
+    if(bk){
+      var br=bk.getBoundingClientRect(), er=el.getBoundingClientRect();
+      reserve=Math.max(reserve,(br.right-er.left)+8);            // 화살표 오른쪽 끝 + 8px 숨통
+    }
+    if(shrink(el.clientWidth-reserve*2)) return;                 // 나란히 세워졌다 → 끝
+    el.style.fontSize='';                                        // 못 세우면 화살표 아래로
+    if(bk){
+      var br2=bk.getBoundingClientRect(), wr=wp.getBoundingClientRect();
+      el.style.marginTop=(br2.bottom-wr.top+6)+'px';
+    }
+    el.style.paddingLeft='8px'; el.style.paddingRight='8px';
+    shrink(el.clientWidth-16);
+  }catch(e){}
+}
+
 var WP_WORD_SHOUT=1.30, WP_WORD_PAD=16;
 function wpFitWord(wrap,capPx){
   try{
