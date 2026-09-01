@@ -911,7 +911,18 @@ function cf(l,t,sx,sy){
 }
 function rf(id){const i=fl.findIndex(f=>f.id===id);if(i!==-1){fl[i].el.remove();fl.splice(i,1)}}
 function raf(){fl.forEach(f=>f.el.remove());fl=[]}
-function uf(){
+// ★ 2026-09-01 파리 이동을 시간 기준(delta-time)으로 — 예전엔 '한 프레임에 f.vx 만큼'이라
+//    화면을 자주 그리는 기기일수록 정비례로 빨라졌다(120Hz 폰 = 2배). 같은 게임인데 아이마다 난이도가 달랐다.
+//    dt(ms) 를 받아 60fps(16.6667ms) 를 1 로 보는 배율 k 를 곱한다 → **60fps 에서는 k=1 이라 예전과 수치가 완전히 동일**.
+//    ⚠️ vx·vy 상한(±2.5/±2)의 뜻은 그대로 '60fps 기준 한 프레임 이동량'이다(단위를 안 바꾼 이유 = 기존 값·감각 보존).
+//    ⚠️ 방향을 불규칙하게 바꾸는 확률(.02)도 k 를 곱한다 — 안 그러면 빠른 화면에서 방향이 2배로 자주 바뀌어 느낌이 달라진다.
+//    ⚠️ dt 상한 100ms(k≤6) — 다른 앱 갔다 오면 dt 가 수 초로 벌어져 파리가 순간이동한다.
+//    dt 를 아예 안 주고 uf() 로 부르면 k=1(예전 동작 그대로) — 옛 코드와 나란히 비교할 때 쓴다.
+//    ⭐ dt=0 은 k=0(이번엔 안 움직임)이다. '안 준 것(k=1)'과 일부러 구분한다 —
+//      만에 하나 gl() 루프가 둘이 되면 같은 프레임의 두 번째 호출은 dt=0 을 받아 **이동량을 더하지 않는다**
+//      (프레임 기준이던 예전엔 루프가 둘이면 그대로 2배였다). 첫 프레임도 dt=0 이라 한 프레임 쉬는데 눈에 안 보인다.
+function uf(dt){
+  const k=(dt===undefined)?1:Math.min(Math.max(dt,0),100)/16.6667;
   const cW=gc.offsetWidth||400,cH=gc.offsetHeight||700,mY=cH*.35;
   fl.forEach(f=>{
     const fw=f.el.offsetWidth||cW*0.2;
@@ -919,14 +930,14 @@ function uf(){
     if(f.spider){
       // 거미: 상하로 내려왔다 올라감 + 좌우 흔들림
       if(f.goingDown){
-        f.y+=f.vy;
+        f.y+=f.vy*k;
         if(f.y>mY){f.goingDown=false;}
       } else {
-        f.y-=f.vy;
+        f.y-=f.vy*k;
         if(f.y<5){f.goingDown=true;}
       }
       // 좌우 흔들림 (사인파)
-      f.swayPhase+=f.swaySpeed;
+      f.swayPhase+=f.swaySpeed*k;
       f.x=f.baseX+Math.sin(f.swayPhase)*f.swayAmp;
       // 경계 처리
       if(f.x<0)f.x=0;
@@ -937,13 +948,13 @@ function uf(){
       if(web) web.style.height=f.y+'px';
       return;
     }
-    f.x+=f.vx;f.y+=f.vy;
+    f.x+=f.vx*k;f.y+=f.vy*k;
     if(f.x<0){f.x=0;f.vx*=-1}
     if(f.x>cW-fw){f.x=cW-fw;f.vx*=-1}
     if(f.y<0){f.y=0;f.vy*=-1}
     if(f.y>mY){f.y=mY;f.vy*=-1}
-    if(Math.random()<.02)f.vx+=(Math.random()-.5);
-    if(Math.random()<.02)f.vy+=(Math.random()-.5)*.8;
+    if(Math.random()<.02*k)f.vx+=(Math.random()-.5);
+    if(Math.random()<.02*k)f.vy+=(Math.random()-.5)*.8;
     f.vx=Math.max(-2.5,Math.min(2.5,f.vx));f.vy=Math.max(-2,Math.min(2,f.vy));
     f.el.style.left=f.x+'px';f.el.style.top=f.y+'px';
   });
@@ -1732,7 +1743,23 @@ function tut(){
   },2500);
 }
 
-function gl(){try{uf();}catch(e){console.warn('Game loop error:',e);}requestAnimationFrame(gl)}
+// ★ 2026-09-01 ① rAF 가 주는 시각(ts)으로 직전 프레임과의 간격(dt)을 재서 uf() 에 넘긴다.
+//    첫 프레임은 비교할 직전 값이 없으므로 dt=0 → uf() 안에서 k=0(한 프레임 쉼, 눈에 안 보인다).
+//    상한(100ms)은 uf() 쪽에서 건다 — 여기서 걸면 uf() 를 직접 부르는 곳이 생겼을 때 새어나간다.
+// ★ 2026-09-01 ② 루프 중복 시작 가드 — gl() 은 멈추는 장치가 없어(rAF 무조건 재귀) go() 가 두 번 불리면
+//    루프가 2개 겹쳐 파리가 정확히 2배가 된다(아래 2418줄 부근 주석에 이미 적혀 있던 함정).
+//    _glOn 으로 '이미 도는 중이면 새로 시작하지 않는다'. 재귀 호출은 인자(ts)가 있으므로 통과시킨다.
+var _glPrev=0, _glOn=false;
+function gl(ts){
+  if(typeof ts!=='number'){                 // 밖에서 gl() 로 '시작'을 시킨 경우
+    if(_glOn) return;                       // 이미 돌고 있다 → 두 번째 루프를 만들지 않는다
+    _glOn=true; _glPrev=0;
+  }
+  var dt=0;
+  if(typeof ts==='number'){ if(_glPrev) dt=ts-_glPrev; _glPrev=ts; }
+  try{uf(dt);}catch(e){console.warn('Game loop error:',e);}
+  requestAnimationFrame(gl);
+}
 function go(mode){
   // ★ 2026-08-31 전환 중 시작화면(ss) 터치 차단 — ss 는 아래에서 0.5초 동안 서서히 투명해지는데
   //    opacity 는 클릭을 막지 않아 그 사이 'ABC 파리잡기' 버튼이 눌렸다(모드 버튼 두 번 탭 → 게임이 메뉴 뒤에서 도는 사고).
