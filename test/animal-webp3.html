@@ -91,6 +91,8 @@
   var animalIdx=0;
   var demoDone=false;   // 첫 퍼즐에서 조각 하나 스르륵 들어가는 시범 — 1회만
   function curA(){ return ANIMALS[animalIdx]; }
+  // ★★★ [TEST 전용] ?start=<key> 로 열리면 그 퍼즐부터 시작(시범 조각 생략) — 아래 바로 열기 버튼이 쓴다. 라이브엔 없다 ★★★
+  try{ var _ts=new URLSearchParams(location.search).get('start'); if(_ts){ var _ti=ANIMALS.findIndex(function(a){return a.key===_ts;}); if(_ti>=0){ animalIdx=_ti; demoDone=true; } } }catch(e){}
 
   // 라이브: 미디어(그림/영상/소리)는 캐시 사용(재다운로드 방지) — 매번 새로 받게 하면 영상 2MB를 들어올 때마다 다시 받는다.
   // 다만 **같은 이름으로 파일을 갈아끼우면** 폰에 옛 파일이 그대로 남는다(2026-08-17 공룡 쪽에서 실제로 문제됨).
@@ -533,6 +535,27 @@ try {
   }
   if (window.caches && caches.keys) { caches.keys().then(function(keys){ keys.forEach(function(k){ try{caches.delete(k);}catch(e){} }); }).catch(function(){}); }
 } catch (e) {}
+</script>
+<!-- ★★★ [TEST 전용] "🦁 사자" 바로 열기 버튼 — 라이브엔 없다. 라이브 반영 때 이 블록(style·button·script)과 위 ?start 줄은 절대 가져가지 말 것 ★★★
+     ⚠️ 왼쪽 위에 두면 안 된다 — 부모(script.js)의 퍼즐 뒤로 화살표가 top 14px·left 14px 에 iframe 위로 떠 있어 그걸 먼저 누르게 된다(9/1 실측). 그래서 오른쪽 위.
+     누르면 이 문서를 ?start=lion 로 새로 열어 깨끗한 상태에서 사자 퍼즐부터 시작한다(퍼즐 도중 갈아끼우면 시범·완성 타이머가 남아 조각 수가 어긋난다). -->
+<style>
+#tjump{position:fixed;right:10px;top:40px;z-index:99999;padding:9px 13px;border:none;border-radius:10px;cursor:pointer;
+  font:700 14px/1.2 'Segoe UI',sans-serif;color:#fff;background:#D500F9;box-shadow:0 3px 10px rgba(0,0,0,.35);touch-action:manipulation}
+#tjump:active{transform:scale(.93)}
+#tjump.now{background:#7B1FA2;opacity:.85}
+#tjumpnote{position:fixed;right:10px;top:80px;z-index:99999;pointer-events:none;text-align:right;background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 'Segoe UI',sans-serif;padding:5px 9px;border-radius:7px;max-width:62vw}
+</style>
+<button id="tjump" type="button">🦁 사자</button>
+<div id="tjumpnote">TEST 전용 버튼<br><span style="opacity:.8">누르면 사자 퍼즐로 바로</span></div>
+<script>
+(function(){
+  var b=document.getElementById('tjump'), n=document.getElementById('tjumpnote');
+  function mark(){ try{ if(curA().key==='lion'){ b.classList.add('now'); n.innerHTML='TEST 전용 버튼<br><span style="opacity:.8">지금 사자 퍼즐입니다 (다시 누르면 처음부터)</span>'; } }catch(e){} }
+  b.addEventListener('click',function(ev){ try{ ev.preventDefault(); ev.stopPropagation(); }catch(e){}
+    try{ location.replace(location.pathname+'?start=lion&b='+Date.now()); }catch(e){} });
+  mark();
+})();
 </script>
 </body>
 </html>
