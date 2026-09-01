@@ -5576,3 +5576,15 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 런처 `/test/` → `current-webp3.html` 열림 · 이름표 표시 · `script-webp3.js` 로드 · 공룡 iframe = `test/dino-webp3.html` · 404 0 확인. 확인 후 브라우저·로컬 서버 종료.
 
 **다음** = 꼼지파파 폰 확인(①스피노·사자 조각 전부 맞춰지는가 ②밑그림 진하기·자리 ③완성 그림 선명한가 ④전환 느낌) → 라이브 `dino.html`·`animal.html` 한 줄씩. 라이브 갈 때 `ASSET_VER` 안 건드림.
+
+### 2026-09-01 — 🦖🦁 **WebP 3차 판에 "스피노·사자 바로 열기" 버튼** (`test/` 사본만) · **라이브 미변경**
+
+**왜**: 확인 대상이 공룡 8번째·동물 7번째라 앞의 것을 다 맞춰야 도달(3분짜리 확인이 30분). 8/24 "🏁 26글자 채우기"와 같은 TEST 전용 버튼 방식.
+
+**어떻게**(`test/dino-webp3.html`·`test/animal-webp3.html` 각 +24줄 + 1줄. 라이브 `dino.html`·`animal.html`·`script.js` 는 `tjump`·`?start=` **0건**):
+- 버튼(`#tjump`, 보라 `#D500F9`)을 누르면 **문서를 `?start=spinosaurus`(`lion`) 붙여 새로 연다**(`location.replace`). `function curA()` 아래 한 줄이 `?start=` 를 읽어 `animalIdx` 를 그 퍼즐로, `demoDone=true`(시범 생략). 지금 그 퍼즐이면 진보라(`.now`) + "다시 누르면 처음부터".
+- ⚠️ **퍼즐 도중 `buildAnimal()` 로 갈아끼우는 방식은 일부러 안 썼다** — 첫 퍼즐 시범 타이머(`dino.html:501~515`)가 새 퍼즐의 `PZ.placedCount` 를 올려 6개 중 5개만 맞춰도 완성 처리된다(9/1 오후 검증 때 `placedCount 7/6` 으로 실측). 새로 여는 게 깨끗하다.
+- 🔴 **왼쪽 위에 두면 안 된다** — 부모 `script.js:2119` 퍼즐 뒤로 화살표가 `top:14px; left:14px`(z 100000)에 **iframe 위로** 떠 있어 왼쪽 위 버튼은 그걸 먼저 누른다(첫 시도에서 퍼즐이 닫혀 실측). → **오른쪽 위** `right:10px; top:40px`(제목 아래, 🔊 버튼 아래).
+- 🔴 **라이브 반영 때 이 블록(`<style>`·`<button>`·`<script>` + `?start=` 줄)은 절대 가져가지 말 것.** 라이브 = 그림 주소 한 줄씩만.
+
+**검증**(로컬 + Playwright, `/test/` 런처 → 공룡/동물 열기 → 버튼 클릭): 버튼 자리 히트테스트 = iframe(부모 화살표 아님) · 클릭 후 `?start=` 로 새로 열림 · 제목 Spinosaurus/Lion · 밑그림 `.webp` · 조각 6개 · 2.5초 뒤 맞춰진 조각 0(시범 생략됨) · 오버레이 유지 · 404·JS 에러 0. 확인 후 브라우저·서버 종료.
