@@ -5539,3 +5539,11 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 사장님이 테스트 판 0.6(투명도 40%)을 폰으로 보고 "됐다, 이대로 라이브에". `style.css` 의 `.gbk.gbk-dim{opacity:.3}` 바로 아래에 **`.gbk.gc-back.gbk-dim{opacity:.6}` 한 줄 추가**(주석 2줄 포함). 클래스 3개라 줄 순서에 안 기대고 이긴다. 퍼즐·파닉스 화살표는 `.gc-back` 이 없어 0.3 그대로. `index.html`·`script.js` 무변경. **'두 번 탭' 수정은 이번에 안 가져갔다**(별건, 폰 확인 4가지 대기).
 - 검증: 라이브 `style.css` 사본만 읽는 확인용 문서(GA4·게임 없음)를 로컬에서 열어 computed opacity 실측 — 파리잡기 흐림 **0.6** / 퍼즐 흐림 **0.3** / 파리잡기 밝음 **1** / 위치 left 14px·bottom 12% 동일. 확인 후 브라우저·서버 종료.
 - 되돌리기: `git revert` 또는 `style.css` 의 그 한 줄 삭제(always-fresh 라 푸시 즉시 반영).
+
+### 2026-09-01 — 👆 **파리잡기 모드 버튼 '두 번 탭' 오터치 수정 라이브 반영** · 커밋 `6e76ac7` · 백업태그 `backup-before-modefix-live-20260901`
+
+사장님 폰 확인 4가지(①ABC·abc·ABc 빠른 두 번 탭 정상 시작 ②한 번 탭 기존과 동일 ③전환 시 시작화면 스침 없음 ④전환 느낌 자연스러움) 전부 통과(2026-08-31) → 승인. `test/script-modefix.js` 의 **수정 2곳만** 라이브 `script.js` 에 옮겼다(테스트 판 복사 금지 규칙대로 Edit 2회). 옮긴 뒤 `diff script.js test/script-modefix.js` = **차이 0**(이름표 "👆 모드 버튼 두 번 탭 수정"은 `test/current-modefix.html` 에 있어 js 엔 애초에 없었다). 캐시 = `index.html` 이 `script.js?b=Date.now()` 로 매 실행 새로 받는 always-fresh 라 **버전 날짜 갱신 불필요**.
+1. `go()` 진입 즉시 `ss.style.pointerEvents='none'`
+2. `goMode()`: `.ms` 에 `pointer-events:none` + `.show` 제거를 **500ms 타이머**로, 타이머를 `go()` 보다 먼저 걺
+- 검증(푸시 전, 로컬 + Playwright MCP, GA4 차단, `Audio` 음소거, 412×915, `page.mouse.click` 실제 히트테스트, 두 번째 탭 = 200ms 뒤 '시작화면 ABC 파리잡기 자리'): **전(HEAD 코드)** = `goModeSelect()` 2회·1.1초 뒤 메뉴 다시 열림(`ms.show=true`, 사고 재현) / **후** = `goModeSelect()` 1회·메뉴 닫힘·`ss display:none`·`gameMode=ABC`. 옛 코드는 Playwright `route()` 로 `git show HEAD:script.js` 를 끼워 같은 문서에서 비교. 확인 후 브라우저·로컬 서버 종료.
+- 되돌리기: `git revert 6e76ac7`(always-fresh 라 푸시 즉시 반영).
