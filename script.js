@@ -1734,6 +1734,10 @@ function tut(){
 
 function gl(){try{uf();}catch(e){console.warn('Game loop error:',e);}requestAnimationFrame(gl)}
 function go(mode){
+  // ★ 2026-08-31 전환 중 시작화면(ss) 터치 차단 — ss 는 아래에서 0.5초 동안 서서히 투명해지는데
+  //    opacity 는 클릭을 막지 않아 그 사이 'ABC 파리잡기' 버튼이 눌렸다(모드 버튼 두 번 탭 → 게임이 메뉴 뒤에서 도는 사고).
+  //    500ms 뒤 display:none 이 되므로 해제 코드는 필요 없다(뒤로가기·PLAY AGAIN 은 location.reload).
+  try{document.getElementById('ss').style.pointerEvents='none';}catch(e){}
   try{preloadFrogImgs();}catch(e){}   // 보장용 — 모드선택을 건너뛰고 들어오는 길(뒤로가기 복귀 등) 대비
   gameMode=mode||'ABC';
   try{gtag('event','game_start',{game_mode:gameMode});}catch(e){}
@@ -2397,7 +2401,17 @@ function goModeSelect(){ try{preloadFrogImgs();}catch(e){} try{document.getEleme
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} syncBackGuard(); }
 // ※ 여기선 syncBackGuard()를 부르지 않는다: 모드선택을 닫은 뒤 실제 게임 화면이 뜨기까지 0.5초 걸리는데,
 //    그 사이엔 '시작 화면'으로 판정돼 보호가 잠깐 풀린다. 모드선택에서 켠 보호를 그대로 게임까지 이어간다.
-function goMode(mode){ try{document.getElementById('ms').classList.remove('show');}catch(e){} go(mode); }
+// ★ 2026-08-31 모드 버튼 두 번 탭 수정 — 예전엔 .ms 를 '즉시' 걷어 그 아래 시작화면(ss)이 0.5초 동안 드러났고,
+//    두 번째 탭이 거기 'ABC 파리잡기' 버튼에 떨어져 메뉴가 다시 열리고 게임은 뒤에서 돌았다(소리·개구리만 나옴).
+//    → .ms 는 ss 가 display:none 되는 시점(go() 의 500ms)과 같은 때에 걷는다. 그동안 .ms 가 위(z 115)를 덮고 있어
+//      시작화면은 한 번도 노출되지 않고, .ms 자신도 pointer-events:none 이라 모드 버튼이 다시 눌리지 않는다.
+//    타이머는 go() 보다 먼저 걸어 같은 시각에 먼저 실행되게 한다(ms 걷기 → ss 숨김 순. 그 사이 ss 는 이미 투명+터치 차단).
+//    퍼즐·파닉스는 z 100000 오버레이로 덮는 방식이라 이 문제가 없다 — 손대지 않는다.
+function goMode(mode){
+  var _ms=null; try{ _ms=document.getElementById('ms'); _ms.style.pointerEvents='none'; }catch(e){}
+  setTimeout(function(){ try{ _ms.classList.remove('show'); _ms.style.pointerEvents=''; }catch(e){} },500);
+  go(mode);
+}
 
 // === 알파벳 게임 화면 뒤로 버튼 ===
 // ⚠️ goModeSelect()만 부르면 안 됨: 그건 .ms 를 '덮기만' 하고 게임은 뒤에서 계속 돈다.
