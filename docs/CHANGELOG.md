@@ -5547,3 +5547,32 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 2. `goMode()`: `.ms` 에 `pointer-events:none` + `.show` 제거를 **500ms 타이머**로, 타이머를 `go()` 보다 먼저 걺
 - 검증(푸시 전, 로컬 + Playwright MCP, GA4 차단, `Audio` 음소거, 412×915, `page.mouse.click` 실제 히트테스트, 두 번째 탭 = 200ms 뒤 '시작화면 ABC 파리잡기 자리'): **전(HEAD 코드)** = `goModeSelect()` 2회·1.1초 뒤 메뉴 다시 열림(`ms.show=true`, 사고 재현) / **후** = `goModeSelect()` 1회·메뉴 닫힘·`ss display:none`·`gameMode=ABC`. 옛 코드는 Playwright `route()` 로 `git show HEAD:script.js` 를 끼워 같은 문서에서 비교. 확인 후 브라우저·로컬 서버 종료.
 - 되돌리기: `git revert 6e76ac7`(always-fresh 라 푸시 즉시 반영).
+
+### 2026-09-01 — 🖼️ **퍼즐 밑그림 무거운 2장 WebP 전환 — `test/` 판** · 커밋 `b261327` · **라이브 미변경**
+
+**대상**(크기 기준으로 고름 — 형식 아님): `assets/dino/images/dino_spinosaurus_image.png` 2,425KB(941×1672 RGB) · `assets/animal/images/animal_lion_image.jpg` 2,169KB(1536×2752 RGB). 나머지 18장은 평균 340KB 라 제외(이 둘이 20장의 40%). 너구리 527KB 는 해상도 부족 건이라 별건(재작업 사안).
+
+**변환**: Pillow lossy **q80·method6·리사이즈 없음**(8/26 1·2차와 동일). 원본 안 지움. 🔴 **리사이즈 절대 금지** — 퍼즐판은 최대 560 CSS px 이지만 DPR 3 에서 1,680 device px 로 그려지고 스피노사우루스 원본이 941px 이라 이미 모자란다.
+| | 전 | 후 | 감소 |
+|---|---|---|---|
+| 스피노사우루스 | 2,425.4KB png | **163.6KB** webp | **−93.3%** |
+| 사자 | 2,169.3KB jpg | **190.7KB** webp | **−91.2%** |
+| 합계 | 4,594.7KB | **354.3KB** | **−92.3%** (4,240KB 절약) |
+픽셀 크기·RGB 모드 전부 동일. ✅ **알파 대조 불필요** — `dino.html`·`animal.html` 은 `getImageData`·alpha 0건, 조각은 SVG `clip-path` 로 자른다(투명도와 무관). 둘 다 RGB 라 알파 채널 자체가 없다. "퍼즐 마스크가 투명도를 읽는다"는 과일·개구리 얘기.
+
+**부르는 곳**: `dino.html:115` · `animal.html:80` 각 한 줄(literal). 이름을 글자로 이어 붙이는 자리 **0건** 확인(grep — `proto-animal.html` 은 옛 프로토타입이라 제외). 캐시는 `bust()` 가 `?v=ASSET_VER` 를 붙이지만 **확장자가 바뀌어 주소가 새것**이라 `ASSET_VER` 갱신 불필요.
+
+**테스트 판 구조**(`test/current-webp3.html`, 런처 `/test/` → 이 판): `test/script-webp3.js`(= 라이브 `script.js` + iframe 주소 2줄 `script.js:2075`·`2115`) → `test/dino-webp3.html`·`test/animal-webp3.html`(= 라이브 + `<base href="../">` 1줄 + 그림 주소 1줄). CSS·파닉스·과일·파리잡기는 라이브 그대로. 이름표 "🖼️ 퍼즐 그림 WebP 3차 판 (2026-09-01)". ⚠️ **라이브 반영 때는 사본을 복사하지 말고 `dino.html:115`·`animal.html:80` 의 주소 한 줄씩만** 바꿀 것(`<base>` 금지).
+
+**검증**(로컬 + Playwright MCP, 412×915, GA4·폰트 차단, 미디어 음소거, `Math.random` 고정, 옛=라이브 `dino.html`/`animal.html` · 새=test 사본을 **같은 조건으로 나란히**):
+| | 옛 | 새 |
+|---|---|---|
+| 밑그림(ghost) 위치·크기 | 스피노 (0,0,412,732) / 사자 (0,−106.1,412,738.2) | **동일** |
+| 밑그림 진하기(opacity) · 원본 픽셀 크기 | 0.3 · 941×1672 / 1536×2752 | **동일** |
+| 조각 자동 드래그(6개) 전부 스냅 | 6/6 | **6/6** |
+| 404 · JS 에러 | 0 · 0 | **0 · 0** |
+| 보드 스크린샷 차이(밑그림 단계) | — | 최대 7/255 · 4/255 (0%) |
+| 보드 스크린샷 차이(완성) | — | 평균 1.7·1.05/255. 스피노 30×40px 한 점은 완성 글자 애니메이션 타이밍(I 글자) — 그림 아님 |
+런처 `/test/` → `current-webp3.html` 열림 · 이름표 표시 · `script-webp3.js` 로드 · 공룡 iframe = `test/dino-webp3.html` · 404 0 확인. 확인 후 브라우저·로컬 서버 종료.
+
+**다음** = 꼼지파파 폰 확인(①스피노·사자 조각 전부 맞춰지는가 ②밑그림 진하기·자리 ③완성 그림 선명한가 ④전환 느낌) → 라이브 `dino.html`·`animal.html` 한 줄씩. 라이브 갈 때 `ASSET_VER` 안 건드림.
