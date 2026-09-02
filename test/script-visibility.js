@@ -17,6 +17,31 @@ window.addEventListener('unhandledrejection',function(e){e.preventDefault();cons
 var _vzHidden=false;
 try{ _vzHidden = !!document.hidden; }catch(e){ _vzHidden=false; }
 
+// ★ 2026-09-02 (후속) 숨김 중 '새로 시작되는 소리'만 막는다 — 소리 출구 한 곳에서.
+// [왜 필요했나] 위 스위치는 setInterval 반복만 막는다. 그런데 실제로 계속 나던 소리는
+//   setTimeout·onended 로 '앞 소리가 끝나면 다음'이 이어지는 사슬이었다(snr→playVoice→onended→playLetter→rit).
+//   그래서 '화면 켜졌을 때 한 번이라도 났으면 나간 뒤에도 계속' 나는 증상이 됐다(사장님 폰 관찰).
+// [🔴 왜 사슬을 끊지 않았나] snr() 의 같은 사슬이 소리가 끝난 뒤 **파리를 새로 뿌린다**(grl).
+//   사슬을 끊으면 돌아왔을 때 파리가 안 나오고 게임이 멈춘다 — 아이는 고장으로 겪는다.
+// [방식] 재생을 '막는' 대신 **소리만 끈 채 그대로 재생**한다(muted). 그러면 onended·재생시간이
+//   1ms 도 달라지지 않아 사슬과 게임 진행이 완전히 그대로다. 실패해도 최악이 '소리가 안 난다'이지
+//   '게임이 멈춘다'가 될 수 없다.
+// [범위] HTMLAudioElement = 이 게임의 소리 전부(알파벳·야미/우웩·파리붕붕·개구리울음·배경음악
+//   + frog-reactions.js 의 금빛 반짝 소리까지 같은 문서라 함께 걸린다). <video> 는 일부러 제외 —
+//   개구리 클립·엔딩 영상의 onended 가 연출을 지휘하고, 그건 _pauseAllSound 가 이미 멈춘다.
+// [안전] 우리가 끈 것만 되살린다(__vzMuted 표시). 원래 muted 인 소리는 건드리지 않는다.
+(function(){ try{
+  var _ap = window.HTMLAudioElement && HTMLAudioElement.prototype && HTMLAudioElement.prototype.play;
+  if(!_ap) return;
+  HTMLAudioElement.prototype.play = function(){
+    try{
+      if(_vzHidden){ this.__vzMuted=true; this.muted=true; }
+      else if(this.__vzMuted){ this.__vzMuted=false; this.muted=false; }
+    }catch(e){}
+    return _ap.apply(this, arguments);
+  };
+}catch(e){} })();
+
 // === 인트로 개구리 숨쉬기 ===
 (function(){const f=document.querySelector('.ss .sf');if(!f)return;let t=false;setInterval(()=>{if(_vzHidden)return;t=!t;f.src='assets/frog/images/frog_4'+(t?'b':'a')+'.webp'},800);})();
 
@@ -128,7 +153,11 @@ document.addEventListener('visibilitychange',function(){
   // ★ 2026-09-02 소리 처리(_pauseAllSound)는 한 글자도 안 건드리고 '움직임 스위치'만 옆에 붙였다.
   try{ _vzHidden = !!document.hidden; }catch(e){}
   if(document.hidden){ _pauseAllSound(); }
-  else if(_bgmWasPlaying){ try{ var b=sndMade('bgm'); if(b) b.play().catch(function(){}); }catch(e){} }
+  else {
+    // ★ 2026-09-02 배경음악만은 계속 도는(loop) 소리라, 숨김 중에 시작됐다면 소리가 꺼진 채 남는다 → 되살린다.
+    try{ var _mb=sndMade('bgm'); if(_mb && _mb.__vzMuted){ _mb.__vzMuted=false; _mb.muted=false; } }catch(e){}
+    if(_bgmWasPlaying){ try{ var b=sndMade('bgm'); if(b) b.play().catch(function(){}); }catch(e){} }
+  }
 });
 window.addEventListener('pagehide',_pauseAllSound);
 
@@ -680,14 +709,14 @@ function getPhrase(letter){var p=PHRASES[Math.floor(Math.random()*PHRASES.length
 const AC=window.AudioContext||window.webkitAudioContext;
 let ax;
 function ea(){try{if(!ax&&AC)ax=new AC();if(ax&&ax.state==='suspended')ax.resume();}catch(e){console.warn('AudioContext error:',e);}}
-function pt(f,d,t='sine',v=.3){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type=t;o.frequency.setValueAtTime(f,ax.currentTime);g.gain.setValueAtTime(v,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+d);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+d)}
-function psg(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(80,ax.currentTime);o.frequency.exponentialRampToValueAtTime(40,ax.currentTime+.3);o.frequency.exponentialRampToValueAtTime(90,ax.currentTime+.5);o.frequency.exponentialRampToValueAtTime(35,ax.currentTime+.8);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.8);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.8)}
+function pt(f,d,t='sine',v=.3){if(_vzHidden)return;ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type=t;o.frequency.setValueAtTime(f,ax.currentTime);g.gain.setValueAtTime(v,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+d);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+d)}
+function psg(){if(_vzHidden)return;ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(80,ax.currentTime);o.frequency.exponentialRampToValueAtTime(40,ax.currentTime+.3);o.frequency.exponentialRampToValueAtTime(90,ax.currentTime+.5);o.frequency.exponentialRampToValueAtTime(35,ax.currentTime+.8);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.8);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.8)}
 function py(){[0,100,200].forEach((d,i)=>setTimeout(()=>pt(523+i*100,.15,'sine',.25),d))}
 function pk(){pt(200,.1,'sawtooth',.2);setTimeout(()=>pt(150,.15,'sawtooth',.25),100);setTimeout(()=>pt(100,.3,'sawtooth',.15),200)}
-function ptg(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(800,ax.currentTime);o.frequency.exponentialRampToValueAtTime(200,ax.currentTime+.15);g.gain.setValueAtTime(.15,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.15);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.15)}
-function pbr(){ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,ax.currentTime);o.frequency.exponentialRampToValueAtTime(60,ax.currentTime+.4);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.5);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.5)}
+function ptg(){if(_vzHidden)return;ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sine';o.frequency.setValueAtTime(800,ax.currentTime);o.frequency.exponentialRampToValueAtTime(200,ax.currentTime+.15);g.gain.setValueAtTime(.15,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.15);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.15)}
+function pbr(){if(_vzHidden)return;ea();if(!ax)return;const o=ax.createOscillator(),g=ax.createGain();o.type='sawtooth';o.frequency.setValueAtTime(120,ax.currentTime);o.frequency.exponentialRampToValueAtTime(60,ax.currentTime+.4);g.gain.setValueAtTime(.08,ax.currentTime);g.gain.exponentialRampToValueAtTime(.001,ax.currentTime+.5);o.connect(g);g.connect(ax.destination);o.start();o.stop(ax.currentTime+.5)}
 function psu(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>pt(f,.2,'sine',.2),i*80))}
-function sp(t,r=1.1,onStart){try{if('speechSynthesis'in window&&speechSynthesis){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=r;u.pitch=1.8;u.volume=1;if(onStart)u.onstart=onStart;u.onerror=function(){};speechSynthesis.speak(u)}}catch(e){console.warn('TTS unavailable');}}
+function sp(t,r=1.1,onStart){if(_vzHidden)return;try{if('speechSynthesis'in window&&speechSynthesis){const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=r;u.pitch=1.8;u.volume=1;if(onStart)u.onstart=onStart;u.onerror=function(){};speechSynthesis.speak(u)}}catch(e){console.warn('TTS unavailable');}}
 
 const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const L_LOWER='abcdefghijklmnopqrstuvwxyz';
@@ -2524,6 +2553,7 @@ try{
 // 조각 붙는 "찰칵" 효과음 (에셋 없이 Web Audio로 합성)
 var wpAC=null;
 function wpClick(){
+  if(_vzHidden)return;
   try{
     var AC=window.AudioContext||window.webkitAudioContext; if(!AC)return;
     if(!wpAC) wpAC=new AC();
@@ -3250,7 +3280,7 @@ function wpComplete(){
       var dur=600;   // 디코드 실패 시 폴백
       if(info && ax){ try{ var src=ax.createBufferSource(), g=ax.createGain(), out=wpLetterOut()||ax.destination;
           src.buffer=info.buffer;
-          g.gain.value=(out===ax.destination)?1.0:WP_LETTER_GAIN;   // 리미터 있으면 +6dB, 없으면 안전하게 1.0(깨짐 방지)
+          g.gain.value=_vzHidden?0:((out===ax.destination)?1.0:WP_LETTER_GAIN);   // ★ 2026-09-02 숨김 중엔 소리크기 0 (재생 길이는 그대로 둬야 다음 글자 순서가 안 어긋난다)   // 리미터 있으면 +6dB, 없으면 안전하게 1.0(깨짐 방지)
           src.connect(g); g.connect(out);
           src.start(0, info.start, info.end-info.start);   // 묵음 잘라낸 발음 구간만 재생
           dur=(info.end-info.start)*1000;
