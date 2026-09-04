@@ -64,7 +64,10 @@ window.PHONICS_SETS = {
     letters: ['m','d','g','o','c','k'],
     words: [
       {word:'mat', tokens:['m','a','t'], traps:[], videos:['mat','dog','kid']},
-      {word:'dog', tokens:['d','o','g'], traps:[], videos:[]},
+      // dog — 이야기 흐름 그대로: 목줄 물고 조른다 → 산책 나간다 → 돌아와 물 먹는다.
+      //   ⚠️ 첫 편(leash)에는 음가 강조가 안 붙는다 — 조각을 다 맞춘 직후 이미 음가가 나오기 때문.
+      //     둘째·셋째(walk·water)에서만 글자가 한 글자씩 커지며 음가가 난다. leash 가 첫 편인 건 의도된 것.
+      {word:'dog', tokens:['d','o','g'], traps:[], videos:['leash','walk','water']},
       {word:'cat', tokens:['c','a','t'], traps:[], videos:[]},
       {word:'mop', tokens:['m','o','p'], traps:[], videos:[]},
       {word:'dig', tokens:['d','i','g'], traps:[], videos:[]},
