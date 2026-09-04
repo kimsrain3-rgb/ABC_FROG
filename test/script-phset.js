@@ -2257,9 +2257,17 @@ var _phOverlay=null;
 //   (Phonics 카드 잠금해제 _unlockPhonicsCard 와 같은 이유·같은 방식)
 // ⚠️ id = GA4 로 나가는 세트 이름. phonics/sets.js 의 id 와 **같은 글자**여야 한다(2026-09-04 추가).
 //    한쪽만 고치면 보고서에서 세트가 두 개로 쪼개져 보인다.
+//
+// 🔴🔴 여기 아래 2번 세트의 open:true 는 **테스트 전용**이다 (2026-09-04).
+//     [왜] 폰에서 mat 을 확인하려면 주소를 직접 쳐야 해서 불편하다. 카드로 들어갈 수 있게 열었다.
+//     [⛔ 라이브로 옮길 때] 2번은 **반드시 open:false 로 되돌린다.** 에셋이 mat 하나뿐이라
+//        나머지 5단어(dog·cat·mop·dig·kid)는 영상도 통발음도 없이 넘어간다 — 아이가 볼 화면이 아니다.
+//        그리고 음가 c·k 와 word_mat 은 아직 음량 부스트 전이라 세트1보다 훨씬 작게 들린다.
+//     ※ 이 파일(script-phset.js)은 애초에 test/ 전용이다 — iframe 주소가 'test/phonics/index.html' 이라
+//       라이브에 그대로 복사하면 어차피 안 돈다. 그래도 눈에 띄게 적어 둔다.
 var PH_SETS=[
   {n:1, id:'satpin', label:'Phonics 1', letters:'s a t p i n',  open:true },
-  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:false},
+  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:true },   // 🔴 TEST 전용 — 라이브는 false
   {n:3, id:'set3',   label:'Phonics 3', letters:'ck e u r h b', open:false},
   {n:4, id:'set4',   label:'Phonics 4', letters:'f l s j v …',  open:false}
 ];

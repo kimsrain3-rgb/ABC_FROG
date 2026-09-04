@@ -10,7 +10,10 @@
                글자 쪼개기를 getTokens() 한 곳으로 모았다(3세트 ck 대비). tokens 없으면 지금까지와 완전히 같은 동작
             ③ test/script-phset.js = 라이브 script.js + 5곳 — 세트 번호 전달 · PH_SETS 에 id · phonics_open 의
                'satpin' 고정 제거 · 완주 판정을 단어 이름(tap)이 아니라 isSetComplete 로 · goPhonicsSet 일반화
-     [범위] 게임 규칙·연출·타이밍은 한 군데도 안 바꿨다. 구조만 바꾼 작업이다. 2세트는 잠긴 채로 둔다(PH_SETS open:false).
+     [범위] 게임 규칙·연출·타이밍은 한 군데도 안 바꿨다. 구조만 바꾼 작업이다.
+     🔴 [2026-09-04 추가] 이 테스트 판에서만 **Phonics 2 카드를 열어 뒀다**(script-phset.js 의 PH_SETS n:2 open:true).
+        폰에서 mat 을 보려면 주소를 직접 쳐야 해서 불편하다는 이유. ⛔ **라이브로 옮길 때 반드시 open:false 로 되돌릴 것** —
+        에셋이 mat 하나뿐이라 나머지 5단어는 영상·통발음 없이 넘어가고, 음가 c·k 와 word_mat 은 음량 부스트 전이다.
      ⚠ 라이브(index.html / script.js / style.css / dino.html / animal.html / phonics/index.html)는 한 글자도 안 건드렸다.
      ⚠ 라이브 반영 때 = ① phonics/sets.js 새로 만들고(test 판 그대로) ② phonics/index.html 에 같은 수정을 다시 하고
        (⚠ 테스트 판을 복사하지 말 것 — 경로가 ../../ 이고 개발 메뉴 블록이 들어 있다)

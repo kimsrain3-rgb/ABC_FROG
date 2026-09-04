@@ -5806,4 +5806,9 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 1. `phonics/sets.js` 새로 만든다 — `test/phonics/sets.js` 그대로 복사해도 된다(경로가 없는 순수 데이터)
 2. `phonics/index.html` 에 **같은 수정을 다시 한다.** ⚠️ **테스트 판을 복사하지 말 것** — 경로가 `../../` 이고 개발 메뉴 블록이 들어 있다(WebP 1차 때와 같은 함정)
 3. `script.js` 의 **그 5곳만** 같은 내용으로 고친다. iframe 주소는 `'phonics/index.html'`(`test/` 없음)
-4. 2세트는 **열지 않는다** — `PH_SETS` 의 `open:false` 그대로
+4. 🔴 2세트는 **열지 않는다** — `PH_SETS` 의 `n:2` 를 반드시 **`open:false` 로 되돌린다**
+
+**⚠️ 추가 (같은 날 오후) — 테스트 판에서만 Phonics 2 카드를 열었다**
+- 폰에서 `mat` 을 보려면 주소(`abcfrog.kr/test/phonics/?set=2`)를 직접 쳐야 해서 불편하다는 지적. `test/script-phset.js` 의 `PH_SETS` `n:2` 를 `open:true` 로. **한 글자 변경.**
+- ⛔ **라이브로 옮길 때 되돌릴 것.** 지금 세트 2는 ①에셋이 `mat` 하나뿐이라 나머지 5단어(`dog`·`cat`·`mop`·`dig`·`kid`)가 영상·통발음 없이 넘어가고 ②음가 `c`·`k` 와 `word_mat` 이 **음량 부스트 전**이다. 아이가 볼 화면이 아니다.
+- `test/script-phset.js` 는 애초에 `test/` 전용이다(iframe 주소가 `test/phonics/index.html`) — 라이브에 통째로 복사하면 어차피 안 돈다. 그래도 파일 안·`test/current-phset.html` 머리말에 🔴 로 적어 뒀다.
