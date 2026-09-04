@@ -5753,3 +5753,57 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 - **계측을 넣을지 말지 묻지 않는다** — 만드는 조건이지 선택지가 아니다. 나중에 붙이는 것도 금지
 
 **안 건드린 것**: 항목 제목 · 인용문(파닉스·C-2 회고) · 나머지 불릿 3개(표준 방식 `postMessage`→`gtag` · `category` 이름 · 새 매개변수 GA4 등록). 새 4줄은 그 3개 **위**에 있다.
+
+
+### 2026-09-04 — 🗂️ **파닉스 세트 데이터 분리(게임 한 벌 + 데이터만 갈아끼우기)** — `test/` 판만, 라이브 무변경
+
+**왜**: 파닉스는 게임 로직과 단어 목록이 `phonics/index.html` **한 파일에 섞여** 있었다. 세트가 4개로 예정돼 있어(`PH_SETS`) 이대로 복사하면 게임이 **네 벌**이 되고, 한 곳을 고칠 때마다 네 번 고쳐야 한다. 동물·공룡 퍼즐이 두 벌로 갈라진 뒤 과일에 있던 `onerror`·`img_ms`·`word` 가 **양쪽 다 빠진 상태**가 그 결과다. 지금이 두 벌이 되기 직전이라 뽑아내는 비용이 가장 싸다.
+
+**만든 것 / 고친 것 (전부 `test/` 아래)**
+| 파일 | 내용 |
+|---|---|
+| `test/phonics/sets.js` | **신규**. `window.PHONICS_SETS` 에 세트별 단어 목록만. 객체 선언뿐(함수·DOM 0개) |
+| `test/phonics/index.html` | 단어 목록 제거 → `sets.js` 읽기 + 주소 `?set=` 으로 세트 고르기 + `getTokens()` |
+| `test/script-phset.js` | 라이브 `script.js` + **5곳**(아래) |
+| `test/current-phset.html` | 테스트 페이지 |
+| `test/index.html` | 런처를 `current-phset.html` 로 |
+
+**0단계 — 음가 파일 6개 (⚠️ "이름만 바꾸기"가 아니었다)**
+- 새로 받은 `phoneme_d/g/m/o/c,k.mp4` 5개는 **컨테이너만 mp4 가 아니라 진짜 영상 파일**이었다(H.264 영상 트랙 + AAC 소리 트랙, ffprobe 실측). 이름만 `.mp3` 로 바꾸면 **`.mp3` 이름표를 단 영상 파일**이 된다.
+- 세트 1 도 그렇게 하지 않았다 — `_source_mp4/` + `_orig_before_boost/` 폴더가 그 증거다. **프로젝트에 이미 정해진 3단계 절차**(원본 보관 → 무보정 추출 → 부스트)를 그대로 따랐다.
+  - `_source_mp4/phoneme_{d,g,m,o,ck}.mp4` ← 원본 5개 이동
+  - `_orig_before_boost/phoneme_{d,g,m,o,ck}.mp3` ← 소리만 추출(44100Hz·스테레오·128k·`-map_metadata -1`). **음량 손대지 않음**
+  - `phoneme_{d,g,m,o}.mp3` + `phoneme_c.mp3`·`phoneme_k.mp3`(c·k 같은 소리 → 같은 파일 두 벌)
+- 검증: 12개 전부 브라우저 `decodeAudioData` 통과 · 영상 트랙 0 · HTTP 200.
+- 🔴 **남은 것 = 음량 부스트**(별건). 세트 1 대비 조용하다 — `c`/`k` **-10.2dB**, `word_mat` **-8.6dB**(가장 큰 0.05초 구간 기준). 세트 2 가 잠겨 있어 지금 유저 영향은 0.
+
+**1단계 — 데이터 분리**
+- 세트 1(satpin) 6단어는 순서·내용·주석까지 **그대로** 옮겼다.
+- 세트 2(`set2`) 6단어 추가: `mat` `dog` `cat` `mop` `dig` `kid`. 에셋이 있는 `mat` 만 `videos:['mat','dog','kid']`, 나머지 5개는 `videos:[]`(코드가 없는 영상은 조용히 건너뛴다).
+- ⚠️ **캐시 꼬리표를 `?v=날짜` 가 아니라 `?b=Date.now()`(always-fresh)로 붙였다.** `sets.js` 는 설정 파일이 아니라 **없으면 게임이 안 도는 코드**다. 날짜 상수로 두면 단어를 고치고 날짜 바꾸는 걸 **한 번만 잊어도** 폰에 옛 단어 목록이 남아 화면(새 판)과 데이터(옛 판)가 어긋난다 — CLAUDE.md 배포/캐시 규칙 1. 옆의 `error-tracker.js`·`video-quality.js`·`video-prefetch.js` 와 **완전히 같은 방식**이다. 크기 약 4KB.
+
+**2단계 — 세트 번호 전달**: `openPhonicsGame(setNo)` 가 `setNo` 를 **받고도 안 쓰고 있었다**. → `?set=N&b=...`. 게임 쪽은 없거나·숫자가 아니거나·모르는 번호면 **1세트로 떨어진다**(실측: `?set=99`·`?set=abc`·`?set=` 없음 → 전부 satpin).
+
+**3단계 — 글자 쪼개기 일반화**: `getTokens(item)` 한 곳으로 모았다. `tokens` 가 없으면 지금까지와 **완전히 같은 동작**(`word.split('')`).
+- ⚠️ **지시받은 4곳이 아니라 6곳이었다.** 슬롯 생성·조각 생성·완성 후 음가·강조 애니메이션 넷은 `split('')` 이라 검색에 잡혔지만, **완성 연출의 `i<W.word.length`/`W.word[i]` 와 강조의 `j<W.word.length`/`W.word[j]` 두 곳은 인덱싱**이라 안 잡혔다. 이 둘을 빼면 `ck` 단어에서 조각은 3개인데 음가는 4번 나온다.
+- ⚠️ 세트별 분기·플러그인 구조는 만들지 않았다(과설계). `tokens` 는 문자열 배열.
+
+**4단계 — 분석 이벤트**
+- (a) `phonics_open` 의 `set:'satpin'` **고정 제거** → `PH_SETS` 의 `id`. `PH_SETS` 에 `id` 4개 추가(`satpin`/`set2`/`set3`/`set4`).
+- (b) **완주 판정을 단어 이름으로 하던 것을 폐기.** 옛 방식 = "마지막 단어 `tap` 의 건수 = 세트 완주자 수"(`script.js` 옛 주석). 단어를 더하거나 순서를 바꾸거나 세트가 늘면 **아무 경고 없이** 틀린 수가 나온다. → 게임이 `isSetComplete` 를 직접 알려주고 부모는 넘기기만 한다.
+- 🔴 **GA4 맞춤 측정기준 등록 필요 3개(사장님 몫)**: `set` · `word_index` · `set_complete`. 이름은 기존과 같은 **snake_case**(`solve_ms`·`effective_type` 과 나란히). **여기 이름과 GA4 등록 이름이 한 글자라도 다르면 그 칸은 영영 빈다.**
+- 옛 판(캐시에 남은 폰)은 `set` 없이 보내온다 → `'satpin'` 으로 채운다(그때는 세트가 하나뿐이었다).
+- `goPhonicsSet` 의 `n===1` 하드코딩을 `PH_SETS` 의 `open` 검사로 바꿨다 — 잠긴 세트는 카드(`wcLocked`)와 여기서 **이중으로** 막힌다.
+
+**검증(로컬 서버 + Playwright, GA4 미발사 · 소리 음소거)**
+- 세트 1 **6단어 처음부터 끝까지**: 순서 `sit→pat→nap→pan→sip→tap` 그대로 · 영상 16편 순서 그대로(`pat` dog/rabbit/mother_kid · `nap` owl/sloth/baby · `pan` pan/rabbit/cat · `sip` harpseal/penguin/polarbear · `tap` rabbit/cat/dog) · 마지막에 🔄 다시하기 버튼 · **오류 0**(favicon 404 뿐)
+- 실제 드래그로 `sit` 완성 → 슬롯 3칸 채워짐 → 완성 연출 → `phonics_done` 발사 확인
+- 세트 2(`?set=2`): 6단어 · `mat` 만 영상 3편(mat/dog/kid) · 나머지는 건너뛰고 진행 · 끝에 🔄
+- 부모 흐름: Phonics → 메뉴(카드 4장, 2·3·4 잠김) → `goPhonicsSet(2)` 눌러도 **안 열림** → `goPhonicsSet(1)` → iframe `?set=1` → `phonics_open{set:'satpin'}` → 완성 시 `word_puzzle_complete{category:'phonics', set:'satpin', word:'sit', word_index:0, set_complete:0, solve_ms:8664}`
+- `test/script-phset.js` 와 라이브 `script.js` 의 차이 = **의도한 5곳뿐**(diff 실측)
+
+**⚠️ 라이브 반영 때 (폰 확인 뒤 별도로)**
+1. `phonics/sets.js` 새로 만든다 — `test/phonics/sets.js` 그대로 복사해도 된다(경로가 없는 순수 데이터)
+2. `phonics/index.html` 에 **같은 수정을 다시 한다.** ⚠️ **테스트 판을 복사하지 말 것** — 경로가 `../../` 이고 개발 메뉴 블록이 들어 있다(WebP 1차 때와 같은 함정)
+3. `script.js` 의 **그 5곳만** 같은 내용으로 고친다. iframe 주소는 `'phonics/index.html'`(`test/` 없음)
+4. 2세트는 **열지 않는다** — `PH_SETS` 의 `open:false` 그대로
