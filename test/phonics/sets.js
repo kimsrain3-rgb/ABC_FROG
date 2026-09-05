@@ -52,8 +52,8 @@ window.PHONICS_SETS = {
   },
 
   /* ── 세트 2 : m d g o c k ── 준비 중. **아직 잠겨 있다**(script.js 의 PH_SETS 2번 open:false).
-       ⚠️ 에셋이 다 된 단어는 지금 **mat · dog · cat 셋**이다(2026-09-05 기준).
-          나머지 셋(mop·dig·kid)은 videos 를 빈 배열로 뒀다 — 코드가 없는 영상을 건너뛰므로
+       ⚠️ 에셋이 다 된 단어는 지금 **mat · dog · cat · mop 넷**이다(2026-09-05 기준).
+          나머지 둘(dig·kid)은 videos 를 빈 배열로 뒀다 — 코드가 없는 영상을 건너뛰므로
           글자 맞추기·음가·통발음까지는 그대로 돌아가고, 영상만 안 나온 채 다음 단어로 넘어간다.
        ⚠️ 단어를 열려면 단어마다 **통발음(word_*.mp3) + 보상 영상 3편**이 필요하다.
        ⚠️ 화질 티어(videos_650/ · videos_400/)는 **세트2 것이 아직 하나도 없다 — 일부러다.**
@@ -78,7 +78,10 @@ window.PHONICS_SETS = {
       //     그 편의 티어 둘을 다시 만들어야 한다. 순서 = 6단어 완성 → 티어 전체 →
       //     폰 확인 → 라이브 → 잠금 해제. 세트2 는 아직 잠겨 있어 유저 영향 0.
       {word:'cat', tokens:['c','a','t'], traps:[], videos:['ball','butterfly','fish']},
-      {word:'mop', tokens:['m','o','p'], traps:[], videos:[]},
+      // mop — 대걸레(사물)라 pan 과 같은 짜임: 사물을 먼저 딱 보여줘 뜻을 심고(stand),
+      //   그 뒤 쓰는 장면 둘로 마무리. ⚠️ 뒤 두 편은 **파일명이 cat 이지만 mop 단어의 영상**이다
+      //   (mop_cat·mop_cat2 = 고양이가 나오는 대걸레 장면). cat 단어와 헷갈리지 말 것.
+      {word:'mop', tokens:['m','o','p'], traps:[], videos:['stand','cat','cat2']},
       {word:'dig', tokens:['d','i','g'], traps:[], videos:[]},
       {word:'kid', tokens:['k','i','d'], traps:[], videos:[]}
     ]
