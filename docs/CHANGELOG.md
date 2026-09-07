@@ -6444,3 +6444,82 @@ GitHub Actions `Build AAB` **성공**(run `33059740141`, 산출물 6,356,371바�
 `git revert <이 커밋>` 또는 `git checkout backup-before-phonics-set2-live-20260907 -- script.js phonics/`.
 **1~2분**(Pages 빌드 실측 55~65초). 코드는 always-fresh 라 유저는 다음 실행에 즉시 옛 코드로 돌아간다.
 남는 것 = 세트2 에셋(영상 54 · 소리)은 안 지워지지만 **부르는 코드가 없어 유저 영향 0**. GA4 에 나간 이벤트는 되돌릴 수 없다.
+
+---
+
+### 2026-09-07 ⑤ — 🎉 **파닉스 2세트 라이브 공개 (잠금 해제)** · 백업태그 `backup-before-phonics-set2-live-20260907`
+
+**`script.js` 한 글자(`open:false` → `true`) + 주석 정리.** 2026-08-12 세트1 공개 이후 **두 번째 세트**다. 실유저가 `mat·dog·cat·mop·dig·kid` 6단어를 할 수 있다.
+
+#### (1) 바꾼 것
+
+```
+{n:2, id:'set2', label:'Phonics 2', letters:'m d g o c k', open:false}
+                                                          → open:true
+```
+**세트 3·4 는 그대로 잠겨 있다**(에셋 없음). 기계 확인: `Phonics 1 열림 / 2 열림 / 3 잠김 / 4 잠김`.
+
+⭐ **잠금 시절 주석을 함께 지웠다** — 이관 때 새로 쓰면서 "연 뒤에는 이 문단을 지울 것"이라고 적어 둔 그대로 처리했다. 남겨 두면 **다 끝난 조건("에셋이 mat 하나뿐")을 보고 누군가 다시 잠그는 사고**가 난다. 대신 "2026-09-07 공개, 그때 옛 메모를 지웠다"는 기록만 남겼다.
+
+#### (2) 라이브에서 실제로 해보고 확인했다
+
+⚠️ **GA4 는 `page.route()` 로 막고 했다** — 검증 플레이가 실유저 통계에 안 섞이게(CLAUDE.md 규칙). 대신 페이지 자신의 `dataLayer` 를 읽어 **"막지 않았다면 무엇이 나갔을지"** 를 그대로 확인했다.
+
+**① 메뉴** — Phonics 카드 4장
+
+| 카드 | 상태 | 누르면 |
+|---|---|---|
+| Phonics 1 | 열림 | `goPhonicsSet(1)` |
+| **Phonics 2** | **열림** | `goPhonicsSet(2)` |
+| Phonics 3 · 4 | 🔒 잠김 | `wcLocked(this)` |
+
+**② `mat` 한 단어 — 조각을 실제로 끌어다 놓았다**(개발 메뉴 없이, 아이와 같은 `pointerdown/move/up`)
+
+| | 결과 |
+|---|---|
+| iframe 주소 | `?set=2&b=…` · `SET.id='set2'` · 단어 6개 |
+| 조각 | `m` `a` `t` 3개 전부 제자리에 |
+| 소리 | `letter_m·a·t` → `phoneme_m·a·t` → `word_mat` **전부 `?v=20260827` 로 정상 수신** |
+| 영상 | `mat_mat` 3.1/3.1초 · `mat_dog` 6.6/6.6초 · `mat_kid` 5.8/5.8초 — **3편 전부 끝까지**(720×1280) |
+| 다음 | `dog`(1번째)로 자동 진행 |
+
+⭐ **`SND_VER` 를 안 올린 판단이 실물로 맞았다** — `word_mat.mp3?v=20260827` 이 **처음 요청되는 주소**라 캐시에 걸리지 않고 새 파일(레벨링본)을 받았다. 예측한 그대로다.
+
+**③ GA4 로 나가는 값** (`dataLayer` 실측)
+```
+phonics_open          { set:'set2' }
+word_puzzle_complete  { category:'phonics', set:'set2', word:'mat',
+                        word_index:0, set_complete:0, solve_ms:6480 }
+```
+세 항목 모두 등록한 이름과 같다. `set_complete` 는 첫 단어라 0 — 마지막 `kid` 에서 1 이 된다.
+
+**④ 세트1 회귀** — 잠금 해제 뒤에도 정상
+
+| | 결과 |
+|---|---|
+| 주소·세트 | `?set=1` · `SET.id='satpin'` · `sit pat nap pan sip tap` |
+| `sit` | 조각 `s` `i` `t` 정상 · `sit_dog.mp4` 재생 시작(720×1280) |
+| GA4 | `phonics_open{set:'satpin'}` · `word_puzzle_complete{set:'satpin', word:'sit', word_index:0}` |
+| JS 오류 | **0** |
+
+※ 이관 커밋(`9d52db6`) 때 세트1 6단어·영상 18편 통 플레이를 이미 끝까지 돌렸다. 여기서는 잠금 해제가 세트1에 영향을 주지 않았는지만 다시 봤다.
+
+⚠️ **못 덮는 것 = 실제 폰.** PC 크롬에서 마우스로 끈 것이라, 폰 터치·WebView 디코딩·실제 회선은 다르다.
+
+#### (3) 이제 test 와 라이브의 차이가 하나 줄었다
+
+이관 때 남았던 5가지 중 **세트2 잠금(3번)이 사라졌다** — 양쪽 다 `open:true`. 남은 것은 4가지다.
+
+| # | 자리 | test | 라이브 |
+|---|---|---|---|
+| 1 | `phonics/index.html` 경로 7곳 | `../../` | `../` |
+| 2 | `script.js` iframe 주소 | `test/phonics/…` | `phonics/…` |
+| 4 | 배포 배지 ~17줄 | 있음 | 없음(test 전용) |
+| 5 | `SND_VER` | `?v=20260907` | `?v=20260827` |
+
+#### (4) 이제 볼 수 있게 된 것
+
+세트2 는 **처음부터 "어디서 멈췄다"를 갖고 태어난 첫 콘텐츠**다(파닉스 1세트는 공개 뒤에야 붙였고, 그 전 기간은 영영 알 수 없다).
+GA4 에서 `word_puzzle_complete` 를 `set='set2'` 로 걸고 `word_index` 로 쪼개면 **6단어 깔때기**가 그대로 보이고, `set_complete=1` 이 완주자 수다.
+
+**남은 것** — ①폰에서 6단어 이어 듣기(음량이 튀지 않는가) ②`phoneme_i`·`p` 채널 복구 + 세트1 음가 레벨링(별건) ③발음 정지 건(별건, 세트1도 동일) ④세트3 에셋.

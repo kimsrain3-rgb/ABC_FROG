@@ -2258,14 +2258,13 @@ var _phOverlay=null;
 // ⚠️ id = GA4 로 나가는 세트 이름. phonics/sets.js 의 id 와 **같은 글자**여야 한다(2026-09-04 추가).
 //    한쪽만 고치면 보고서에서 세트가 두 개로 쪼개져 보인다.
 //
-// 🔴 2번 세트(set2)는 **아직 잠겨 있다(open:false)** — 남은 조건은 "폰 확인" 하나뿐이다.
-//    에셋은 2026-09-07 에 전부 끝났다: 영상 18편 + 화질 티어 36개 + 통발음 6종 음량 레벨링.
-//    ⚠️ 폰 확인이 끝나 open:true 로 연 뒤에는 **이 문단을 지울 것.**
-//       "라이브는 false 여야 한다" 는 옛 메모를 보고 다시 잠그는 사고를 막기 위해서다.
-//       (그 메모는 에셋이 mat 하나뿐이던 2026-09-04 시점의 이유였고, 지금은 해당 없다.)
+// ✅ 2번 세트(set2)는 **2026-09-07 라이브 공개**했다(mat·dog·cat·mop·dig·kid).
+//    에셋 영상 18편 + 화질 티어 36개 + 통발음 6종 음량 레벨링까지 끝난 뒤 열었다.
+//    ※ 잠금 시절의 "라이브는 반드시 false" 메모는 **이때 지웠다** — 다 끝난 조건을 보고
+//      다시 잠그는 일이 없게 하려고. 3·4 는 에셋이 없어 잠긴 상태 그대로다.
 var PH_SETS=[
   {n:1, id:'satpin', label:'Phonics 1', letters:'s a t p i n',  open:true },
-  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:false},
+  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:true },   // 2026-09-07 공개
   {n:3, id:'set3',   label:'Phonics 3', letters:'ck e u r h b', open:false},
   {n:4, id:'set4',   label:'Phonics 4', letters:'f l s j v …',  open:false}
 ];
