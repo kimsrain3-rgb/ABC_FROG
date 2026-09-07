@@ -663,6 +663,25 @@ if(DEVMENU){ (function(){
        tg.textContent='set '+SET_NO+' · '+SET.id+' · 단어 '+WORDS.length+'개';
        tg.style.display='block'; }catch(e){}
 
+  /* ★ 배포 시각을 라벨에 덧붙인다 (2026-09-07 추가)
+       파닉스는 전체화면 오버레이라 부모 화면의 판 표시가 가려진다.
+       그래서 여기에도 "언제 올라간 판인가" 를 붙인다. 손으로 적는 날짜가 아니라
+       서버가 주는 Last-Modified 라 판을 갈아끼워도 저절로 맞는다.
+       ⚠️ 실패해도 라벨만 그대로 두고 넘어간다(게임 영향 0). 개발 메뉴 안이라 라이브엔 안 뜬다. */
+  try{
+    if(window.fetch){
+      fetch('sets.js?b='+Date.now(),{method:'HEAD',cache:'no-store'}).then(function(r){
+        try{
+          var lm=r.headers.get('last-modified'); if(!lm) return;
+          var d=new Date(lm); if(isNaN(d)) return;
+          var p=function(n){return (n<10?'0':'')+n;};
+          var tg2=document.getElementById('tag');
+          if(tg2) tg2.textContent += ' · 배포 '+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+        }catch(e){}
+      }).catch(function(){});
+    }
+  }catch(e){}
+
   /* 점프하면 앞 단어의 소리가 다음 화면에 얹혀 들린다.
      화면(영상·자막)은 BUILD_ID 가 막아주지만 소리는 DOM 밖의 Audio 라 따로 끊어야 한다.
      끊을 대상 3종: ①글자이름·음가(sndCache) ②단어 통발음(_lastWordAudio) ③재생 중인 영상 */

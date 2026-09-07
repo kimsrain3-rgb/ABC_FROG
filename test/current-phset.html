@@ -297,7 +297,79 @@ try {
 <style>#bgmnote{position:fixed;left:10px;top:78px;z-index:99999;pointer-events:none;
   background:rgba(0,0,0,.72);color:#fff;font:600 11px/1.45 "Segoe UI",sans-serif;
   padding:6px 10px;border-radius:7px;max-width:66vw;transition:opacity 1s}</style>
-<div id="bgmnote">💤 <b>숨김 시 움직임+소리 정지 판</b> (2026-09-02 ②)<br><span style="opacity:.8">이 줄이 안 보이면 옛날 화면입니다<br>① 알파벳 소리가 난 뒤 나가기 → 10초간 조용한가<br>② 파리를 잡아 반짝 소리 난 직후 나가기 → 조용한가<br>③ <b>돌아왔을 때 파리가 나오고 잡을 수 있는가 (가장 중요)</b><br>④ 5번 이상 왔다 갔다 해도 정상인가<br>⑤ 26글자 완주까지 한 번 — 중간에 안 멈추는가</span></div>
-<script>setTimeout(function(){try{var n=document.getElementById("bgmnote");if(n)n.style.opacity="0";}catch(e){}},15000);</script>
+<div id="bgmnote">🐸 <b>TEST 판</b><br><span style="opacity:.8">배포 시각 확인 중…</span></div>
+<script>
+/* ★ [TEST 전용] 자동 판 표시 (2026-09-07 교체)
+   ─────────────────────────────────────────────────────────────────────────
+   왜 바꿨나 — 여기엔 원래 "(2026-09-02 ②)" 같은 **손으로 적은 날짜**가 있었다.
+   그런데 판을 갈아끼울 때 알맹이(script-phset.js·phonics/*)만 고치고 이 줄은
+   그대로 두는 일이 반복돼, 9/4 판을 보면서 9/2 날짜를 읽고 "옛날 화면인가?"
+   하고 오해하는 일이 실제로 벌어졌다. test/index.html 주석에도 같은 경고가
+   이미 적혀 있었지만 사람이 지키는 규칙이라 또 새어나갔다.
+   → **손으로 적는 날짜를 없애고 서버가 말해주는 값만 보여준다.**
+
+   무엇을 보여주나
+     ① 배포 시각 = 이 파일들의 HTTP Last-Modified.
+        GitHub Pages 는 배포할 때마다 전체 파일의 이 값을 갱신하므로
+        **"이 화면이 언제 올라간 판인가" 를 그대로 가리킨다.**
+     ② 알맹이 파일의 바이트 수 = 내용이 바뀌면 같이 바뀐다.
+        시각만으로는 "올리긴 했는데 내가 고친 게 들어갔나" 를 못 가리는데,
+        크기가 같이 붙으면 그것까지 눈으로 구분된다.
+
+   ⚠️ 이 블록은 **라이브에 가져가지 않는다**(테스트 판 확인용).
+   ⚠️ 실패해도 게임은 그대로 돌아야 한다 — 전부 try-catch + .catch() 로 감쌌고
+      값을 못 받으면 "확인 실패" 만 적고 끝난다(게임 코드는 한 줄도 안 건드렸다). */
+(function(){
+  var EL = document.getElementById('bgmnote');
+  if (!EL) return;
+  // 알맹이 파일들. 주소는 <base href="../"> 기준(= 저장소 뿌리).
+  var WATCH = [
+    { url:'test/script-phset.js',    name:'script-phset.js' },
+    { url:'test/phonics/sets.js',    name:'phonics/sets.js' },
+    { url:'test/phonics/index.html', name:'phonics/index.html' }
+  ];
+  function two(n){ return (n<10?'0':'') + n; }
+  function stamp(d){
+    return two(d.getMonth()+1) + '-' + two(d.getDate()) + ' ' +
+           two(d.getHours()) + ':' + two(d.getMinutes());
+  }
+  function comma(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function head(f){
+    // cache:'no-store' — 표시용 조회가 캐시에 걸려 옛 값을 보여주면 뜻이 없다.
+    return fetch(f.url + '?b=' + Date.now(), { method:'HEAD', cache:'no-store' })
+      .then(function(r){
+        if (!r.ok) return null;
+        return { name:f.name,
+                 lm:   r.headers.get('last-modified'),
+                 size: r.headers.get('content-length') };
+      })
+      .catch(function(){ return null; });
+  }
+  try {
+    if (!window.fetch) { EL.innerHTML = '🐸 <b>TEST 판</b><br><span style="opacity:.8">(이 브라우저는 자동 확인 불가)</span>'; return; }
+    Promise.all(WATCH.map(head)).then(function(rs){
+      try {
+        var got = rs.filter(function(x){ return x; });
+        if (!got.length) { EL.innerHTML = '🐸 <b>TEST 판</b><br><span style="opacity:.8">배포 시각 확인 실패(오프라인?)</span>'; return; }
+        // 가장 최근 시각 하나를 대표로 쓴다(Pages 는 보통 전부 같은 값이다).
+        var newest = null;
+        got.forEach(function(x){
+          if (!x.lm) return;
+          var d = new Date(x.lm);
+          if (!isNaN(d) && (!newest || d > newest)) newest = d;
+        });
+        var sizes = got.filter(function(x){ return x.size; })
+                       .map(function(x){ return x.name + ' ' + comma(+x.size); })
+                       .join('<br>');
+        EL.innerHTML =
+          '🐸 <b>TEST 판 · 배포 ' + (newest ? stamp(newest) : '?') + '</b>' +
+          '<br><span style="opacity:.8">' + (sizes || '') +
+          '<br>위 시각이 방금 올린 때가 아니면 옛 화면입니다</span>';
+      } catch (e) {}
+    }).catch(function(){});
+  } catch (e) {}
+})();
+setTimeout(function(){try{var n=document.getElementById("bgmnote");if(n)n.style.opacity="0";}catch(e){}},15000);
+</script>
 </body>
 </html>
