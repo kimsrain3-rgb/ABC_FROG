@@ -313,8 +313,17 @@ try {
         GitHub Pages 는 배포할 때마다 전체 파일의 이 값을 갱신하므로
         **"이 화면이 언제 올라간 판인가" 를 그대로 가리킨다.**
      ② 알맹이 파일의 바이트 수 = 내용이 바뀌면 같이 바뀐다.
-        시각만으로는 "올리긴 했는데 내가 고친 게 들어갔나" 를 못 가리는데,
-        크기가 같이 붙으면 그것까지 눈으로 구분된다.
+        Pages 는 **푸시가 있어야만 배포**되므로, "올렸습니다" 직후에 이 시각이
+        방금이면 내가 고친 것이 들어간 것이다.
+     ② 지금 열려 있는 알맹이 파일 이름(공짜 — 네트워크를 안 쓴다).
+        판을 갈아끼우면 여기가 같이 바뀌므로 "어느 판인가" 가 눈으로 갈린다.
+
+   🚩 **파일 크기(Content-Length)는 일부러 안 쓴다** (2026-09-07 실측으로 뺐다).
+      브라우저는 gzip 으로 받기 때문에 `Content-Length` 가 **압축된 크기**로 온다
+      — `script-phset.js` 가 199,567 인데 화면엔 65,781 로 떴다.
+      내 컴퓨터에서 보는 크기와 안 맞아 오히려 "뭐가 잘못됐나" 로 읽힌다.
+      (curl 로 재면 압축을 안 걸어 199,567 이 나와서 처음엔 못 알아챘다 —
+       **헤더 검증은 브라우저가 실제로 받는 조건으로 해야 한다.**)
 
    ⚠️ 이 블록은 **라이브에 가져가지 않는다**(테스트 판 확인용).
    ⚠️ 실패해도 게임은 그대로 돌아야 한다 — 전부 try-catch + .catch() 로 감쌌고
@@ -333,18 +342,17 @@ try {
     return two(d.getMonth()+1) + '-' + two(d.getDate()) + ' ' +
            two(d.getHours()) + ':' + two(d.getMinutes());
   }
-  function comma(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
   function head(f){
     // cache:'no-store' — 표시용 조회가 캐시에 걸려 옛 값을 보여주면 뜻이 없다.
     return fetch(f.url + '?b=' + Date.now(), { method:'HEAD', cache:'no-store' })
       .then(function(r){
         if (!r.ok) return null;
-        return { name:f.name,
-                 lm:   r.headers.get('last-modified'),
-                 size: r.headers.get('content-length') };
+        return { name:f.name, lm:r.headers.get('last-modified') };
       })
       .catch(function(){ return null; });
   }
+  // 지금 열려 있는 알맹이 파일 이름(네트워크를 안 쓴다)
+  var PAGE = (location.pathname.split('/').pop() || 'index.html');
   try {
     if (!window.fetch) { EL.innerHTML = '🐸 <b>TEST 판</b><br><span style="opacity:.8">(이 브라우저는 자동 확인 불가)</span>'; return; }
     Promise.all(WATCH.map(head)).then(function(rs){
@@ -358,12 +366,9 @@ try {
           var d = new Date(x.lm);
           if (!isNaN(d) && (!newest || d > newest)) newest = d;
         });
-        var sizes = got.filter(function(x){ return x.size; })
-                       .map(function(x){ return x.name + ' ' + comma(+x.size); })
-                       .join('<br>');
         EL.innerHTML =
           '🐸 <b>TEST 판 · 배포 ' + (newest ? stamp(newest) : '?') + '</b>' +
-          '<br><span style="opacity:.8">' + (sizes || '') +
+          '<br><span style="opacity:.8">알맹이: ' + PAGE +
           '<br>위 시각이 방금 올린 때가 아니면 옛 화면입니다</span>';
       } catch (e) {}
     }).catch(function(){});
