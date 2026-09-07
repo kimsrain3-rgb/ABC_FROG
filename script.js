@@ -2218,16 +2218,29 @@ window.addEventListener('message',function(ev){
 });
 /* 파닉스(iframe phonics/index.html)가 단어 완성을 알려오면 GA로 기록. (2026-08-18 추가)
    과일·동물·공룡과 **같은 신호 이름** + category:'phonics' → GA4에서 넷을 나란히 비교할 수 있다.
-   ★ 이탈 지점은 `word` 로 본다 — 단어 순서가 곧 진도다:
-       sit → pat → nap → pan → sip → tap
-     단어별 건수가 그대로 깔때기고, **마지막 단어 `tap` 의 건수 = 세트(satpin) 완주자 수**다.
-   ⚠️ 위 순서는 phonics/index.html 의 WORDS 배열 순서다. 단어를 더하거나 순서를 바꾸면
-      "tap = 완주" 가 깨진다. 그때는 이 주석과 GA4 보는 법을 같이 고칠 것.
    ※ solve_ms(글자 맞추는 데 걸린 시간)는 C-3 계획서에서 신설하기로 한 것을 파닉스만 먼저 넣은 것.
-      공룡·동물·과일은 C-3 0단계에서 같은 이름으로 붙인다. */
+      공룡·동물·과일은 C-3 0단계에서 같은 이름으로 붙인다.
+
+   ★★ 2026-09-04 고침 — 세트가 2개 이상이 되면 옛 방식이 조용히 깨진다.
+      [옛 방식] "마지막 단어 tap 의 건수 = 세트 완주자 수"로 세고 있었다. 단어 이름으로 완주를
+                판정한 것이라, 단어를 더하거나 순서를 바꾸거나 세트가 늘면 아무 경고 없이 틀린 수가 나온다.
+      [새 방식] 파닉스 페이지가 완주 여부를 직접 알려준다. 여기서는 그대로 넘기기만 한다.
+        set          = 어느 세트(satpin / set2 …). 세트가 둘 이상이면 word 만으로는 못 가른다
+        word_index   = 그 세트 안에서 몇 번째 단어(0부터) — "어디서 멈췄다"를 보는 값
+        set_complete = 1 이면 그 세트를 끝까지 마쳤다 (0/1)
+      ⚠️ 셋 다 GA4 맞춤 측정기준에 등록해야 보고서에서 쪼개진다(등록은 사장님 몫).
+      ⚠️ 이름은 기존과 같은 snake_case 로 맞췄다(solve_ms·effective_type·save_data 와 나란히).
+         **여기 이름과 GA4 에 등록한 이름이 한 글자라도 다르면 그 칸은 영영 빈다.**
+      ※ 옛 판(캐시에 남은 폰)은 set 없이 보내온다 → 그때는 'satpin' 으로 채운다(그때는 세트가 하나뿐이었다). */
 window.addEventListener('message',function(ev){
   try{ var d=ev&&ev.data; if(d&&d.t==='phonics_done'){
-    gtag('event','word_puzzle_complete',{category:'phonics',word:d.word,solve_ms:d.solve_ms|0}); } }catch(e){}
+    gtag('event','word_puzzle_complete',{
+      category:'phonics',
+      set:(d.set||'satpin'),
+      word:d.word,
+      word_index:(d.wordIndex|0),
+      set_complete:(d.isSetComplete?1:0),
+      solve_ms:d.solve_ms|0}); } }catch(e){}
 });
 
 // === 파닉스 satpin (독립 페이지 phonics/index.html을 전체화면 오버레이로 — 동물·공룡 퍼즐과 동일 구조) ===
@@ -2242,12 +2255,21 @@ var _phOverlay=null;
 //   거기에 메뉴를 넣으면 옛 index.html 을 쓰는 폰은 메뉴 없이 예전 동작을 계속한다.
 //   script.js 는 항상 최신으로 받으므로 여기서 만들면 모든 폰에 즉시 반영된다.
 //   (Phonics 카드 잠금해제 _unlockPhonicsCard 와 같은 이유·같은 방식)
+// ⚠️ id = GA4 로 나가는 세트 이름. phonics/sets.js 의 id 와 **같은 글자**여야 한다(2026-09-04 추가).
+//    한쪽만 고치면 보고서에서 세트가 두 개로 쪼개져 보인다.
+//
+// 🔴 2번 세트(set2)는 **아직 잠겨 있다(open:false)** — 남은 조건은 "폰 확인" 하나뿐이다.
+//    에셋은 2026-09-07 에 전부 끝났다: 영상 18편 + 화질 티어 36개 + 통발음 6종 음량 레벨링.
+//    ⚠️ 폰 확인이 끝나 open:true 로 연 뒤에는 **이 문단을 지울 것.**
+//       "라이브는 false 여야 한다" 는 옛 메모를 보고 다시 잠그는 사고를 막기 위해서다.
+//       (그 메모는 에셋이 mat 하나뿐이던 2026-09-04 시점의 이유였고, 지금은 해당 없다.)
 var PH_SETS=[
-  {n:1, label:'Phonics 1', letters:'s a t p i n',  open:true },
-  {n:2, label:'Phonics 2', letters:'m d g o c k',  open:false},
-  {n:3, label:'Phonics 3', letters:'ck e u r h b', open:false},
-  {n:4, label:'Phonics 4', letters:'f l s j v …',  open:false}
+  {n:1, id:'satpin', label:'Phonics 1', letters:'s a t p i n',  open:true },
+  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:false},
+  {n:3, id:'set3',   label:'Phonics 3', letters:'ck e u r h b', open:false},
+  {n:4, id:'set4',   label:'Phonics 4', letters:'f l s j v …',  open:false}
 ];
+function _phSetId(n){ for(var i=0;i<PH_SETS.length;i++){ if(PH_SETS[i].n===n) return PH_SETS[i].id; } return 'satpin'; }
 // 아이콘 = 시작화면 Phonics 버튼과 같은 그림(입 벌린 옆얼굴 + 소리 물결 2줄).
 // 잠긴 카드는 기존 `.wc-locked .card-icon` 회색 필터가 그대로 걸려 채소·곤충과 같은 실루엣이 된다.
 function _phIconHTML(){
@@ -2302,8 +2324,10 @@ function goPhonics(){                              // Phonics 버튼 → 세트 
     try{gtag('event','phonics_menu_open',{});}catch(e){}
   }catch(e){}
 }
-function goPhonicsSet(n){                           // 세트 카드 누름 (지금은 1번만 열림)
-  try{ if(n===1) openPhonicsGame(1); }catch(e){}
+function goPhonicsSet(n){                           // 세트 카드 누름
+  // 2026-09-04 — 'n===1' 하드코딩을 PH_SETS 의 open 검사로 바꿨다. 새 세트를 열 때
+  // 여기를 안 고쳐도 되고, 잠긴 세트는 여기서도 한 번 더 막힌다(카드 쪽 wcLocked 와 이중).
+  try{ for(var i=0;i<PH_SETS.length;i++){ if(PH_SETS[i].n===n && PH_SETS[i].open){ openPhonicsGame(n); return; } } }catch(e){}
 }
 function psBack(){                                  // 세트 메뉴 → 시작화면
   try{ var m=document.getElementById('ps'); if(m) m.classList.remove('show'); }catch(e){}
@@ -2319,6 +2343,7 @@ window.__psState=function(){ return { menuOpen: psMenuOpen(), gameOpen: !!_phOve
 function openPhonicsGame(setNo){
   try{
     if(_phOverlay) return;                       // 중복 열기 방지
+    var _setNo=(setNo|0)||1;                     // 안 넘어오면 1세트(안전망 openPhonicsGame() 호출 대비)
     // 개구리 인사/반응이 돌고 있으면 먼저 정리 — 파닉스 위로 소리가 겹치지 않게.
     // (frog-reactions.js 쪽에서도 goPhonics 를 감싸 cancelGreeting 을 부르지만, 그 파일이
     //  로드 실패해도 안전하도록 여기서도 한 번 세워준다. 두 번 불려도 문제 없는 함수다.)
@@ -2329,7 +2354,11 @@ function openPhonicsGame(setNo){
     var fr=document.createElement('iframe');
     fr.setAttribute('allow','autoplay; fullscreen');
     fr.style.cssText='border:0;width:100%;height:100%;display:block;';
-    fr.src='phonics/index.html?b='+Date.now();   // HTML 항상 최신(미디어는 내부에서 캐시)
+    /* ★ 2026-09-04 — 세트 번호를 게임에 넘긴다. 그 전에는 setNo 를 받고도 안 쓰고 있었다.
+       게임(phonics/index.html)은 ?set= 을 읽어 sets.js 에서 그 세트를 고르고,
+       없거나 모르는 값이면 1세트로 떨어진다(빈 화면 방지).
+       ⚠️ ?b= (HTML 항상 최신) 은 그대로 뒤에 붙인다. 미디어는 페이지 안의 SND_VER·VID_VER 로 캐시. */
+    fr.src='phonics/index.html?set='+encodeURIComponent(_setNo)+'&b='+Date.now();
     var bk=document.createElement('button');
     bk.setAttribute('aria-label','back');
     bk.onclick=closePhonics;
@@ -2341,7 +2370,8 @@ function openPhonicsGame(setNo){
     _phOverlay=ov;
     syncBackGuard();                              // 파닉스 진입 → 뒤로가기 보호 켜기
     try{ if(screen.orientation&&screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){}); }catch(e){}
-    try{gtag('event','phonics_open',{set:'satpin'});}catch(e){}
+    // ★ 2026-09-04 — 'satpin' 고정을 지웠다. 세트가 2개 이상이면 어느 세트를 연 건지 알 수 없어진다.
+    try{gtag('event','phonics_open',{set:_phSetId(_setNo)});}catch(e){}
   }catch(e){}
 }
 function closePhonics(){
