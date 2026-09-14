@@ -39,11 +39,36 @@
      · 파닉스 카드: 기존 Dino 카드의 둥근 사진 아이콘(.dino-skull-ic, style.css:215)과 같은 규격 — 새 모양 안 만듦
      · 모드 버튼: .mbtn-word 가 쓰던 flex 방식 그대로. 글자(.mbtn-label)는 손대지 않는다 -->
 <style>
+/* ── 파리잡기 모드 버튼 (이번엔 크기 안 건드림) ── */
 .mbtn-ic{display:flex;align-items:center;justify-content:center;flex:0 0 auto}
 .mbtn-has-ic{display:flex;align-items:center;justify-content:center;gap:12px}
 .mbtn-ic .menu-anim-ic{width:44px;height:44px;object-fit:contain;display:block}
-/* margin-right — 둥근 사진은 이모지·SVG 와 달리 가장자리까지 그림이 차서 글자에 붙어 보인다(.wc-card 의 gap:8px 만으론 모자람) */
-.wc-card .card-icon .menu-anim-ic{width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;box-shadow:0 1px 3px rgba(0,0,0,.35);margin-right:4px}
+
+/* ── 파닉스 세트 카드: 아이콘이 주인공 (2026-09-14 2차) ──
+   [문제] 폰에서 보니 ①아이콘이 글자에 눌렸다 ②글자가 먼저 눈에 들어온다 — 글 못 읽는 아이용인데 거꾸로였다.
+   [원인] 라이브 style.css:379 의 `.ps-card .card-icon{width:30px;height:30px}` 안에 44px 그림을 넣고 있었다.
+          박스가 30px 이라 그림이 눌려 있었고, 옆 글자는 28px 이라 아이콘과 크기가 비슷했다.
+   [고침] 아이콘 30→84px(2.8배) · 이름 28→20px · 글자목록(s a t p i n)은 15px 그대로(부모가 본다).
+   ⚠️ 잠긴 3·4 카드도 같은 84px 박스를 쓴다 — 1·2 만 키우면 카드 높이가 어긋나 메뉴가 망가져 보인다.
+      잠긴 모양(회색 실루엣 + 🔒)은 그대로다. 그 안의 SVG 만 같이 커진다.
+   ⚠️ 폭을 244→264px 로 넓혔다 — 84px 아이콘 + 'Phonics 3' + 🔒 가 244 에 안 들어간다.
+      .ps-card 에만 걸어 퍼즐(Word) 메뉴 카드는 244px 그대로다. */
+.ps-card{width:272px;gap:10px;padding-top:14px;padding-bottom:14px}
+.ps-card .card-icon{width:80px;height:80px;flex:0 0 auto}
+.ps-card .card-label{font-size:20px}
+.ps-card .card-icon .menu-anim-ic{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+/* 잠긴 3·4 카드의 SVG 는 박스를 꽉 채우지 않는다(62%). 라이브 style.css:380 이 100% 라 그냥 두면
+   옛 30px 짜리가 70px 로 부풀어 조잡해 보인다. 박스는 같은 크기라 카드 높이는 1·2 와 맞는다. */
+.ps-card .card-icon svg{width:62%;height:62%}
+#ps .wc-cards{gap:14px}
+/* 짧은 화면에서 아이콘부터 줄인다 — 라이브의 @media(max-height) 들보다 뒤에 있어야 이깁니다.
+   ⚠️ 카드 높이는 글자가 아니라 '아이콘'이 정한다(글자칸 20+3+15=38px < 아이콘 80px).
+      그래서 폰 글자확대 130% 로 글자가 26px 이 돼도 카드가 안 높아진다 — 잘림은 폭에서만 생길 수 있다. */
+/* 🚩 기준선을 800 이 아니라 860 으로 잡았다 — 실측으로 정한 값이다.
+      아이콘 80px 이면 카드 4장이 506px 인데 805px 화면에서 카드가 302px 부터 시작해 3px 넘쳤다.
+      "800 이하만 줄이면 되겠지"로 두면 801~860 짜리 폰에서만 마지막 카드가 잘린다. */
+@media (max-height:860px){ .ps-card .card-icon{width:70px;height:70px} .ps-card{padding-top:12px;padding-bottom:12px} #ps .wc-cards{gap:12px} }
+@media (max-height:720px){ .ps-card .card-icon{width:58px;height:58px} .ps-card{padding-top:10px;padding-bottom:10px} #ps .wc-cards{gap:10px} }
 </style>
 <!-- 파리잡기 화살표 진하기(.6)는 2026-08-31 라이브 style.css 에 반영됨 → 이 판에 따로 넣지 않는다 -->
 <!-- 테스트 빌드라 GA4·에러추적 없음(테스트 플레이가 실유저 통계에 안 섞이게). script.js 가 gtag 를 부르므로 빈 함수만 세워둔다. -->
