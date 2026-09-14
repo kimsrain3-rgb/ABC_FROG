@@ -231,6 +231,14 @@ function menuIconHTML(a,b,alt,fb,ms,delay){
          (fb?' data-fb="'+fb+'"':'')+(ms?' data-ms="'+ms+'" data-delay="'+(delay||0)+'"':'')+
          ' onerror="menuIconFail(this)">';
 }
+// ★ 세 장 이상을 '룰렛처럼' 돌리는 아이콘 (2026-09-14 6차, 동물 퍼즐 카드용).
+//   두 장짜리(menuIconHTML)는 a↔b 왕복이라 3장을 넣을 자리가 없다. 목록을 통째로 싣는다.
+//   ⚠️ 두 장짜리 구조는 그대로 둔다 — 파닉스·첫 화면·모드 버튼이 이미 그걸로 돌고 있다.
+function menuIconFramesHTML(list,alt,ms,delay,fb){
+  return '<img class="menu-anim-ic" src="'+list[0]+'" data-frames="'+list.join(',')+'" alt="'+(alt||'')+'"'+
+         (fb?' data-fb="'+fb+'"':'')+' data-ms="'+ms+'" data-delay="'+(delay||0)+'"'+
+         ' onerror="menuIconFail(this)">';
+}
 // ① 그림 실패 대비 — 과일 퍼즐에는 있고(_im.onerror) 동물·공룡엔 없던 그것.
 //    메뉴 아이콘에도 원래 없었다(index.html 의 ABC 카드 파리 그림은 실패하면 깨진 그림이 뜬다).
 function menuIconFail(img){
@@ -250,6 +258,38 @@ function menuIconArm(root){
     for(var i=0;i<list.length;i++){
       (function(img){
         img.setAttribute('data-armed','1');
+        // ── 세 장 이상(룰렛) ──
+        var fr=img.getAttribute('data-frames');
+        if(fr){
+          // got[i]=true 인 것만 **원래 순서대로** 돈다(받아진 순서가 아니라 — 순서가 뒤죽박죽이면 어색하다)
+          var all=fr.split(','), got=[true], pending=all.length-1, ok=[];
+          var start=function(){
+            ok=[]; for(var q=0;q<all.length;q++) if(got[q]) ok.push(all[q]);
+            if(ok.length<2) return;                  // 한 장밖에 못 받았으면 그냥 그 한 장으로 가만히
+            img.setAttribute('data-ready','1');
+            var ms=parseInt(img.getAttribute('data-ms')||'1000',10),
+                dly=parseInt(img.getAttribute('data-delay')||'0',10), k=0;
+            setTimeout(function(){
+              setInterval(function(){
+                if(_vzHidden) return;                // 화면 안 보이면 쉰다
+                k=(k+1)%ok.length;
+                try{ img.src=ok[k]; }catch(e){}
+              },ms);
+            },dly);
+          };
+          if(pending<=0){ start(); return; }
+          for(var j=1;j<all.length;j++){
+            (function(src,idx){
+              var p=new Image();
+              // ⚠️ 못 받은 장은 목록에서 빼고 **받은 것끼리만** 돈다 — 한 장이 없다고 전부 멈추지 않는다.
+              p.onload =function(){ got[idx]=true;  if(--pending===0) start(); };
+              p.onerror=function(){ got[idx]=false; if(--pending===0) start(); };
+              p.src=src;
+            })(all[j],j);
+          }
+          return;
+        }
+        // ── 두 장(왕복) ── 파닉스·첫 화면·모드 버튼이 쓰는 기존 길
         var b=img.getAttribute('data-b'); if(!b) return;
         var pre=new Image();
         pre.onload=function(){
@@ -393,7 +433,39 @@ function buildHomeIcons(){
   }catch(e){}
 }
 
-try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); }); }catch(e){}
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 퍼즐(Word) 메뉴 Animal 카드 — 발자국 실루엣 → 동물 얼굴 3종 룰렛 (2026-09-14 6차)
+//
+// [왜] 발자국(🐾)만으론 무슨 퍼즐인지 애매하다. 그렇다고 얼굴 하나만 세우면
+//   동물이 11가지인데 "강아지 나오는 데"로 오해한다 → 셋을 돌려 '여러 동물'임을 보인다.
+// ⚠️ 두 장 왕복이 아니라 **세 장 돌리기**라 menuIconFramesHTML 을 새로 만들었다(위 참고).
+// ⚠️ Fruit·Dino·잠긴 카드(Vegetable·Insect)는 손대지 않는다. 카드·아이콘 크기도 그대로다.
+// ★★★ 도는 속도(밀리초). 두 장 왕복과 달리 **각 얼굴이 충분히 머물러야** 알아본다. ★★★
+var ANIMAL_ICON_MS=1000;
+var ANIMAL_ICONS=['assets/animal/icons/animal_a.webp',    // 강아지
+                  'assets/animal/icons/animal_b.webp',    // 고양이
+                  'assets/animal/icons/animal_c.webp'];   // 코끼리
+function buildPuzzleIcons(){
+  try{
+    var cards=document.querySelectorAll('.wc-card');
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i], lbl=c.querySelector('.card-label'), ic=c.querySelector('.card-icon');
+      if(!lbl||!ic) continue;
+      if((lbl.textContent||'').trim().toLowerCase()!=='animal') continue;
+      if(c.getAttribute('data-animic')) break;                  // 이미 얹힘
+      // ⚠️ 잠긴 상태면 손대지 않는다 — 옛 index.html 이 캐시된 폰에서 _unlockAnimalCard 보다
+      //    먼저 돌 수 있다. 그때는 발자국(잠금 회색)이 그대로 남는 게 맞다.
+      if(c.className.indexOf('wc-locked')>=0) break;
+      // fb 없음 → 첫 장을 못 받으면 아이콘이 사라지고 'Animal' 글자만 남는다(카드는 그대로 눌린다)
+      ic.innerHTML=menuIconFramesHTML(ANIMAL_ICONS,'Animal',ANIMAL_ICON_MS,0);
+      c.setAttribute('data-animic','1');
+      menuIconArm(ic);
+      break;
+    }
+  }catch(e){}
+}
+
+try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); }); }catch(e){}
 
 const PHRASES=[
   {text:'I wanna eat {L}',vk:'i_wanna_eat'},

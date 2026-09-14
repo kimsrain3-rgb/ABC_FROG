@@ -60,6 +60,21 @@
 @media (max-height:760px){ .ms-buttons .mbtn .mbtn-ic{width:62px;height:62px} }
 @media (max-height:700px){ .ms-buttons .mbtn .mbtn-ic{width:52px;height:52px} }
 
+/* ── 퍼즐(Word) 메뉴 Animal 카드 (2026-09-14 6차) — 발자국 → 동물 얼굴 3종 룰렛 ──
+   기존 발자국(.wc-card .ic-mask)은 32px 이었는데 **44px 로 올렸다** — 32px 에서는 셋 다 알아보기
+   어렵고 특히 코끼리 코가 안 보였다. 44px = **Dino 카드(.dino-sil-ic)와 같은 크기**라 새로 만드는
+   크기가 아니고, 카드 높이는 글자가 정하므로 카드는 안 커진다(72px 유지 — 실측).
+   ⚠️ .wc-card .card-icon 은 width:auto(style.css:202) 라 그림에 크기를 직접 줘야 한다
+      (안 주면 style.css:135 의 img{width:100%} 가 0 이 되어 안 보인다).
+   ⚠️ Fruit·Dino·잠긴 카드는 이 규칙에 안 걸린다(.wc-animal 아래로만 건다).
+   🚩 그냥 44px 로 키웠더니 **Animal 카드만 72→84px 로 높아졌다**(다른 카드 68). 실측으로 잡았다.
+      → 아이콘이 차지하는 '자리'는 옛 발자국과 같은 32px 로 고정하고, **그림만 44px 로 넘치게** 한다.
+      카드 높이를 정하는 건 자리(.card-icon)라서 카드는 그대로 72px 이고, 그림은 위아래로 6px 씩
+      넘치지만 잘리지 않는다(.wc-card 에 overflow 가 없다 — 첫 화면 파리와 같은 방식). */
+.wc-animal .card-icon{width:44px;height:32px;display:flex;align-items:center;justify-content:center}
+.wc-animal .card-icon .menu-anim-ic{width:44px;height:44px;flex:0 0 auto;object-fit:contain;display:block;
+  filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
+
 /* ── 파닉스 세트 카드: 아이콘이 주인공 (2026-09-14 2차) ──
    [문제] 폰에서 보니 ①아이콘이 글자에 눌렸다 ②글자가 먼저 눈에 들어온다 — 글 못 읽는 아이용인데 거꾸로였다.
    [원인] 라이브 style.css:379 의 `.ps-card .card-icon{width:30px;height:30px}` 안에 44px 그림을 넣고 있었다.
