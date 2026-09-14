@@ -216,6 +216,12 @@ var MENU_ICON_MS=500;
 // 모드 버튼(파리잡기 글자 고르기) 3종이 쓸 그림. 위 벌레 목록을 그대로 재사용한다(주소 중복 0).
 var MODE_ICONS={ 'ABC':FLY_IMGS.front, 'abc':DRAGONFLY_IMGS.left, 'ABc':SPIDER_IMGS };
 
+// ★★★ 모드 버튼 3종의 박자(밀리초). 셋이 같은 박자면 기계처럼 보인다 — 주기도 시작도 어긋낸다. ★★★
+//   벌레는 날갯짓이라 첫 화면 사과(700ms)보다 빠르다. 거미는 날개가 아니라 다리라 셋 중 제일 느리다.
+//   ⚠️ 2026-09-14 4차 전까지는 이 셋이 공용 타이머(MENU_ICON_MS=500)를 타서 **셋이 똑같이** 움직였다.
+var MODE_ICON_MS   ={ 'ABC':380, 'abc':440, 'ABc':560 };
+var MODE_ICON_DELAY={ 'ABC':0,   'abc':140, 'ABc':280 };
+
 // 두 장짜리 아이콘 <img> 한 장을 만든다. 처음엔 a 를 보여주고, b 가 다 받아지면 그때부터 번갈아 바뀐다.
 //   fb='svg' → 그림을 못 받으면 기존 파닉스 SVG 로 되돌린다(카드가 지금과 똑같아진다)
 //   fb 없음  → 그림을 못 받으면 아이콘을 지운다(모드 버튼이 지금처럼 글자만 남는다)
@@ -302,7 +308,8 @@ function buildModeIcons(){
       var pair=MODE_ICONS[m[1]]; if(!pair) continue;
       var sp=document.createElement('span');
       sp.className='mbtn-ic';
-      sp.innerHTML=menuIconHTML(pair[0],pair[1],m[1]);            // fb 없음 → 실패하면 글자만 남음
+      // fb 없음 → 실패하면 글자만 남음. ms/delay 를 주므로 공용 타이머가 아니라 자기 박자로 돈다.
+      sp.innerHTML=menuIconHTML(pair[0],pair[1],m[1],null,MODE_ICON_MS[m[1]],MODE_ICON_DELAY[m[1]]);
       btn.insertBefore(sp,btn.firstChild);
       // ⚠️ CSS 의 :has() 를 쓰지 않고 여기서 클래스를 붙인다 — :has() 는 옛 WebView 에서 안 먹어
       //    그런 폰에서만 그림이 글자 위로 올라가 버튼 모양이 달라진다.

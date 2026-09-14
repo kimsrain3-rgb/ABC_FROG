@@ -39,10 +39,26 @@
      · 파닉스 카드: 기존 Dino 카드의 둥근 사진 아이콘(.dino-skull-ic, style.css:215)과 같은 규격 — 새 모양 안 만듦
      · 모드 버튼: .mbtn-word 가 쓰던 flex 방식 그대로. 글자(.mbtn-label)는 손대지 않는다 -->
 <style>
-/* ── 파리잡기 모드 버튼 (이번엔 크기 안 건드림) ── */
+/* ── 파리잡기 모드 버튼 (2026-09-14 4차: 첫 화면·파닉스와 같은 크기로) ──
+   🔍 확인 결과 style.css 의 .mbtn 쪽에는 **아이콘 크기가 박혀 있지 않다** — 원래 아이콘이 없던 버튼이라
+      그렇다(44px 은 9/14 1차에 내가 쓴 값이다). 대신 **글자 크기가 박혀 있다**:
+      .mbtn-abc 32px · .mbtn-lower 26px · .mbtn-mix 30px (style.css:123·125·127) → 셋 다 20px 로 낮춘다.
+   ⚠️ .mbtn 은 width 가 아니라 min-width:160px(style.css:119·188) 이라 폭을 따로 준다. */
 .mbtn-ic{display:flex;align-items:center;justify-content:center;flex:0 0 auto}
-.mbtn-has-ic{display:flex;align-items:center;justify-content:center;gap:12px}
-.mbtn-ic .menu-anim-ic{width:44px;height:44px;object-fit:contain;display:block}
+.mbtn-has-ic{display:flex;align-items:center;justify-content:center;gap:10px}
+.ms-buttons .mbtn{width:272px;min-width:0;padding-left:16px;padding-right:16px}
+.ms-buttons .mbtn .mbtn-ic{width:80px;height:80px}
+.ms-buttons .mbtn .menu-anim-ic{width:100%;height:100%;object-fit:contain;display:block}
+.ms-buttons .mbtn-abc .mbtn-label,
+.ms-buttons .mbtn-lower .mbtn-label,
+.ms-buttons .mbtn-mix .mbtn-label{font-size:20px;letter-spacing:1px}
+/* 파리는 캔버스에 투명 여백이 많아 혼자 작아 보인다 — 첫 화면 ABC 카드와 같은 1.344 배를 준다.
+   잠자리·거미는 여백이 적어 그대로 둔다(키우면 글자를 친다). */
+.ms-buttons .mbtn-abc .menu-anim-ic{transform:scale(1.344)}
+/* 첫 화면과 같은 단계. 모드 화면은 버튼이 3개라 첫 화면보다 여유가 있지만 단계는 맞춰 둔다. */
+@media (max-height:860px){ .ms-buttons .mbtn .mbtn-ic{width:70px;height:70px} }
+@media (max-height:760px){ .ms-buttons .mbtn .mbtn-ic{width:62px;height:62px} }
+@media (max-height:700px){ .ms-buttons .mbtn .mbtn-ic{width:52px;height:52px} }
 
 /* ── 파닉스 세트 카드: 아이콘이 주인공 (2026-09-14 2차) ──
    [문제] 폰에서 보니 ①아이콘이 글자에 눌렸다 ②글자가 먼저 눈에 들어온다 — 글 못 읽는 아이용인데 거꾸로였다.
