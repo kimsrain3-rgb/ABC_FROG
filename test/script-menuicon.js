@@ -219,9 +219,11 @@ var MODE_ICONS={ 'ABC':FLY_IMGS.front, 'abc':DRAGONFLY_IMGS.left, 'ABc':SPIDER_I
 // 두 장짜리 아이콘 <img> 한 장을 만든다. 처음엔 a 를 보여주고, b 가 다 받아지면 그때부터 번갈아 바뀐다.
 //   fb='svg' → 그림을 못 받으면 기존 파닉스 SVG 로 되돌린다(카드가 지금과 똑같아진다)
 //   fb 없음  → 그림을 못 받으면 아이콘을 지운다(모드 버튼이 지금처럼 글자만 남는다)
-function menuIconHTML(a,b,alt,fb){
-  return '<img class="menu-anim-ic" src="'+a+'" data-b="'+b+'" alt="'+(alt||'')+'"'+
-         (fb?' data-fb="'+fb+'"':'')+' onerror="menuIconFail(this)">';
+//   ms/delay 를 주면 그 아이콘만 '자기 박자'로 돈다(첫 화면 3장). 안 주면 아래 공용 타이머(MENU_ICON_MS)를 탄다.
+function menuIconHTML(a,b,alt,fb,ms,delay){
+  return '<img class="menu-anim-ic" src="'+a+'" data-a="'+a+'" data-b="'+b+'" alt="'+(alt||'')+'"'+
+         (fb?' data-fb="'+fb+'"':'')+(ms?' data-ms="'+ms+'" data-delay="'+(delay||0)+'"':'')+
+         ' onerror="menuIconFail(this)">';
 }
 // ① 그림 실패 대비 — 과일 퍼즐에는 있고(_im.onerror) 동물·공룡엔 없던 그것.
 //    메뉴 아이콘에도 원래 없었다(index.html 의 ABC 카드 파리 그림은 실패하면 깨진 그림이 뜬다).
@@ -244,7 +246,24 @@ function menuIconArm(root){
         img.setAttribute('data-armed','1');
         var b=img.getAttribute('data-b'); if(!b) return;
         var pre=new Image();
-        pre.onload=function(){ try{ img.setAttribute('data-ready','1'); }catch(e){} };
+        pre.onload=function(){
+          try{
+            img.setAttribute('data-ready','1');
+            // 자기 박자를 가진 아이콘(첫 화면 3장)은 개별 타이머로 돈다.
+            // 공용 타이머는 data-ms 없는 것만 돌리므로 두 번 바뀌지 않는다.
+            var ms=parseInt(img.getAttribute('data-ms')||'0',10);
+            if(ms>0){
+              var dly=parseInt(img.getAttribute('data-delay')||'0',10), on=false;
+              setTimeout(function(){
+                setInterval(function(){
+                  if(_vzHidden) return;
+                  on=!on;
+                  try{ img.src= on ? img.getAttribute('data-b') : img.getAttribute('data-a'); }catch(e){}
+                },ms);
+              },dly);
+            }
+          }catch(e){}
+        };
         pre.onerror=function(){};                       // 못 받으면 a 로 가만히 — 아무 일도 안 한다
         pre.src=b;
       })(list[i]);
@@ -257,7 +276,8 @@ var _miPhase=0;
 setInterval(function(){
   if(_vzHidden) return;
   try{
-    var list=document.querySelectorAll('.menu-anim-ic[data-ready="1"]');
+    // :not([data-ms]) — 자기 박자를 가진 첫 화면 아이콘은 여기서 건드리지 않는다(이중 구동 방지)
+    var list=document.querySelectorAll('.menu-anim-ic[data-ready="1"]:not([data-ms])');
     if(!list.length) return;
     _miPhase=_miPhase?0:1;
     for(var i=0;i<list.length;i++){
@@ -291,7 +311,82 @@ function buildModeIcons(){
     menuIconArm(box);
   }catch(e){}
 }
-try{ window.addEventListener('load',function(){ buildModeIcons(); }); }catch(e){}
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 첫 화면 카드 3장(ABC · Word · Phonics) — 아이콘 키우고 움직이게 (2026-09-14 3차)
+//
+// ⛔ index.html:119~145 에 있는 카드지만 **그 파일은 안 건드린다** — 캐시버스터가 없어
+//    이미 깔린 폰에 옛 판이 며칠 남는다(2026-08-12 파닉스 잠김 사고). 여기서 얹는다.
+//
+// 🔴 셋이 같은 박자로 움직이면 기계처럼 보인다 → 주기도 시작 시점도 어긋나게 둔다.
+// ★★★ 아래 6개 숫자만 고치면 된다. 파닉스 세트 카드의 MENU_ICON_MS(500) 와는 별개다. ★★★
+var HOME_ICON_MS   ={ fly:400, mouth:550, apple:700 };   // 파리=원래 빠른 것 · 입 · 사과=무거운 것
+var HOME_ICON_DELAY={ fly:0,   mouth:200, apple:400 };   // 시작 시점 어긋내기
+// ────────────────────────────────────────────────────────────────────────────
+
+// 파닉스 입 모양 두 가지. 원본(index.html·_phIconHTML)과 같은 그림인데 **입 벌린 각도만** 다르다.
+// ⚠️ 눈동자 #7F5BC2 는 카드 그라데이션의 '눈 높이' 실측값 — 원본 그대로 둔다.
+var PH_MOUTH_OPEN='M42 52 L67 37 A28 28 0 1 0 67 67 Z';   // 방긋 벌린 입
+var PH_MOUTH_SHUT='M42 52 L67 48 A28 28 0 1 0 67 56 Z';   // 거의 다문 입
+function _phMouthSVG(){
+  return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">'+
+    '<path class="ph-mouth" d="'+PH_MOUTH_SHUT+'" fill="#fff"/>'+
+    '<circle cx="32" cy="30" r="10" fill="#fff"/>'+
+    '<circle cx="32" cy="28" r="4" fill="#7F5BC2"/>'+
+    '<path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+    '<path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>';
+}
+function _homeMouthStart(path){
+  try{
+    var open=false;
+    setTimeout(function(){
+      setInterval(function(){
+        if(_vzHidden) return;                         // 화면 안 보이면 쉰다(다른 타이머와 같은 규칙)
+        open=!open;
+        try{ path.setAttribute('d', open?PH_MOUTH_OPEN:PH_MOUTH_SHUT); }catch(e){}
+      },HOME_ICON_MS.mouth);
+    },HOME_ICON_DELAY.mouth);
+  }catch(e){}
+}
+
+// 카드를 '글자'로 찾는다 — index.html 에 새 표시를 안 붙여도 되고, 옛 판이 캐시된 폰에서도 똑같이 동작한다.
+// (_unlockPhonicsCard 가 이미 쓰던 방식 그대로다.) 두 번 불려도 안전하다.
+function buildHomeIcons(){
+  try{
+    var wrap=document.querySelector('.mode-buttons'); if(!wrap) return;
+    var cards=wrap.querySelectorAll('.game-card');
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i];
+      if(c.getAttribute('data-homeic')) continue;                    // 이미 얹힘
+      var lbl=c.querySelector('.card-label'), ic=c.querySelector('.card-icon');
+      if(!lbl||!ic) continue;
+      var name=(lbl.textContent||'').trim().toLowerCase();
+      if(name==='abc'){
+        // 파리 두 장 번갈아. 지금까지는 fly_front 한 장으로 정지해 있었다.
+        ic.innerHTML=menuIconHTML(FLY_IMGS.front[0],FLY_IMGS.front[1],'ABC',null,
+                                  HOME_ICON_MS.fly,HOME_ICON_DELAY.fly);
+        c.setAttribute('data-homeic','1');
+      } else if(name==='word'){
+        // 사과는 그림이 한 장뿐 → 코드로 좌우로 기울인다(그림 추가 0장).
+        // 회전은 CSS 가 맡고(부드럽게), 속도·시작시점만 여기서 넣는다 → 숫자가 위 한 곳에 모인다.
+        var im=ic.querySelector('img');
+        if(im){
+          im.classList.add('home-apple-ic');
+          im.style.animation='homeAppleWobble '+HOME_ICON_MS.apple+'ms ease-in-out '+
+                             HOME_ICON_DELAY.apple+'ms infinite alternate';
+        }
+        c.setAttribute('data-homeic','1');
+      } else if(name==='phonics'){
+        // 입이 방긋방긋 — 도형의 '입' 한 군데만 두 모양으로 갈아끼운다.
+        ic.innerHTML=_phMouthSVG();
+        var m=ic.querySelector('.ph-mouth'); if(m) _homeMouthStart(m);
+        c.setAttribute('data-homeic','1');
+      }
+    }
+    menuIconArm(wrap);
+  }catch(e){}
+}
+
+try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); }); }catch(e){}
 
 const PHRASES=[
   {text:'I wanna eat {L}',vk:'i_wanna_eat'},
