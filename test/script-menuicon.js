@@ -447,9 +447,15 @@ function buildHomeIcons(){
 //   dino   = 입에서 불꽃 (셋 중 가장 빠르다 — 불은 짧게 확 나왔다 들어가야 불 같다)
 var PUZZLE_ICON_MS   ={ animal:1000, fruit:820, dino:620 };
 var PUZZLE_ICON_DELAY={ animal:0,    fruit:150, dino:320 };
-var ANIMAL_ICONS=['assets/animal/icons/animal_a.webp',    // 강아지
-                  'assets/animal/icons/animal_b.webp',    // 고양이
-                  'assets/animal/icons/animal_c.webp'];   // 코끼리
+// 🔴 ?v= 는 지우지 말 것 — **그림은 이름이 같으면 폰이 옛것을 계속 쓴다.**
+//    코드(js/css)는 index.html 의 always-fresh 로더가 매번 새로 받지만 **그림·소리는 안 덮인다**
+//    (CLAUDE.md '배포/캐시 규칙' 2번). 2026-09-15 고양이를 새로 그려 넣었는데 폰에 옛 고양이가
+//    그대로 보인 것이 이것이었다. 서버 파일은 이미 새것이었다(지문 대조로 확인).
+//    ⚠️ **그림을 같은 이름으로 갈아끼울 때마다 이 날짜를 올릴 것.**
+var ANIMAL_ICON_VER='?v=20260915';
+var ANIMAL_ICONS=['assets/animal/icons/animal_a.webp'+ANIMAL_ICON_VER,    // 강아지
+                  'assets/animal/icons/animal_b.webp'+ANIMAL_ICON_VER,    // 고양이
+                  'assets/animal/icons/animal_c.webp'+ANIMAL_ICON_VER];   // 코끼리
 // 공룡 불꽃 — 그림 파일 없이 도형으로 그린다. 공룡이 **왼쪽을 보고** 있어 불꽃도 왼쪽으로 뻗는다.
 // ⚠️ **두 색**(겉 #FF6E40 주황 + 속 #FFD740 노랑). 2026-09-15 9차에 오렌지 단색에서 되돌렸다 —
 //    단색은 밋밋해 '주황 덩어리'로 보이고, 속에 밝은 심지가 있어야 불처럼 읽힌다(사장님 판단).
