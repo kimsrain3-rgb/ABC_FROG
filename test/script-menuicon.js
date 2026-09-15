@@ -253,45 +253,84 @@ try{
   },true);
 }catch(e){}
 
+// ── 예약된 것을 '한 곳에서' 거둔다 (2026-09-15 16차) ──────────────────────────
+// 🔴 [고친 문제] 소리가 끝나기를 기다리는 사이에 **화면이 달라질 수 있다.** 그런데 예약해 둔
+//    넘김(setTimeout)과 소리를 안 거두면:
+//      ① 뒤로가기로 취소했는데 **음성이 끝나는 순간 그 게임이 뒤늦게 열린다**
+//      ② 상한(2.2초)에 걸려 게임으로 넘어가도 **메뉴 음성이 계속 흘러 게임 소리와 겹친다**
+//    둘은 증상이 다를 뿐 **원인이 하나다 — 떠날 때 예약을 안 거둔다.**
+// ⚠️ 그래서 '예약한 것'을 전부 한 군데(아래 변수들)에 두고 _menuSndClear() 하나로만 거둔다.
+//    새로 예약하는 것이 생기면 **반드시 여기에 같이 넣을 것.** 흩어놓으면 또 샌다.
+//    (파닉스의 _pauseAllSound() 가 new Audio() 로 만든 발음과 예약된 다음 발음을 못 잡는 것이
+//     같은 계통이다 — 그건 별건이라 이번에 안 건드렸다.)
+var _menuSndCur=null, _menuSndTimer=0, _menuSndBtn=null, _menuSndAct=null, _menuSndDone=true;
+function _menuSndClear(){                    // 소리·타이머·눌린 톤을 거둔다 (화면은 안 넘긴다)
+  try{ clearTimeout(_menuSndTimer); }catch(e){}
+  _menuSndTimer=0;
+  var a=_menuSndCur; _menuSndCur=null;
+  if(a){
+    try{ a.onended=null; a.onerror=null; }catch(e){}
+    try{ a.pause(); }catch(e){}
+    try{ a.currentTime=0; }catch(e){}        // ← ②를 막는 자리: 넘어갈 때 음성을 실제로 멈춘다
+  }
+  if(_menuSndBtn){ try{ _menuSndBtn.classList.remove('menu-snd-on'); }catch(e){} }
+  _menuSndBtn=null; _menuSndAct=null; _menuSndBusy=false; _menuSndDone=true;
+}
+// 바깥에서 부르는 '취소' — 화면을 안 넘긴다. 뒤로가기·화면 숨김에서 쓴다.
+function menuSndCancel(){ if(!_menuSndDone) _menuSndClear(); }
+// 소리가 끝났거나 실패했거나 상한에 걸렸을 때 — **거두고 나서** 원래 하던 일을 한다.
+function _menuSndFire(){
+  if(_menuSndDone) return;
+  var act=_menuSndAct, b=_menuSndBtn;
+  _menuSndClear();                           // ← 먼저 거둔다(소리 정지 포함). 순서가 중요하다.
+  try{ if(typeof act==='function') act.call(b); }catch(e){}
+}
+
 // ⚠️ **붙잡기(capture) 단계**에서 가로챈다 — 그래야 index.html 의 onclick 이 먼저 돌지 않는다.
 //    index.html 은 한 글자도 안 건드린다(캐시버스터가 없어 옛 판이 폰에 남는다).
 try{
   document.addEventListener('click',function(e){
     var btn=null;
     try{
+      // 🔴 ①을 막는 자리 — 뒤로 버튼을 누르면 **예약을 먼저 거둔다.**
+      //    안 거두면 음성이 끝나는 순간 방금 취소한 게임이 열린다.
+      //    뒤로 버튼 자체는 막지 않는다(그대로 눌려야 한다).
+      try{ var bk=(e.target&&e.target.closest)?e.target.closest('.gbk,.wc-back,.ms-back,.wp-back'):null;
+           if(bk){ menuSndCancel(); return; } }catch(_){}
       btn=_menuBtnFrom(e.target); if(!btn) return;
       if((btn.className||'').indexOf('wc-locked')>=0) return;   // 잠긴 카드는 그대로(흔들림+토스트)
-      var key=_menuSndKeyFor(btn); if(!key) return;             // 소리 없는 버튼(뒤로 등)은 그대로
+      var key=_menuSndKeyFor(btn); if(!key) return;             // 소리 없는 버튼은 그대로
       // 아이는 여러 번 누른다 → 도는 동안 눌린 것은 **전부 무시**한다(같은 버튼이든 다른 버튼이든).
       // 안 막으면 소리가 겹치고 화면이 두 번 넘어간다.
       if(_menuSndBusy){ e.preventDefault(); e.stopPropagation(); return; }
       var act=btn.onclick;
       if(typeof act!=='function') return;                       // 할 일을 모르면 아예 안 건드린다
       e.preventDefault(); e.stopPropagation();
-      _menuSndBusy=true;
+      _menuSndBusy=true; _menuSndDone=false; _menuSndBtn=btn; _menuSndAct=act;
       try{ btn.classList.add('menu-snd-on'); }catch(_){}
-      var done=false, timer=0;
-      var go=function(){
-        if(done) return; done=true;
-        try{ clearTimeout(timer); }catch(_){}
-        _menuSndBusy=false;
-        try{ btn.classList.remove('menu-snd-on'); }catch(_){}
-        try{ act.call(btn); }catch(_){}                         // 원래 하던 일(화면 넘기기)
-      };
-      timer=setTimeout(go,MENU_SND_MAX_MS);                     // ← 마지막 안전장치
+      _menuSndTimer=setTimeout(_menuSndFire,MENU_SND_MAX_MS);   // ← 마지막 안전장치
       var a=_menuSndGet(key);
-      if(!a){ go(); return; }                                   // 소리를 못 만들면 즉시 넘어간다
-      try{ a.onended=go; a.onerror=go; a.currentTime=0; }catch(_){}
+      if(!a){ _menuSndFire(); return; }                         // 소리를 못 만들면 즉시 넘어간다
+      _menuSndCur=a;
+      try{ a.onended=_menuSndFire; a.onerror=_menuSndFire; a.currentTime=0; }catch(_){}
       var p=null;
-      try{ p=a.play(); }catch(_){ go(); return; }               // 재생 자체가 터지면 즉시
-      if(p && p.catch) p.catch(function(){ go(); });            // 브라우저가 소리를 막으면 즉시
+      try{ p=a.play(); }catch(_){ _menuSndFire(); return; }      // 재생 자체가 터지면 즉시
+      if(p && p.catch) p.catch(function(){ _menuSndFire(); });   // 브라우저가 소리를 막으면 즉시
     }catch(err){
       // 무슨 일이 나도 버튼은 먹어야 한다
-      try{ _menuSndBusy=false; if(btn){ btn.classList.remove('menu-snd-on');
-           if(typeof btn.onclick==='function') btn.onclick.call(btn); } }catch(_){}
+      try{ var b2=_menuSndBtn||btn; _menuSndClear();
+           if(b2 && typeof b2.onclick==='function') b2.onclick.call(b2); }catch(_){}
     }
   },true);
 }catch(e){}
+// 🔴 물리 뒤로가기 — script.js 의 뒤로가기 보호가 popstate 로 화면을 닫는다.
+//    화면이 닫히는 순간 예약도 같이 거둔다(위 ①과 같은 이유, 경로만 다르다).
+try{ window.addEventListener('popstate',menuSndCancel); }catch(e){}
+// 🔴 앱을 백그라운드로 보낼 때 — 돌아왔더니 게임이 혼자 열려 있는 일을 막는다.
+//    ⚠️ 기존 _pauseAllSound() 는 sndOf() 로 만든 소리만 잡는다. 메뉴 소리는 우리가 따로 들고
+//       있으므로 여기서 직접 거둔다(파닉스가 겪은 것과 같은 함정을 안 밟으려고).
+try{ document.addEventListener('visibilitychange',function(){ if(document.hidden) menuSndCancel(); }); }catch(e){}
+try{ window.addEventListener('pagehide',menuSndCancel); }catch(e){}
 // ────────────────────────────────────────────────────────────────────────────
 
 // ────────────────────────────────────────────────────────────────────────────
