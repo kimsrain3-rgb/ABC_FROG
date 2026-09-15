@@ -440,27 +440,69 @@ function buildHomeIcons(){
 //   동물이 11가지인데 "강아지 나오는 데"로 오해한다 → 셋을 돌려 '여러 동물'임을 보인다.
 // ⚠️ 두 장 왕복이 아니라 **세 장 돌리기**라 menuIconFramesHTML 을 새로 만들었다(위 참고).
 // ⚠️ Fruit·Dino·잠긴 카드(Vegetable·Insect)는 손대지 않는다. 카드·아이콘 크기도 그대로다.
-// ★★★ 도는 속도(밀리초). 두 장 왕복과 달리 **각 얼굴이 충분히 머물러야** 알아본다. ★★★
-var ANIMAL_ICON_MS=1000;
+// ★★★ 퍼즐 메뉴 세 카드의 박자(밀리초). 셋이 같으면 기계처럼 보인다 — 주기도 시작도 어긋낸다. ★★★
+//   animal = 얼굴 3종 룰렛(각 얼굴이 충분히 머물러야 알아본다 → 가장 느리다)
+//   fruit  = 사과 흔들기. ⚠️ **첫 화면 Word 카드의 사과(HOME_ICON_MS.apple=700)와 달라야 한다** —
+//            같은 박자면 화면을 옮겨도 같은 것이 흔들려 어색하다
+//   dino   = 입에서 불꽃 (셋 중 가장 빠르다 — 불은 짧게 확 나왔다 들어가야 불 같다)
+var PUZZLE_ICON_MS   ={ animal:1000, fruit:820, dino:620 };
+var PUZZLE_ICON_DELAY={ animal:0,    fruit:150, dino:320 };
 var ANIMAL_ICONS=['assets/animal/icons/animal_a.webp',    // 강아지
                   'assets/animal/icons/animal_b.webp',    // 고양이
                   'assets/animal/icons/animal_c.webp'];   // 코끼리
+// 공룡 불꽃 — 그림 파일 없이 도형으로 그린다. 공룡이 **왼쪽을 보고** 있어 불꽃도 왼쪽으로 뻗는다.
+// ⚠️ 색은 카드(청록 #4DD0E1→#00ACC1)·몸통(짙은 파랑 #01579B)과 안 묻히게 주황+노랑.
+// ⚠️ 작고 귀엽게 — 3~7세용이라 불꽃이 크면 무섭다(아이콘 44px 에 13px).
+function _dinoFlameHTML(){
+  return '<span class="dino-flame" aria-hidden="true">'+
+    '<svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">'+
+      '<path d="M23 10 C17 2, 9 3.5, 2 10 C9 16.5, 17 18, 23 10 Z" fill="#FF6E40"/>'+
+      '<path d="M23 10 C18.5 5.8, 13 6.4, 9 10 C13 13.6, 18.5 14.2, 23 10 Z" fill="#FFD740"/>'+
+    '</svg></span>';
+}
 function buildPuzzleIcons(){
   try{
     var cards=document.querySelectorAll('.wc-card');
     for(var i=0;i<cards.length;i++){
       var c=cards[i], lbl=c.querySelector('.card-label'), ic=c.querySelector('.card-icon');
       if(!lbl||!ic) continue;
-      if((lbl.textContent||'').trim().toLowerCase()!=='animal') continue;
-      if(c.getAttribute('data-animic')) break;                  // 이미 얹힘
-      // ⚠️ 잠긴 상태면 손대지 않는다 — 옛 index.html 이 캐시된 폰에서 _unlockAnimalCard 보다
-      //    먼저 돌 수 있다. 그때는 발자국(잠금 회색)이 그대로 남는 게 맞다.
-      if(c.className.indexOf('wc-locked')>=0) break;
-      // fb 없음 → 첫 장을 못 받으면 아이콘이 사라지고 'Animal' 글자만 남는다(카드는 그대로 눌린다)
-      ic.innerHTML=menuIconFramesHTML(ANIMAL_ICONS,'Animal',ANIMAL_ICON_MS,0);
-      c.setAttribute('data-animic','1');
-      menuIconArm(ic);
-      break;
+      var name=(lbl.textContent||'').trim().toLowerCase();
+      if(c.getAttribute('data-puzic')) continue;                 // 이미 얹힘
+      // ⚠️ 잠긴 카드(Vegetable·Insect)는 손대지 않는다. Animal·Dino 도 옛 index.html 이 캐시된 폰에서
+      //    잠금해제(_unlockAnimalCard)보다 먼저 돌 수 있는데, 그때는 잠금 회색이 남는 게 맞다.
+      if(c.className.indexOf('wc-locked')>=0) continue;
+
+      if(name==='animal'){
+        // fb 없음 → 첫 장을 못 받으면 아이콘이 사라지고 'Animal' 글자만 남는다(카드는 그대로 눌린다)
+        ic.innerHTML=menuIconFramesHTML(ANIMAL_ICONS,'Animal',PUZZLE_ICON_MS.animal,PUZZLE_ICON_DELAY.animal);
+        c.setAttribute('data-puzic','1');
+        menuIconArm(ic);
+
+      } else if(name==='fruit'){
+        // 사과는 이모지 글자 한 개(index.html 의 🍎)라 바꿀 그림이 없다 → 첫 화면 Word 카드와 같이 기울인다.
+        // 회전은 CSS(homeAppleWobble)가, 속도·시작시점은 여기서 — 숫자가 위 한 곳에 모인다.
+        ic.style.transformOrigin='50% 85%';
+        ic.style.animation='homeAppleWobble '+PUZZLE_ICON_MS.fruit+'ms ease-in-out '+
+                           PUZZLE_ICON_DELAY.fruit+'ms infinite alternate';
+        c.setAttribute('data-puzic','1');
+
+      } else if(name==='dino'){
+        // 공룡은 그림이 아니라 '마스크로 딴 실루엣'이라 갈아끼울 장면이 없다 →
+        // 불꽃 도형을 하나 더 얹고 **켜졌다 꺼졌다** 한다(파닉스 입이 방긋거리는 것과 같은 방식).
+        if(!ic.querySelector('.dino-flame')) ic.insertAdjacentHTML('beforeend',_dinoFlameHTML());
+        var fl=ic.querySelector('.dino-flame');
+        if(fl){
+          var on=false;
+          setTimeout(function(){
+            setInterval(function(){
+              if(_vzHidden) return;                              // 화면 안 보이면 쉰다
+              on=!on;
+              try{ fl.classList.toggle('on',on); }catch(e){}
+            },PUZZLE_ICON_MS.dino);
+          },PUZZLE_ICON_DELAY.dino);
+        }
+        c.setAttribute('data-puzic','1');
+      }
     }
   }catch(e){}
 }

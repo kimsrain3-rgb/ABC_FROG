@@ -75,6 +75,22 @@
 .wc-animal .card-icon .menu-anim-ic{width:44px;height:44px;flex:0 0 auto;object-fit:contain;display:block;
   filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
 
+/* ── Dino 카드 입에서 불꽃 (2026-09-14 7차) ──
+   공룡은 그림이 아니라 '마스크로 딴 실루엣'(style.css:219)이라 갈아끼울 장면이 없다 →
+   불꽃 도형을 하나 더 얹고 켜졌다 꺼졌다 한다(파닉스 입이 방긋거리는 것과 같은 방식).
+   ⚠️ 공룡이 **왼쪽을 보고** 있다 — 눈이 (10,7), 주둥이 끝이 x≈4·y≈11 이라 불꽃은 왼쪽으로 뻗는다.
+      (assets/ui/icons/dino_silhouette.png 을 44px 로 그려 좌표를 실측했다)
+   ⚠️ .wc-dino .card-icon 에 position:relative 가 이미 있고(style.css:218), ::after 는 '눈'이
+      쓰고 있어 못 쓴다 → 진짜 요소를 하나 넣는다.
+   ⚠️ 작고 귀엽게 — 44px 아이콘에 13px. 3~7세용이라 불꽃이 크면 무섭다.
+   ⚠️ 켜고 끌 때 뚝 끊기지 않게 0.14초 사이로 부드럽게(어린아이용) — 커졌다 작아지며 나온다. */
+.wc-dino .card-icon .dino-flame{position:absolute;left:-7px;top:9px;width:13px;height:11px;
+  opacity:0;transform:scale(.55);transform-origin:100% 50%;
+  transition:opacity .14s ease,transform .14s ease;pointer-events:none;
+  filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
+.wc-dino .card-icon .dino-flame.on{opacity:1;transform:scale(1)}
+.wc-dino .card-icon .dino-flame svg{width:100%;height:100%;display:block}
+
 /* ── 파닉스 세트 카드: 아이콘이 주인공 (2026-09-14 2차) ──
    [문제] 폰에서 보니 ①아이콘이 글자에 눌렸다 ②글자가 먼저 눈에 들어온다 — 글 못 읽는 아이용인데 거꾸로였다.
    [원인] 라이브 style.css:379 의 `.ps-card .card-icon{width:30px;height:30px}` 안에 44px 그림을 넣고 있었다.
