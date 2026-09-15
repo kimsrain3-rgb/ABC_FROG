@@ -78,13 +78,19 @@
 /* ── Dino 카드 입에서 불꽃 (2026-09-14 7차) ──
    공룡은 그림이 아니라 '마스크로 딴 실루엣'(style.css:219)이라 갈아끼울 장면이 없다 →
    불꽃 도형을 하나 더 얹고 켜졌다 꺼졌다 한다(파닉스 입이 방긋거리는 것과 같은 방식).
-   ⚠️ 공룡이 **왼쪽을 보고** 있다 — 눈이 (10,7), 주둥이 끝이 x≈4·y≈11 이라 불꽃은 왼쪽으로 뻗는다.
-      (assets/ui/icons/dino_silhouette.png 을 44px 로 그려 좌표를 실측했다)
+   ⚠️ 공룡이 **왼쪽을 보고** 있다 — 불꽃도 왼쪽으로 뻗는다.
+   🔴 **입 높이 = y 10** (2026-09-15 재실측). `dino_silhouette.png` 를 44px 로 줄여 세로줄마다 재보니
+      주둥이 끝이 **x=3, y 7~13(가운데 10.0)** 이다. 머리 덩어리는 y 5~14 이고,
+      그 아래 y 20~24 는 **턱이 아니라 앞발**이다.
+      ⛔ 처음엔 `top:9px` + 높이 11px 이라 불꽃 중심이 **y 14.5 = 턱 밑**이었다. 지금은
+         `top:-1px` + 높이 22px → 중심 **y 10.0 = 입 한가운데**.
+      ⛔ 눈(style.css:227)이 `left:10px top:7px` 인데 그건 **눈**이지 입이 아니다. 헷갈리지 말 것.
+   ⚠️ 가로도 같이 맞췄다 — 폭 26px 에 `left:-21px` 이라 오른쪽 끝이 x=5.
+      주둥이 끝(x=3)에 2px 겹쳐 **입에 붙어** 보인다.
    ⚠️ .wc-dino .card-icon 에 position:relative 가 이미 있고(style.css:218), ::after 는 '눈'이
       쓰고 있어 못 쓴다 → 진짜 요소를 하나 넣는다.
-   ⚠️ 작고 귀엽게 — 44px 아이콘에 13px. 3~7세용이라 불꽃이 크면 무섭다.
    ⚠️ 켜고 끌 때 뚝 끊기지 않게 0.14초 사이로 부드럽게(어린아이용) — 커졌다 작아지며 나온다. */
-.wc-dino .card-icon .dino-flame{position:absolute;left:-7px;top:9px;width:13px;height:11px;
+.wc-dino .card-icon .dino-flame{position:absolute;left:-21px;top:-1px;width:26px;height:22px;
   opacity:0;transform:scale(.55);transform-origin:100% 50%;
   transition:opacity .14s ease,transform .14s ease;pointer-events:none;
   filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
