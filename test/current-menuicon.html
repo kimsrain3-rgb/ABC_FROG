@@ -85,13 +85,17 @@
       ⛔ 처음엔 `top:9px` + 높이 11px 이라 불꽃 중심이 **y 14.5 = 턱 밑**이었다.
       ⛔ 눈(style.css:227)이 `left:10px top:7px` 인데 그건 **눈**이지 입이 아니다. 헷갈리지 말 것.
    📏 **크기 = 처음 13×11px 의 1.5배 → 20×17px** (2026-09-15 9차. 2배(26×22)는 너무 컸다).
+   ↔️ **입에서 3px 띄운다**(2026-09-15 12차) — 딱 붙여 놨더니 **입이 뜨거워 보였다.**
       ⚠️ 크기를 바꾸면 **위치 두 값을 같이 고쳐야** 입에서 안 벗어난다 —
-         `top = 10 − 높이/2` (세로 중심을 입 y10 에), `left = 5 − 폭` (오른쪽 끝을 x5 에).
-         지금 = 높이 17 → top 1.5 / 폭 20 → left −15. 오른쪽 끝 x=5 라 주둥이 끝(x=3)에 2px 겹친다.
+         `top = 10 − 높이/2` (세로 중심을 입 y10 에)
+         `left = 3 − 폭 − 띄울칸` (오른쪽 끝을 주둥이 끝 x=3 에서 그만큼 왼쪽에)
+         지금 = 높이 17 → `top:1.5px` / 폭 20·3px 띄움 → `left:-20px`(오른쪽 끝 x=0).
+      🚩 **−18(1px 띄움)·−19(2px)는 실제 44px 크기에서 아직 붙어 보였다.** 네 값을 나란히 띄워 놓고
+         골랐다 — 이런 한두 픽셀은 **확대하면 다 떨어져 보여** 실제 크기로만 갈린다.
    ⚠️ .wc-dino .card-icon 에 position:relative 가 이미 있고(style.css:218), ::after 는 '눈'이
       쓰고 있어 못 쓴다 → 진짜 요소를 하나 넣는다.
    ⚠️ 켜고 끌 때 뚝 끊기지 않게 0.14초 사이로 부드럽게(어린아이용) — 커졌다 작아지며 나온다. */
-.wc-dino .card-icon .dino-flame{position:absolute;left:-15px;top:1.5px;width:20px;height:17px;
+.wc-dino .card-icon .dino-flame{position:absolute;left:-20px;top:1.5px;width:20px;height:17px;
   opacity:0;transform:scale(.55);transform-origin:100% 50%;
   transition:opacity .14s ease,transform .14s ease;pointer-events:none;
   filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
