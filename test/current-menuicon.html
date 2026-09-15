@@ -60,6 +60,16 @@
 @media (max-height:760px){ .ms-buttons .mbtn .mbtn-ic{width:62px;height:62px} }
 @media (max-height:700px){ .ms-buttons .mbtn .mbtn-ic{width:52px;height:52px} }
 
+/* ── 버튼을 누르고 소리가 나는 동안의 '눌린 톤' (2026-09-15 15차) ──
+   소리가 끝날 때까지 화면이 안 넘어가므로, 그 사이 **눌린 게 눈에 보여야** 아이가 또 안 누른다.
+   ⚠️ :active 는 손을 떼면 바로 풀린다 → 소리 도는 내내 붙어 있는 클래스를 따로 쓴다.
+   밝기만 올리면 색이 바래 보여 채도도 같이 올리고, 눌린 느낌으로 3px 내린다. */
+.game-card.menu-snd-on,.mbtn.menu-snd-on{
+  filter:brightness(1.22) saturate(1.15);
+  transform:translateY(3px);
+  box-shadow:0 2px 0 rgba(0,0,0,.2),0 4px 10px rgba(0,0,0,.3);
+}
+
 /* ── 퍼즐(Word) 메뉴 Animal 카드 (2026-09-14 6차) — 발자국 → 동물 얼굴 3종 룰렛 ──
    기존 발자국(.wc-card .ic-mask)은 32px 이었는데 **44px 로 올렸다** — 32px 에서는 셋 다 알아보기
    어렵고 특히 코끼리 코가 안 보였다. 44px = **Dino 카드(.dino-sil-ic)와 같은 크기**라 새로 만드는

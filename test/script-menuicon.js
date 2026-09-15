@@ -195,6 +195,106 @@ const SPIDER_IMGS=["assets/bugs/images/spider1.webp","assets/bugs/images/spider1
 const DIRS=['left','right','front'];
 
 // ────────────────────────────────────────────────────────────────────────────
+// ★ 메뉴 버튼 소리 (2026-09-15 15차)
+//   누르면 → 버튼이 눌린 톤으로 바뀌고 소리가 나고 → 소리가 끝나면 그때 화면이 넘어간다.
+//
+// 🔴 **상한이 핵심이다.** 소리가 안 나는 폰(브라우저가 소리를 막았거나 파일을 못 받았거나)에서
+//    '소리가 끝나면'을 기다리면 **버튼이 영영 안 먹는다.** 답답함이 아니라 멈춤이다.
+//    그래서 ①소리가 실패하면 즉시 넘어가고 ②그마저 조용히 멎을 때를 대비해 상한을 둔다.
+// ★★★ 기다리는 시간(밀리초). 답답하면 이 숫자만 줄이면 된다. ★★★
+//    2200 = 가장 긴 소리(menu_catchdragonfly 2.04초)보다 조금 위. 평소엔 안 쓰이고
+//    **소리가 조용히 멎을 때만** 도는 마지막 안전장치다.
+var MENU_SND_MAX_MS=2200;
+// ⚠️ 소리도 그림과 같다 — 같은 이름으로 갈아끼우면 폰이 옛것을 쓴다. 음량을 다시 맞추면 날짜를 올릴 것.
+var MENU_SND_VER='?v=20260915';
+// 어느 화면의 어느 버튼이 어떤 소리를 쓰는가.
+// ⚠️ 'ABC' 가 두 화면에 있다(첫 화면=알파벳 고르기 / 모드=파리잡기) → **화면으로 먼저 가른다.**
+var MENU_SNDS={
+  home  :{ 'abc':'menu_abc', 'word':'menu_word', 'phonics':'menu_phonics' },
+  mode  :{ 'ABC':'menu_catchfly', 'abc':'menu_catchdragonfly', 'ABc':'menu_catchspider' },
+  puzzle:{ 'fruit':'menu_fruit', 'animal':'menu_animal', 'dino':'menu_dino' },
+  phset :{ 'phonics 1':'menu_phonicsone', 'phonics 2':'menu_phonicstwo' }
+};
+var _menuSndCache={}, _menuSndBusy=false;
+function _menuSndGet(name){
+  try{
+    if(_menuSndCache[name]) return _menuSndCache[name];
+    // ⚠️ new Audio() 직접 호출 금지 — 실패해도 앱이 안 죽는 safeAudio() 를 쓴다(CLAUDE.md 안정성 규칙 2번)
+    var a=safeAudio('assets/game/sounds/'+name+'.mp3'+MENU_SND_VER);
+    try{ a.preload='auto'; }catch(e){}
+    _menuSndCache[name]=a; return a;
+  }catch(e){ return null; }
+}
+function _menuBtnFrom(t){
+  try{ return (t && t.closest) ? t.closest('.game-card,.mbtn') : null; }catch(e){ return null; }
+}
+function _menuSndKeyFor(btn){
+  try{
+    var inside=function(sel){ try{ return !!btn.closest(sel); }catch(e){ return false; } };
+    if(inside('#ms')){                                   // 파리잡기 모드 고르기
+      var m=(btn.getAttribute('onclick')||'').match(/goMode\('([^']+)'\)/);
+      return m ? MENU_SNDS.mode[m[1]] : null;            // 대소문자를 가리는 자리(ABC/abc/ABc)
+    }
+    var lbl=btn.querySelector('.card-label,.mbtn-label');
+    var name=lbl ? (lbl.textContent||'').trim().toLowerCase() : '';
+    if(!name) return null;
+    if(inside('#ps'))            return MENU_SNDS.phset[name]||null;    // 파닉스 세트
+    if(inside('.wc'))            return MENU_SNDS.puzzle[name]||null;   // 퍼즐 메뉴
+    if(inside('.mode-buttons'))  return MENU_SNDS.home[name]||null;     // 첫 화면
+    return null;
+  }catch(e){ return null; }
+}
+// 누르기 직전(pointerdown)에 파일을 미리 받기 시작한다 — 첫 누름이 느리지 않게.
+// ⚠️ 화면이 뜰 때 미리 받지 않는다. 첫 화면을 '소리 0바이트'로 지켜 온 것을 깨지 않으려고(2026-08-15).
+try{
+  document.addEventListener('pointerdown',function(e){
+    try{ var b=_menuBtnFrom(e.target); if(!b) return;
+         var k=_menuSndKeyFor(b); if(k) _menuSndGet(k); }catch(_){}
+  },true);
+}catch(e){}
+
+// ⚠️ **붙잡기(capture) 단계**에서 가로챈다 — 그래야 index.html 의 onclick 이 먼저 돌지 않는다.
+//    index.html 은 한 글자도 안 건드린다(캐시버스터가 없어 옛 판이 폰에 남는다).
+try{
+  document.addEventListener('click',function(e){
+    var btn=null;
+    try{
+      btn=_menuBtnFrom(e.target); if(!btn) return;
+      if((btn.className||'').indexOf('wc-locked')>=0) return;   // 잠긴 카드는 그대로(흔들림+토스트)
+      var key=_menuSndKeyFor(btn); if(!key) return;             // 소리 없는 버튼(뒤로 등)은 그대로
+      // 아이는 여러 번 누른다 → 도는 동안 눌린 것은 **전부 무시**한다(같은 버튼이든 다른 버튼이든).
+      // 안 막으면 소리가 겹치고 화면이 두 번 넘어간다.
+      if(_menuSndBusy){ e.preventDefault(); e.stopPropagation(); return; }
+      var act=btn.onclick;
+      if(typeof act!=='function') return;                       // 할 일을 모르면 아예 안 건드린다
+      e.preventDefault(); e.stopPropagation();
+      _menuSndBusy=true;
+      try{ btn.classList.add('menu-snd-on'); }catch(_){}
+      var done=false, timer=0;
+      var go=function(){
+        if(done) return; done=true;
+        try{ clearTimeout(timer); }catch(_){}
+        _menuSndBusy=false;
+        try{ btn.classList.remove('menu-snd-on'); }catch(_){}
+        try{ act.call(btn); }catch(_){}                         // 원래 하던 일(화면 넘기기)
+      };
+      timer=setTimeout(go,MENU_SND_MAX_MS);                     // ← 마지막 안전장치
+      var a=_menuSndGet(key);
+      if(!a){ go(); return; }                                   // 소리를 못 만들면 즉시 넘어간다
+      try{ a.onended=go; a.onerror=go; a.currentTime=0; }catch(_){}
+      var p=null;
+      try{ p=a.play(); }catch(_){ go(); return; }               // 재생 자체가 터지면 즉시
+      if(p && p.catch) p.catch(function(){ go(); });            // 브라우저가 소리를 막으면 즉시
+    }catch(err){
+      // 무슨 일이 나도 버튼은 먹어야 한다
+      try{ _menuSndBusy=false; if(btn){ btn.classList.remove('menu-snd-on');
+           if(typeof btn.onclick==='function') btn.onclick.call(btn); } }catch(_){}
+    }
+  },true);
+}catch(e){}
+// ────────────────────────────────────────────────────────────────────────────
+
+// ────────────────────────────────────────────────────────────────────────────
 // ★ 메뉴 아이콘 — 두 장을 번갈아 보여주는 그림 (2026-09-14 추가)
 //
 // [왜] 글 못 읽는 아이가 메뉴에서 게임을 못 고른다. 파닉스 카드 4장은 전부 같은 SVG 를 쓰고,
