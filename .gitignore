@@ -45,3 +45,8 @@ twa-project/app/src/main/assets/web/
 /*.png
 /*.jpg
 /*.jpeg
+
+# npm 패키지 (2026-09-15) — 저장소가 무거워지면 안 된다.
+# 브라우저 확인 도구를 어디서 설치하든 여기로 안 딸려 오게 막아 둔다.
+node_modules/
+package-lock.json

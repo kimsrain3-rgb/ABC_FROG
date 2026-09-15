@@ -263,8 +263,18 @@ try{
 //    새로 예약하는 것이 생기면 **반드시 여기에 같이 넣을 것.** 흩어놓으면 또 샌다.
 //    (파닉스의 _pauseAllSound() 가 new Audio() 로 만든 발음과 예약된 다음 발음을 못 잡는 것이
 //     같은 계통이다 — 그건 별건이라 이번에 안 건드렸다.)
-var _menuSndCur=null, _menuSndTimer=0, _menuSndBtn=null, _menuSndAct=null, _menuSndDone=true;
+// 🔴 [3번째 · 2026-09-15 17차] **누름마다 번호를 매긴다.**
+//    앞의 둘을 고치고도 한 군데가 남았다 — `play()` 가 돌려주는 '약속(Promise)'의 실패 알림은
+//    **떼어낼 수가 없다.** `onended`·`onerror` 는 null 로 떼면 그만이고 타이머는 지우면 그만인데,
+//    이미 만들어진 약속의 `.catch` 는 취소할 방법이 없다.
+//    그래서 A 를 눌렀다 취소하고 B 를 누른 뒤 **A 의 실패 알림이 늦게 도착하면**
+//    그게 B 의 차례에 끼어들어 **B 의 음성을 끊고 게임을 바로 시작**시킨다.
+//    → 떼어낼 수 없으면 **무시할 수 있게** 만든다. 누름마다 번호를 주고, 늦게 온 알림은
+//      자기 번호가 지금 번호와 다르면 아무 일도 안 한다. (지나간 일이 현재에 못 끼어든다.)
+//    ⚠️ 새로 '나중에 오는 알림'을 만들면 **반드시 번호를 같이 실어 보낼 것.**
+var _menuSndCur=null, _menuSndTimer=0, _menuSndBtn=null, _menuSndAct=null, _menuSndDone=true, _menuSndSeq=0;
 function _menuSndClear(){                    // 소리·타이머·눌린 톤을 거둔다 (화면은 안 넘긴다)
+  _menuSndSeq++;                             // ← 번호를 올려 '지금까지 예약된 알림'을 전부 지난 것으로 만든다
   try{ clearTimeout(_menuSndTimer); }catch(e){}
   _menuSndTimer=0;
   var a=_menuSndCur; _menuSndCur=null;
@@ -277,9 +287,11 @@ function _menuSndClear(){                    // 소리·타이머·눌린 톤을
   _menuSndBtn=null; _menuSndAct=null; _menuSndBusy=false; _menuSndDone=true;
 }
 // 바깥에서 부르는 '취소' — 화면을 안 넘긴다. 뒤로가기·화면 숨김에서 쓴다.
-function menuSndCancel(){ if(!_menuSndDone) _menuSndClear(); }
+function menuSndCancel(){ if(!_menuSndDone) _menuSndClear(); else _menuSndSeq++; }
 // 소리가 끝났거나 실패했거나 상한에 걸렸을 때 — **거두고 나서** 원래 하던 일을 한다.
-function _menuSndFire(){
+// seq = 그 알림이 '어느 누름'에서 온 것인지. 지금 번호와 다르면 지나간 알림이므로 버린다.
+function _menuSndFire(seq){
+  if(seq!==undefined && seq!==_menuSndSeq) return;   // ← 지나간 알림이 현재에 끼어드는 것을 막는 자리
   if(_menuSndDone) return;
   var act=_menuSndAct, b=_menuSndBtn;
   _menuSndClear();                           // ← 먼저 거둔다(소리 정지 포함). 순서가 중요하다.
@@ -307,15 +319,19 @@ try{
       if(typeof act!=='function') return;                       // 할 일을 모르면 아예 안 건드린다
       e.preventDefault(); e.stopPropagation();
       _menuSndBusy=true; _menuSndDone=false; _menuSndBtn=btn; _menuSndAct=act;
+      var my=++_menuSndSeq;                                     // ← 이번 누름의 번호
       try{ btn.classList.add('menu-snd-on'); }catch(_){}
-      _menuSndTimer=setTimeout(_menuSndFire,MENU_SND_MAX_MS);   // ← 마지막 안전장치
+      _menuSndTimer=setTimeout(function(){ _menuSndFire(my); },MENU_SND_MAX_MS);  // ← 마지막 안전장치
       var a=_menuSndGet(key);
-      if(!a){ _menuSndFire(); return; }                         // 소리를 못 만들면 즉시 넘어간다
+      if(!a){ _menuSndFire(my); return; }                       // 소리를 못 만들면 즉시 넘어간다
       _menuSndCur=a;
-      try{ a.onended=_menuSndFire; a.onerror=_menuSndFire; a.currentTime=0; }catch(_){}
+      try{ a.onended=function(){ _menuSndFire(my); };
+           a.onerror=function(){ _menuSndFire(my); };
+           a.currentTime=0; }catch(_){}
       var p=null;
-      try{ p=a.play(); }catch(_){ _menuSndFire(); return; }      // 재생 자체가 터지면 즉시
-      if(p && p.catch) p.catch(function(){ _menuSndFire(); });   // 브라우저가 소리를 막으면 즉시
+      try{ p=a.play(); }catch(_){ _menuSndFire(my); return; }    // 재생 자체가 터지면 즉시
+      // ⚠️ 이 `.catch` 는 떼어낼 수 없다 — 늦게 도착해도 자기 번호(my)가 안 맞으면 스스로 물러난다.
+      if(p && p.catch) p.catch(function(){ _menuSndFire(my); }); // 브라우저가 소리를 막으면 즉시
     }catch(err){
       // 무슨 일이 나도 버튼은 먹어야 한다
       try{ var b2=_menuSndBtn||btn; _menuSndClear();
