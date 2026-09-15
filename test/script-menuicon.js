@@ -451,15 +451,15 @@ var ANIMAL_ICONS=['assets/animal/icons/animal_a.webp',    // 강아지
                   'assets/animal/icons/animal_b.webp',    // 고양이
                   'assets/animal/icons/animal_c.webp'];   // 코끼리
 // 공룡 불꽃 — 그림 파일 없이 도형으로 그린다. 공룡이 **왼쪽을 보고** 있어 불꽃도 왼쪽으로 뻗는다.
-// ⚠️ **오렌지 단색**(#FF7043 — style.css 의 .wc-fruit·.mbtn-word 가 이미 쓰는 색).
+// ⚠️ **두 색**(겉 #FF6E40 주황 + 속 #FFD740 노랑). 2026-09-15 9차에 오렌지 단색에서 되돌렸다 —
+//    단색은 밋밋해 '주황 덩어리'로 보이고, 속에 밝은 심지가 있어야 불처럼 읽힌다(사장님 판단).
 //    카드(청록 #4DD0E1→#00ACC1)·몸통(짙은 파랑 #01579B)과 안 묻힌다.
-// ⚠️ 모양은 후보 4개를 44px 실제 크기로 그려 보고 골랐다 — 매끈한 타원은 '풍선',
-//    각진 것은 '마름모'로 보였고, 이것만 **왼쪽이 뾰족한 불덩이**로 읽혔다.
+// ⚠️ 오른쪽 끝(x=23)이 입에 붙는 자리다 — 붙이는 위치는 CSS 의 left/top 이 정한다.
 function _dinoFlameHTML(){
   return '<span class="dino-flame" aria-hidden="true">'+
     '<svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">'+
-      '<path d="M1 10 C7 5, 9 1, 12 3.5 C15 1.5, 18 4, 20 5 C24 7.5, 24 12.5, 20 15 '+
-              'C18 16, 15 18.5, 12 16.5 C9 19, 7 15, 1 10 Z" fill="#FF7043"/>'+
+      '<path d="M23 10 C17 2, 9 3.5, 2 10 C9 16.5, 17 18, 23 10 Z" fill="#FF6E40"/>'+
+      '<path d="M23 10 C18.5 5.8, 13 6.4, 9 10 C13 13.6, 18.5 14.2, 23 10 Z" fill="#FFD740"/>'+
     '</svg></span>';
 }
 function buildPuzzleIcons(){
