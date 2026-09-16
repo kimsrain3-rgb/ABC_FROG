@@ -206,9 +206,13 @@ const DIRS=['left','right','front'];
 //    **소리가 조용히 멎을 때만** 도는 마지막 안전장치다.
 var MENU_SND_MAX_MS=2200;
 // ⚠️ 소리도 그림과 같다 — 같은 이름으로 갈아끼우면 폰이 옛것을 쓴다. 음량을 다시 맞추면 날짜를 올릴 것.
-var MENU_SND_VER='?v=20260915';
+//    2026-09-16 — menu_abc("ABC"→"Alphabet Game")·menu_word("Word"→"Word Puzzle") 를
+//    **같은 이름으로** 갈아끼웠다. 이름이 같으므로 이 날짜를 안 올리면 폰에서 옛 소리가 그대로 난다.
+var MENU_SND_VER='?v=20260916';
 // 어느 화면의 어느 버튼이 어떤 소리를 쓰는가.
 // ⚠️ 'ABC' 가 두 화면에 있다(첫 화면=알파벳 고르기 / 모드=파리잡기) → **화면으로 먼저 가른다.**
+// 🔴 첫 화면(home)만 열쇠가 **글자가 아니라 homeCardKey() 가 돌려주는 이름**이다(2026-09-16).
+//    글자를 "Alphabet Game"·"Word Puzzle" 로 바꿨기 때문에 글자로 찾으면 소리를 못 찾는다.
 var MENU_SNDS={
   home  :{ 'abc':'menu_abc', 'word':'menu_word', 'phonics':'menu_phonics' },
   mode  :{ 'ABC':'menu_catchfly', 'abc':'menu_catchdragonfly', 'ABc':'menu_catchspider' },
@@ -235,12 +239,13 @@ function _menuSndKeyFor(btn){
       var m=(btn.getAttribute('onclick')||'').match(/goMode\('([^']+)'\)/);
       return m ? MENU_SNDS.mode[m[1]] : null;            // 대소문자를 가리는 자리(ABC/abc/ABc)
     }
+    // 🔴 첫 화면만 먼저 가른다 — 글자가 바뀌었으므로 글자로 찾으면 안 된다(2026-09-16).
+    if(inside('.mode-buttons')) return MENU_SNDS.home[homeCardKey(btn)]||null;
     var lbl=btn.querySelector('.card-label,.mbtn-label');
     var name=lbl ? (lbl.textContent||'').trim().toLowerCase() : '';
     if(!name) return null;
     if(inside('#ps'))            return MENU_SNDS.phset[name]||null;    // 파닉스 세트
     if(inside('.wc'))            return MENU_SNDS.puzzle[name]||null;   // 퍼즐 메뉴
-    if(inside('.mode-buttons'))  return MENU_SNDS.home[name]||null;     // 첫 화면
     return null;
   }catch(e){ return null; }
 }
@@ -377,6 +382,31 @@ var MODE_ICONS={ 'ABC':FLY_IMGS.front, 'abc':DRAGONFLY_IMGS.left, 'ABc':SPIDER_I
 var MODE_ICON_MS   ={ 'ABC':380, 'abc':440, 'ABc':560 };
 var MODE_ICON_DELAY={ 'ABC':0,   'abc':140, 'ABc':280 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 모드 버튼 아이콘이 좌우로 떠다니게 (2026-09-16)
+//
+// [왜] 날갯짓만 하고 제자리에 붙어 있으면 '그림'이지 '날아다니는 벌레'로 안 보인다.
+//   거미도 게임에서 거미줄에 매달려 날아다니므로 셋 다 준다.
+//
+// 🔴 **왼쪽으로만 떠다닌다.** 버튼 안에서 그림·글자가 가운데로 모여 있어 **왼쪽에 여유가 있고**,
+//    오른쪽으로 가면 글자(.mbtn-label)와의 사이(10px)를 파고들어 부딪힌다.
+//    그래서 '왼쪽 끝 ↔ 제자리' 사이를 오간다 — 글자 쪽으로는 한 번도 안 넘어온다.
+// 🔴 **날갯짓(MODE_ICON_MS)과 박자가 겹치면 안 된다.** 겹치면 "왼쪽 갈 때 늘 같은 날개 모양"이
+//    되어 두 움직임이 한 덩어리로 보인다 → 아래 표는 날갯짓의 **배수가 아닌** 값으로 골랐다.
+//      ABC 1310÷380=3.45 · abc 1070÷440=2.43 · ABc 1630÷560=2.91  (셋 다 정수가 아니다)
+//    셋끼리도 배수가 아니다(1310:1070:1630 → 1.22 · 1.24 · 1.52배).
+// ⚠️ 움직임은 transform 이라 **자리를 차지하지 않는다** — 글자 위치는 1px 도 안 움직이고
+//    버튼 크기·높이도 그대로다. 커지는 게 아니라 옮겨지는 것이라 버튼 밖으로도 안 나간다
+//    (아래 PX 가 '아이콘 왼쪽 ~ 버튼 안쪽 왼쪽 여백'보다 작으면 된다. 실측 여유 46px).
+// ⚠️ 날갯짓(setInterval, img.src 갈아끼우기)은 한 글자도 안 건드렸다 — 여기서는 **자리만** 더한다.
+//    움직이는 대상도 다르다: 날갯짓은 <img>, 떠다니기는 그 바깥 상자(.mbtn-ic).
+//    같은 것에 둘 다 걸면 .mbtn-abc 의 transform:scale(1.344) 와 서로 지운다.
+//
+// ★★★ 아래 3줄만 고치면 된다. PX=떠다니는 폭 · MS=한 번 가는 데 걸리는 시간 · DELAY=시작 시점 ★★★
+var MODE_FLOAT_PX   ={ 'ABC':14,   'abc':11,   'ABc':8   };   // 파리가 제일 활발 · 거미는 매달려 있어 조금만
+var MODE_FLOAT_MS   ={ 'ABC':1310, 'abc':1070, 'ABc':1630 };
+var MODE_FLOAT_DELAY={ 'ABC':0,    'abc':230,  'ABc':470 };
+
 // 두 장짜리 아이콘 <img> 한 장을 만든다. 처음엔 a 를 보여주고, b 가 다 받아지면 그때부터 번갈아 바뀐다.
 //   fb='svg' → 그림을 못 받으면 기존 파닉스 SVG 로 되돌린다(카드가 지금과 똑같아진다)
 //   fb 없음  → 그림을 못 받으면 아이콘을 지운다(모드 버튼이 지금처럼 글자만 남는다)
@@ -505,6 +535,15 @@ function buildModeIcons(){
       sp.className='mbtn-ic';
       // fb 없음 → 실패하면 글자만 남음. ms/delay 를 주므로 공용 타이머가 아니라 자기 박자로 돈다.
       sp.innerHTML=menuIconHTML(pair[0],pair[1],m[1],null,MODE_ICON_MS[m[1]],MODE_ICON_DELAY[m[1]]);
+      // ★ 좌우로 떠다니기 (2026-09-16) — 움직임은 CSS(mbtnFloat)가, 폭·박자·시작시점은 여기서.
+      //   숫자가 위 한 곳(MODE_FLOAT_*)에 모인다. 첫 화면 사과(homeAppleWobble)와 같은 방식이다.
+      //   ⚠️ <img> 가 아니라 이 바깥 상자에 건다 — img 에는 scale(1.344) 이 이미 걸려 있다.
+      var fpx=MODE_FLOAT_PX[m[1]];
+      if(fpx){
+        sp.style.setProperty('--mbtn-float',fpx+'px');
+        sp.style.animation='mbtnFloat '+MODE_FLOAT_MS[m[1]]+'ms ease-in-out '+
+                           (MODE_FLOAT_DELAY[m[1]]||0)+'ms infinite alternate';
+      }
       btn.insertBefore(sp,btn.firstChild);
       // ⚠️ CSS 의 :has() 를 쓰지 않고 여기서 클래스를 붙인다 — :has() 는 옛 WebView 에서 안 먹어
       //    그런 폰에서만 그림이 글자 위로 올라가 버튼 모양이 달라진다.
@@ -550,8 +589,100 @@ function _homeMouthStart(path){
   }catch(e){}
 }
 
-// 카드를 '글자'로 찾는다 — index.html 에 새 표시를 안 붙여도 되고, 옛 판이 캐시된 폰에서도 똑같이 동작한다.
-// (_unlockPhonicsCard 가 이미 쓰던 방식 그대로다.) 두 번 불려도 안전하다.
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 첫 화면 카드 글자 바꾸기 — ABC → Alphabet Game · Word → Word Puzzle (2026-09-16)
+//
+// ⛔ index.html 은 안 건드린다 — 캐시버스터가 없어 이미 깔린 폰에 옛 판이 며칠 남는다
+//    (2026-08-12 파닉스 잠김 사고). script.js 가 얹어야 푸시 즉시 전원에게 간다.
+//
+// 🔴 [함정] 지금까지 카드를 **글자로** 찾고 있었다(아래 buildHomeIcons · _menuSndKeyFor).
+//    글자를 바꾸면 그 코드가 카드를 못 찾아 **소리가 안 나고 아이콘이 안 움직인다.**
+//    → 찾는 열쇠를 글자에서 **바뀌지 않는 표시(card-abc / card-word / card-phonics)** 로 옮겼다.
+//      그 표시는 index.html:119·123·134 에 2026-08-05 부터 붙어 있다.
+//    ⚠️ 옛 index.html 이 캐시된 폰은 표시가 없을 수 있다 → **옛 글자도 그대로 받아준다**(아래 표).
+//    ⚠️ Phonics 는 글자를 안 바꾼다. _unlockPhonicsCard() 가 'phonics' 라는 글자로 찾고 있어서
+//       바꾸면 잠금해제가 깨진다. 이번 지시에도 "Phonics 카드 건드리지 말 것"이 있다.
+// ────────────────────────────────────────────────────────────────────────────
+
+// ★★★ 새 글자. 여기만 고치면 된다. Phonics 는 일부러 목록에 없다(= 안 건드림). ★★★
+var HOME_CARD_TEXT={ abc:'Alphabet Game', word:'Word Puzzle' };
+// 옛 글자 → 이름. 표시가 없는 옛 index.html 폰을 위한 뒷길이다. 새 글자도 같이 받아 둔다
+// (두 번 불려도, 이미 바뀐 뒤에 불려도 같은 이름이 나오게).
+var _HOME_ALIAS={ 'abc':'abc', 'word':'word', 'phonics':'phonics',
+                  'alphabet game':'abc', 'word puzzle':'word' };
+function homeCardKey(c){
+  try{
+    if(!c) return '';
+    var cl=' '+(c.className||'')+' ';
+    if(cl.indexOf(' card-abc ')>=0)     return 'abc';
+    if(cl.indexOf(' card-word ')>=0)    return 'word';
+    if(cl.indexOf(' card-phonics ')>=0) return 'phonics';
+    var lbl=c.querySelector('.card-label');
+    return _HOME_ALIAS[lbl ? (lbl.textContent||'').trim().toLowerCase() : '']||'';
+  }catch(e){ return ''; }
+}
+
+// ★★★ 글자 크기의 위·아래 한계(px). ★★★
+//   위 = 테스트 판 CSS 의 20px(.mode-buttons .game-card .card-label). 짧은 글자는 여기서 안 내려간다.
+//   아래 = 이보다 작아지면 안 읽힌다. 여기에 닿으면 글자가 넘치므로 카드를 넓히거나 글자를 줄여야 한다.
+var HOME_LABEL_MIN=12;
+// 🔴 **공식으로 정하지 않는다 — 실제로 그려진 폭을 잰다**(CLAUDE.md 안정성 규칙 8번).
+//    폰 글자확대(WebView 는 웹 글자에 폰 설정을 곱한다)·폰트 늦게 오기·좁은 폰에서
+//    "글자수 × 추정폭" 공식은 반드시 어긋난다. 재서 줄이면 무엇이 곱해지든 알아서 맞는다.
+// ⚠️ 카드 **높이는 안 바뀐다** — 높이는 아이콘(80/70/62px)이 정하고 글자(최대 20px)는 그보다 작다.
+//    글자를 줄이는 쪽이라 높이에 닿을 일이 구조적으로 없다.
+function fitHomeLabel(card){
+  try{
+    var lbl=card.querySelector('.card-label'); if(!lbl) return;
+    var ic=card.querySelector('.card-icon');
+    lbl.style.whiteSpace='nowrap';
+    lbl.style.fontSize='';                       // CSS 값으로 되돌리고 시작 → 두 번 불려도 안전
+    var cs=getComputedStyle(card);
+    var gap=parseFloat(cs.columnGap)||parseFloat(cs.gap)||0;
+    // clientWidth = 테두리를 뺀 폭(안쪽 여백은 포함) → 여백과 아이콘·사이간격을 뺀 나머지가 글자 몫
+    var avail=card.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)
+              -(ic?ic.getBoundingClientRect().width:0)-gap-2;   // 2 = 반올림 여유
+    if(!(avail>0)) return;
+    var wid=function(){ return Math.max(lbl.scrollWidth, lbl.getBoundingClientRect().width); };
+    var fs=parseFloat(getComputedStyle(lbl).fontSize)||20;
+    for(var n=0; n<40 && wid()>avail && fs>HOME_LABEL_MIN; n++){
+      fs-=0.5; lbl.style.fontSize=fs+'px';
+    }
+  }catch(e){}
+}
+// 글자를 바꾸고 크기를 맞춘다. 두 번 불려도 안전하다(같은 글자면 안 건드리고, 크기는 다시 잰다).
+function renameHomeCards(){
+  try{
+    var wrap=document.querySelector('.mode-buttons'); if(!wrap) return;
+    var cards=wrap.querySelectorAll('.game-card');
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i], want=HOME_CARD_TEXT[homeCardKey(c)];
+      if(!want) continue;                                    // Phonics 등 → 손대지 않는다
+      var lbl=c.querySelector('.card-label'); if(!lbl) continue;
+      if((lbl.textContent||'').trim()!==want) lbl.textContent=want;
+      fitHomeLabel(c);
+    }
+  }catch(e){}
+}
+// 🔴 **세 번 부른다** — 한 번만 부르면 잘린 채로 남는 경우가 있다.
+//    ① 바로   = 첫 화면이 이미 그려져 있으면 곧장 바꾼다(옛 글자가 한 번도 안 보이게)
+//    ② load   = 아이콘이 얹힌 뒤 아이콘 폭이 확정된 상태로 다시 잰다
+//    ③ 폰트   = 웹폰트(Fredoka)가 늦게 오면 **글자 폭이 달라진다.** 안 다시 재면 그때 넘친다
+//               (퍼즐 제목이 같은 이유로 fonts.ready 를 쓰고 있다 — 2026-08-20)
+//    ④ 회전·크기변경 = 가로/세로가 바뀌면 카드 폭·아이콘 크기(@media max-height)가 달라진다
+try{ renameHomeCards(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',renameHomeCards); }catch(e){}
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ renameHomeCards(); }); }catch(e){}
+(function(){
+  try{
+    var t=0, fire=function(){ clearTimeout(t); t=setTimeout(renameHomeCards,200); };
+    window.addEventListener('resize',fire);
+    window.addEventListener('orientationchange',fire);
+  }catch(e){}
+})();
+
+// 카드를 찾는다 — homeCardKey() 가 '바뀌지 않는 표시'로, 없으면 옛 글자로 찾아준다(위 참고).
+// (표시가 없는 옛 폰까지 덮는 것은 _unlockPhonicsCard 가 쓰던 생각 그대로다.) 두 번 불려도 안전하다.
 function buildHomeIcons(){
   try{
     var wrap=document.querySelector('.mode-buttons'); if(!wrap) return;
@@ -561,7 +692,7 @@ function buildHomeIcons(){
       if(c.getAttribute('data-homeic')) continue;                    // 이미 얹힘
       var lbl=c.querySelector('.card-label'), ic=c.querySelector('.card-icon');
       if(!lbl||!ic) continue;
-      var name=(lbl.textContent||'').trim().toLowerCase();
+      var name=homeCardKey(c);
       if(name==='abc'){
         // 파리 두 장 번갈아. 지금까지는 fly_front 한 장으로 정지해 있었다.
         ic.innerHTML=menuIconHTML(FLY_IMGS.front[0],FLY_IMGS.front[1],'ABC',null,
@@ -670,7 +801,9 @@ function buildPuzzleIcons(){
   }catch(e){}
 }
 
-try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); }); }catch(e){}
+// ⚠️ renameHomeCards() 를 buildHomeIcons() **뒤에** 부른다 — 아이콘이 얹힌 뒤라야 아이콘 폭이
+//    확정되고, 글자가 쓸 수 있는 폭을 제대로 잴 수 있다(2026-09-16).
+try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); renameHomeCards(); }); }catch(e){}
 
 const PHRASES=[
   {text:'I wanna eat {L}',vk:'i_wanna_eat'},

@@ -20,6 +20,22 @@
      확인할 것: ① Phonics 메뉴 — 1=펭귄·2=두더지가 번갈아 움직이는가, 3·4 는 옛 회색 SVG 그대로인가
        ② 파리잡기 모드 — ABC=파리 · abc=잠자리 · ABc=거미, 글자는 그대로인가
        ③ 시작화면·퍼즐(Word) 메뉴는 그대로인가  ④ 오류 0 -->
+<!-- ★ 이어붙임 (2026-09-16) — 첫 화면 글자·음성 교체 + 모드 버튼 아이콘 떠다니기
+     [바뀐 것] ① 첫 화면 카드 글자: ABC → **Alphabet Game** · Word → **Word Puzzle** (Phonics 는 그대로)
+       ② 음성 2개를 **같은 이름으로** 갈아끼움 — assets/game/sounds/menu_abc.mp3 · menu_word.mp3
+          (원본 wav 에서 한 번만 인코딩. 음량 −17.9/−18.0dB = 나머지 아홉 개와 같음)
+       ③ MENU_SND_VER '?v=20260915' → '?v=20260916' — 이름이 같아 안 올리면 폰에 옛 소리가 남는다
+       ④ 파리잡기 모드 버튼 아이콘 3종이 **왼쪽으로 떠다님**(날갯짓은 그대로, 자리만 더함)
+     [고친 함정] 카드를 **글자로 찾던 코드 2곳**이 글자 변경으로 깨질 자리였다 →
+       homeCardKey() 가 '바뀌지 않는 표시(card-abc/card-word)'로 찾게 바꿨다(옛 글자도 받아줌).
+       · _menuSndKeyFor() = 어느 소리를 틀지  · buildHomeIcons() = 파리·사과 아이콘 움직이기
+       · _unlockPhonicsCard() 는 'phonics' 로 찾는데 그 글자를 안 바꿨으므로 무사하다.
+     [글자 넘침] 글자가 길어졌다 → fitHomeLabel() 이 **실제로 그려진 폭을 재서** 줄인다(공식 아님).
+       카드 높이는 아이콘(80/70/62px)이 정하고 글자는 그보다 작아 **높이가 안 바뀐다.**
+     ⚠ 라이브(index.html / script.js / style.css)는 이번에도 한 글자도 안 건드렸다.
+       단 **소리 파일 2개는 assets/ 공용**이라 실물이 바뀌었다 — 라이브 코드는 menu_*.mp3 를
+       한 번도 안 부르므로(확인함) 라이브 동작에는 영향이 없다.
+     ⚠ 라이브 반영 때 = 위 CSS + 아래 @keyframes mbtnFloat 를 style.css 로, script 변경을 script.js 로. -->
 <base href="../">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500&display=swap" rel="stylesheet">
 <meta charset="UTF-8">
@@ -58,6 +74,11 @@
 /* 첫 화면과 같은 단계. 모드 화면은 버튼이 3개라 첫 화면보다 여유가 있지만 단계는 맞춰 둔다. */
 @media (max-height:860px){ .ms-buttons .mbtn .mbtn-ic{width:70px;height:70px} }
 @media (max-height:760px){ .ms-buttons .mbtn .mbtn-ic{width:62px;height:62px} }
+/* ★ 아이콘이 좌우로 떠다니기 (2026-09-16) — 폭·박자·시작시점은 script 의 MODE_FLOAT_* 가 준다.
+   🔴 **왼쪽으로만** 간다(0 → 왼쪽 → 0). 오른쪽엔 글자가 10px 옆에 있어 파고들면 부딪히고,
+      왼쪽은 버튼 안쪽에 여유가 있다. 첫 화면 사과(homeAppleWobble)와 같은 짜임이다.
+   ⚠️ transform 이라 자리를 안 차지한다 → 글자 위치·버튼 크기·높이 전부 그대로. */
+@keyframes mbtnFloat{ from{transform:translateX(0)} to{transform:translateX(calc(-1 * var(--mbtn-float,0px)))} }
 @media (max-height:700px){ .ms-buttons .mbtn .mbtn-ic{width:52px;height:52px} }
 
 /* ── 버튼을 누르고 소리가 나는 동안의 '눌린 톤' (2026-09-15 15차) ──
