@@ -808,9 +808,71 @@ function buildPuzzleIcons(){
   }catch(e){}
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 퍼즐(Word) 메뉴 아이콘 줄 맞추기 — 기준은 Animal (2026-09-16)
+//
+// [문제] `.wc-card` 는 아이콘+글자를 **한 덩어리로 가운데**(`style.css:201` justify-content:center)
+//   놓는다 → **글자가 길수록 아이콘이 왼쪽으로 밀린다.** 실측(390×844) = 과일 68.4 · 동물 51.6 ·
+//   공룡 67.5px. 셋이 제각각이라 눈이 아이콘을 따라가지 못한다.
+//
+// [왜 CSS 한 줄이 아니라 재서 맞추나] 첫 화면은 `justify-content:flex-start` 한 줄로 끝났다.
+//   여기는 **Animal 을 건드리면 안 된다**(기준이라는 지시). flex-start 로 바꾸면 Animal 도 움직인다.
+//   게다가 맞출 자리(51.6px)는 **'Animal' 이라는 글자 폭에서 나온 값**이라 폰 글자확대·폰트가
+//   달라지면 같이 움직인다. 숫자를 박아 두면 그때 어긋난다 → **매번 Animal 을 재서 거기에 맞춘다.**
+//
+// [어떻게] 가운데 정렬에서는 덩어리에 붙인 여백의 **절반**만 자리가 움직인다
+//   (여백 m 을 주면 남는 자리가 m 만큼 줄어 양쪽에 m/2 씩 나뉜다) → 한 번에 안 맞으므로
+//   **재고 고치고 다시 재기**를 반복한다. 보통 2번이면 0.5px 안으로 들어온다.
+//
+// 🔴 **공룡은 불꽃이 아니라 공룡 그림 기준이다.** 불꽃(`.dino-flame`)은 `position:absolute` 라
+//    `.card-icon` 의 상자에도, `offsetLeft`·`offsetWidth` 에도 **안 들어간다.** 상자를 재면
+//    불꽃은 저절로 빠진다. (불꽃을 기준 삼으면 공룡이 18px 오른쪽으로 밀려 버린다.)
+// 🔴 **자리는 `offsetLeft` 로 잰다 — `getBoundingClientRect()` 로 재면 안 된다.**
+//    과일 아이콘은 `homeAppleWobble` 로 계속 기울어져 있어(±7°) 화면상 상자가 매 프레임 달라진다.
+//    `offsetLeft` 는 **기울이기 전 자리**라 흔들리지 않는다. (CLAUDE.md 안정성 규칙 8번과 같은 이유)
+// ⚠️ 잠긴 카드(Vegetable·Insect)는 **아래 목록에 없다 = 안 건드린다.**
+// ⚠️ 아이콘 크기·움직임·불꽃·카드 크기는 한 값도 안 바꾼다. **자리만** 옮긴다.
+// ────────────────────────────────────────────────────────────────────────────
+// ★★★ 기준 카드와 맞출 카드. 기준을 바꾸려면 여기만 고친다. ★★★
+var PUZZLE_ALIGN_BASE='.wc-animal';
+var PUZZLE_ALIGN_TARGETS=['.wc-fruit','.wc-dino'];
+function alignPuzzleIcons(){
+  try{
+    var wc=document.getElementById('wc'); if(!wc) return;
+    var base=wc.querySelector(PUZZLE_ALIGN_BASE); if(!base) return;
+    var bi=base.querySelector('.card-icon'); if(!bi) return;
+    // 화면이 안 떠 있으면(display:none) 전부 0 이라 잴 수가 없다 → 아무것도 안 한다.
+    if(!bi.offsetWidth) return;
+    var goal=bi.offsetLeft;                                  // 기준 = Animal 아이콘 자리
+    for(var t=0;t<PUZZLE_ALIGN_TARGETS.length;t++){
+      var card=wc.querySelector(PUZZLE_ALIGN_TARGETS[t]); if(!card) continue;
+      var ic=card.querySelector('.card-icon'); if(!ic||!ic.offsetWidth) continue;
+      ic.style.marginLeft='';                                // 지우고 다시 — 두 번 불려도 안전
+      var m=0;
+      for(var n=0;n<6;n++){
+        var d=goal-ic.offsetLeft;
+        if(Math.abs(d)<0.5) break;
+        m+=2*d;                                              // 가운데 정렬 → 여백의 절반만 움직인다
+        ic.style.marginLeft=m.toFixed(2)+'px';
+      }
+    }
+  }catch(e){}
+}
+// 🔴 **퍼즐 메뉴가 열릴 때 불러야 한다** — 닫혀 있으면(display:none) 잴 수가 없다.
+//    goWordCat() 안에서 한 번, 그리고 한 박자 뒤에 한 번 더(그림·폰트가 늦게 오는 경우).
+// ⚠️ 웹폰트(Fredoka)가 늦게 오면 글자 폭이 달라져 가운데 자리가 통째로 움직인다 → 다시 맞춘다.
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ alignPuzzleIcons(); }); }catch(e){}
+(function(){
+  try{
+    var t=0, fire=function(){ clearTimeout(t); t=setTimeout(alignPuzzleIcons,200); };
+    window.addEventListener('resize',fire);
+    window.addEventListener('orientationchange',fire);
+  }catch(e){}
+})();
+
 // ⚠️ renameHomeCards() 를 buildHomeIcons() **뒤에** 부른다 — 아이콘이 얹힌 뒤라야 아이콘 폭이
 //    확정되고, 글자가 쓸 수 있는 폭을 제대로 잴 수 있다(2026-09-16).
-try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); renameHomeCards(); }); }catch(e){}
+try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); renameHomeCards(); alignPuzzleIcons(); }); }catch(e){}
 
 const PHRASES=[
   {text:'I wanna eat {L}',vk:'i_wanna_eat'},
@@ -2745,7 +2807,13 @@ function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이�
   document.getElementById('wp').classList.remove('show'); try{var _b=sndMade('bgm'); if(_b)_b.pause();}catch(e){} syncBackGuard(); }
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
-function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} syncBackGuard(); }
+function goWordCat(){
+  try{document.getElementById('wc').classList.add('show');}catch(e){}
+  // ★ 2026-09-16 — 아이콘 줄 맞추기는 **화면이 뜬 뒤**라야 잴 수 있다(닫혀 있으면 전부 0).
+  //   한 박자 뒤에 한 번 더 부르는 것은 그림·폰트가 늦게 와서 글자 폭이 달라지는 경우 때문이다.
+  try{ alignPuzzleIcons(); setTimeout(alignPuzzleIcons,120); }catch(e){}
+  syncBackGuard();
+}
 function wcBack(){ try{document.getElementById('wc').classList.remove('show');}catch(e){} syncBackGuard(); }
 var _wcToastT=null;
 function wcLocked(el){
