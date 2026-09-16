@@ -870,9 +870,146 @@ try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function
   }catch(e){}
 })();
 
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 메뉴 화면이 짧은 폰에서 잘리는 것 — 재서 맞춘다 (2026-09-16)
+//
+// [문제] 네 화면(시작·모드·퍼즐·파닉스) 모두 내용을 **가운데 정렬**하고 스크롤이 없다
+//   (`justify-content:center`). 내용이 화면보다 크면 **위아래가 같이 잘린다.**
+//   실측(320×568·글자 100%) = 시작 27.5 · 모드 3.2 · 퍼즐 3.5 · 파닉스 10.5px 잘림.
+//
+// 🔴 [왜 @media 단계를 더 놓지 않았나 — 원리적으로 못 잡는다]
+//   ① **높이만 보는 규칙은 폰 글자확대를 못 본다.** 같은 360×640 인데 글자 100% 면 8.5px 남고
+//      130% 면 1.5px 잘린다. 퍼즐 메뉴는 320×568 에서 3.5 → **46.1px** 로 벌어진다.
+//      `@media (max-height:…)` 에는 글자 배율이 안 들어오므로 이 차이를 볼 수가 없다.
+//   ② **사다리는 칸 사이가 빈다.** 시작 화면은 이미 860/760/700 3단인데 568 에서 27.5px,
+//      600 에서도 11.5px 잘렸다. 모드·파닉스에 같은 걸 놓으면 같은 일이 반복된다.
+//   → 그래서 **화면 크기가 아니라 '잘리는지'를 직접 재서** 들어갈 때까지 줄인다.
+//
+// ★★★ 줄이는 순서. 들어가는 순간 멈춘다. 숫자 넷만 고치면 된다. ★★★
+//   ① 카드 사이 간격 → ② 개구리·제목(장식) → ③ 아이콘 → ④ 그래도 안 되면 그대로
+//   🔴 **아이콘은 마지막이고 52px 이 바닥이다.** 그 아래로는 절대 안 내려간다 —
+//      작아지면 글 못 읽는 아이가 무슨 게임인지 못 알아본다(2026-09-14 교훈).
+//   ⚠️ **여유가 있으면 첫 줄에서 그냥 나간다 → 넉넉한 폰은 한 픽셀도 안 바뀐다.**
+//      390×844 는 47~89px, 412×915 는 52~110px 남아 아예 이 아래로 안 내려온다.
+// ────────────────────────────────────────────────────────────────────────────
+var FIT_GAP_MIN   = 8;      // 카드 사이 간격은 여기까지만
+var FIT_DECOR_MIN = 0.70;   // 개구리·제목은 70% 까지만 (더 줄이면 허전해 보인다)
+var FIT_DECOR_STEP= 0.04;   // 장식을 줄이는 한 걸음
+var FIT_ICON_MIN  = 52;     // 🔴 아이콘 바닥 — 사장님 기준. 건드리지 말 것
+// 위아래로 이만큼은 남기고 멈춘다. 0 으로 두면 '딱 맞음'에서 멈추는데, 실제 폰은
+// 반올림·시스템 막대 때문에 1~2px 이 달라져 그 자리가 다시 잘릴 수 있다.
+var FIT_SAFE      = 3;
+
+// 화면마다 '무엇을 줄일 수 있는가'. 퍼즐 메뉴만 icon 이 없다 —
+// 아이콘이 이미 32~44px 이라 바닥(52) 아래이고, 그 화면은 **글자가 카드 높이를 정한다**(아래 주석 참고).
+var FIT_SCREENS=[
+  {root:'.ss',  list:'.mode-buttons', icon:'.mode-buttons .game-card .card-icon',
+   decor:[['.ss .sf','w'],['.ss h1','f'],['.ss .sub','f']], after:'home'},
+  {root:'#ms',  list:'.ms-buttons',   icon:'.ms-buttons .mbtn .mbtn-ic',
+   decor:[['#ms .ms-frog','w'],['#ms .ms-title','f']]},
+  {root:'#wc',  list:'#wc .wc-cards', icon:null,
+   decor:[['#wc .wc-frog','w'],['#wc .wc-title','f']], after:'puzzle'},
+  {root:'#ps',  list:'#ps .wc-cards', icon:'#ps .ps-card .card-icon',
+   decor:[['#ps .wc-frog','w'],['#ps .wc-title','f']]}
+];
+
+// 얼마나 모자라는가(px). 0 이면 다 들어간다.
+// ⚠️ 가운데 정렬이라 **위아래가 같이 넘친다** → 둘 다 더한다.
+// ⚠️ 뒤로 화살표처럼 `position:absolute` 인 것은 자리를 안 차지하므로 뺀다.
+function _fitNeed(root){
+  try{
+    var r=root.getBoundingClientRect(), top=1e9, bot=-1e9, any=false, k=root.children;
+    for(var i=0;i<k.length;i++){
+      var e=k[i];
+      if(!e.offsetWidth && !e.offsetHeight) continue;
+      var p=getComputedStyle(e).position;
+      if(p==='absolute'||p==='fixed') continue;
+      var b=e.getBoundingClientRect();
+      if(!b.height) continue;
+      top=Math.min(top,b.top); bot=Math.max(bot,b.bottom); any=true;
+    }
+    if(!any) return 0;
+    return Math.max(0,bot-(r.bottom-FIT_SAFE))+Math.max(0,(r.top+FIT_SAFE)-top);
+  }catch(e){ return 0; }
+}
+// 손댄 것을 전부 원래대로. 두 번 불려도 안전하고, 화면이 커지면 원래 크기로 되돌아온다.
+function _fitReset(sc){
+  try{
+    var L=document.querySelector(sc.list); if(L) L.style.rowGap='';
+    for(var i=0;i<sc.decor.length;i++){
+      var e=document.querySelector(sc.decor[i][0]); if(!e) continue;
+      if(sc.decor[i][1]==='w') e.style.width=''; else e.style.fontSize='';
+    }
+    if(sc.icon){ var ic=document.querySelectorAll(sc.icon);
+      for(var j=0;j<ic.length;j++){ ic[j].style.width=''; ic[j].style.height=''; } }
+  }catch(e){}
+}
+function fitMenuScreen(sc){
+  try{
+    var root=document.querySelector(sc.root); if(!root||!root.offsetHeight) return;  // 안 떠 있으면 못 잰다
+    _fitReset(sc);
+    if(_fitNeed(root)<=0) return;              // ⭐ 여유가 있으면 여기서 끝 — 아무것도 안 바꾼다
+
+    // ① 카드 사이 간격
+    var L=document.querySelector(sc.list);
+    if(L){
+      var g=parseFloat(getComputedStyle(L).rowGap)||0;
+      if(g>FIT_GAP_MIN){ L.style.rowGap=FIT_GAP_MIN+'px'; if(_fitNeed(root)<=0) return; }
+    }
+    // ② 개구리·제목 — 장식이다. 아이가 누르는 것이 아니라 먼저 양보한다.
+    var base=[];
+    for(var i=0;i<sc.decor.length;i++){
+      var e=document.querySelector(sc.decor[i][0]); if(!e) continue;
+      var cs=getComputedStyle(e), isW=sc.decor[i][1]==='w';
+      var v=parseFloat(isW?cs.width:cs.fontSize)||0;
+      if(v) base.push({e:e,w:isW,v:v});
+    }
+    for(var k=1-FIT_DECOR_STEP; k>=FIT_DECOR_MIN-0.001; k-=FIT_DECOR_STEP){
+      for(var b=0;b<base.length;b++){
+        if(base[b].w) base[b].e.style.width=(base[b].v*k).toFixed(1)+'px';
+        else          base[b].e.style.fontSize=(base[b].v*k).toFixed(1)+'px';
+      }
+      if(_fitNeed(root)<=0) return;
+    }
+    // ③ 아이콘 — 마지막 수단. 🔴 FIT_ICON_MIN(52px) 아래로는 절대 안 내려간다.
+    if(sc.icon){
+      var ic=document.querySelectorAll(sc.icon); if(!ic.length) return;
+      var cur=Math.round(parseFloat(getComputedStyle(ic[0]).width)||0);
+      if(cur<=FIT_ICON_MIN) return;            // 이미 바닥이거나 더 작다 → 안 건드린다
+      for(var s=cur-2; s>=FIT_ICON_MIN; s-=2){
+        for(var j=0;j<ic.length;j++){ ic[j].style.width=s+'px'; ic[j].style.height=s+'px'; }
+        if(_fitNeed(root)<=0) return;
+      }
+    }
+    // ④ 여기까지 와도 안 들어가면 **그대로 둔다** — 지금보다 나빠지지 않는다.
+  }catch(e){}
+}
+// 지금 떠 있는 화면만 맞춘다(나머지는 display:none 이라 첫 줄에서 나간다).
+function fitMenus(){
+  try{
+    for(var i=0;i<FIT_SCREENS.length;i++){
+      var sc=FIT_SCREENS[i];
+      fitMenuScreen(sc);
+      // 줄인 뒤에 딸려서 다시 재야 하는 것들
+      if(sc.after==='home')   { try{ renameHomeCards(); }catch(e){} }    // 아이콘이 작아지면 글자 몫이 늘어난다
+      if(sc.after==='puzzle') { try{ alignPuzzleIcons(); }catch(e){} }   // 카드가 다시 그려지면 줄도 다시 맞춘다
+    }
+  }catch(e){}
+}
+// ⚠️ 폰트가 늦게 오면 제목·글자 폭이 달라져 높이가 바뀐다 → 다시 잰다.
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ fitMenus(); }); }catch(e){}
+(function(){
+  try{
+    var t=0, fire=function(){ clearTimeout(t); t=setTimeout(fitMenus,200); };
+    window.addEventListener('resize',fire);
+    window.addEventListener('orientationchange',fire);
+  }catch(e){}
+})();
+
 // ⚠️ renameHomeCards() 를 buildHomeIcons() **뒤에** 부른다 — 아이콘이 얹힌 뒤라야 아이콘 폭이
 //    확정되고, 글자가 쓸 수 있는 폭을 제대로 잴 수 있다(2026-09-16).
-try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); renameHomeCards(); alignPuzzleIcons(); }); }catch(e){}
+// ⚠️ fitMenus() 는 **맨 마지막** — 아이콘·글자가 다 얹힌 뒤라야 진짜 높이를 잴 수 있다.
+try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); renameHomeCards(); alignPuzzleIcons(); fitMenus(); }); }catch(e){}
 
 const PHRASES=[
   {text:'I wanna eat {L}',vk:'i_wanna_eat'},
@@ -2809,9 +2946,11 @@ function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이�
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
 function goWordCat(){
   try{document.getElementById('wc').classList.add('show');}catch(e){}
-  // ★ 2026-09-16 — 아이콘 줄 맞추기는 **화면이 뜬 뒤**라야 잴 수 있다(닫혀 있으면 전부 0).
+  // ★ 2026-09-16 — 줄 맞추기·화면 맞추기는 **화면이 뜬 뒤**라야 잴 수 있다(닫혀 있으면 전부 0).
   //   한 박자 뒤에 한 번 더 부르는 것은 그림·폰트가 늦게 와서 글자 폭이 달라지는 경우 때문이다.
-  try{ alignPuzzleIcons(); setTimeout(alignPuzzleIcons,120); }catch(e){}
+  //   ⚠️ 순서 = 화면 맞추기(높이) 먼저, 줄 맞추기(가로) 나중. 카드가 줄어들면 줄도 다시 잡아야 한다.
+  try{ fitMenuScreen(FIT_SCREENS[2]); alignPuzzleIcons();
+       setTimeout(function(){ fitMenuScreen(FIT_SCREENS[2]); alignPuzzleIcons(); },120); }catch(e){}
   syncBackGuard();
 }
 function wcBack(){ try{document.getElementById('wc').classList.remove('show');}catch(e){} syncBackGuard(); }
@@ -3016,6 +3155,8 @@ function goPhonics(){                              // Phonics 버튼 → 세트 
     // (frog-reactions.js 가 goPhonics 를 감싸 cancelGreeting 도 부르지만, 그 파일이 로드 실패해도
     //  안전하도록 여기서도 한 번 세워둔다. 두 번 불려도 문제 없는 함수다.)
     try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(e){}
+    // ★ 2026-09-16 — 짧은 폰에서 마지막 카드가 잘리는 것. 메뉴를 만든 직후·그림이 온 뒤 두 번 잰다.
+    try{ fitMenuScreen(FIT_SCREENS[3]); setTimeout(function(){ fitMenuScreen(FIT_SCREENS[3]); },120); }catch(e){}
     syncBackGuard();                                // 세트 메뉴 진입 → 뒤로가기 보호 켜기
     try{gtag('event','phonics_menu_open',{});}catch(e){}
   }catch(e){}
@@ -3201,7 +3342,10 @@ try{ document.addEventListener('DOMContentLoaded',_ensureInsectCard); }catch(e){
 // === ABC 모드 선택 화면 ===
 // 개구리 그림 미리 받기를 여기서 시작한다 — 모드 선택은 실제 게임 시작보다 한 탭 앞이라
 // 아이가 ABC/abc/ABc 를 고르는 동안 1단계 그림이 도착할 여유가 생긴다.
-function goModeSelect(){ try{preloadFrogImgs();}catch(e){} try{document.getElementById('ms').classList.add('show');}catch(e){} syncBackGuard(); }
+function goModeSelect(){ try{preloadFrogImgs();}catch(e){} try{document.getElementById('ms').classList.add('show');}catch(e){}
+  // ★ 2026-09-16 — 짧은 폰에서 마지막 버튼이 잘리는 것. 화면이 뜬 뒤라야 잴 수 있다.
+  try{ fitMenuScreen(FIT_SCREENS[1]); setTimeout(function(){ fitMenuScreen(FIT_SCREENS[1]); },120); }catch(e){}
+  syncBackGuard(); }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} syncBackGuard(); }
 // ※ 여기선 syncBackGuard()를 부르지 않는다: 모드선택을 닫은 뒤 실제 게임 화면이 뜨기까지 0.5초 걸리는데,
 //    그 사이엔 '시작 화면'으로 판정돼 보호가 잠깐 풀린다. 모드선택에서 켠 보호를 그대로 게임까지 이어간다.
