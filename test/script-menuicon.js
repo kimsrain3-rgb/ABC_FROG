@@ -639,9 +639,16 @@ function fitHomeLabel(card){
     lbl.style.fontSize='';                       // CSS 값으로 되돌리고 시작 → 두 번 불려도 안전
     var cs=getComputedStyle(card);
     var gap=parseFloat(cs.columnGap)||parseFloat(cs.gap)||0;
+    // 🔴 아이콘이 차지하는 폭 = 그림 상자 + **바깥 여백(margin)**.
+    //    ⚠️ 2026-09-16: 아이콘을 오른쪽으로 5px 미느라 `margin-left:5px` 를 줬는데 여기서 그걸 안 세어
+    //       글자 몫을 5px 크게 봤다 → 390×920·글자확대 130% 에서 **2.7px 넘쳤다**(실측으로 잡았다).
+    //       아이콘 여백을 바꾸면 이 줄이 자동으로 따라간다 — 숫자를 두 곳에 적지 않는다.
+    var icm=ic?getComputedStyle(ic):null;
+    var icW=ic ? ic.getBoundingClientRect().width
+                 +(parseFloat(icm.marginLeft)||0)+(parseFloat(icm.marginRight)||0) : 0;
     // clientWidth = 테두리를 뺀 폭(안쪽 여백은 포함) → 여백과 아이콘·사이간격을 뺀 나머지가 글자 몫
     var avail=card.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)
-              -(ic?ic.getBoundingClientRect().width:0)-gap-2;   // 2 = 반올림 여유
+              -icW-gap-2;   // 2 = 반올림 여유
     if(!(avail>0)) return;
     var wid=function(){ return Math.max(lbl.scrollWidth, lbl.getBoundingClientRect().width); };
     var fs=parseFloat(getComputedStyle(lbl).fontSize)||20;
