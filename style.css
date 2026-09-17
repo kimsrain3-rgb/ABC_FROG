@@ -400,3 +400,164 @@ cursor:pointer;opacity:1;transition:opacity .3s ease}
 #endvid{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;
   z-index:26;background:#000;opacity:0;transition:opacity .35s;pointer-events:none}
 #endvid.on{opacity:1}
+/* ── 파리잡기 모드 버튼 (2026-09-14 4차: 첫 화면·파닉스와 같은 크기로) ──
+   🔍 확인 결과 style.css 의 .mbtn 쪽에는 **아이콘 크기가 박혀 있지 않다** — 원래 아이콘이 없던 버튼이라
+      그렇다(44px 은 9/14 1차에 내가 쓴 값이다). 대신 **글자 크기가 박혀 있다**:
+      .mbtn-abc 32px · .mbtn-lower 26px · .mbtn-mix 30px (style.css:123·125·127) → 셋 다 20px 로 낮춘다.
+   ⚠️ .mbtn 은 width 가 아니라 min-width:160px(style.css:119·188) 이라 폭을 따로 준다. */
+.mbtn-ic{display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.mbtn-has-ic{display:flex;align-items:center;justify-content:center;gap:10px}
+.ms-buttons .mbtn{width:272px;min-width:0;padding-left:16px;padding-right:16px}
+.ms-buttons .mbtn .mbtn-ic{width:80px;height:80px}
+.ms-buttons .mbtn .menu-anim-ic{width:100%;height:100%;object-fit:contain;display:block}
+.ms-buttons .mbtn-abc .mbtn-label,
+.ms-buttons .mbtn-lower .mbtn-label,
+.ms-buttons .mbtn-mix .mbtn-label{font-size:20px;letter-spacing:1px}
+/* 파리는 캔버스에 투명 여백이 많아 혼자 작아 보인다 — 첫 화면 ABC 카드와 같은 1.344 배를 준다.
+   잠자리·거미는 여백이 적어 그대로 둔다(키우면 글자를 친다). */
+.ms-buttons .mbtn-abc .menu-anim-ic{transform:scale(1.344)}
+/* 첫 화면과 같은 단계. 모드 화면은 버튼이 3개라 첫 화면보다 여유가 있지만 단계는 맞춰 둔다. */
+@media (max-height:860px){ .ms-buttons .mbtn .mbtn-ic{width:70px;height:70px} }
+@media (max-height:760px){ .ms-buttons .mbtn .mbtn-ic{width:62px;height:62px} }
+/* ★ 아이콘이 좌우로 떠다니기 (2026-09-16) — 폭·박자·시작시점은 script 의 MODE_FLOAT_* 가 준다.
+   🔴 **왼쪽으로만** 간다(0 → 왼쪽 → 0). 오른쪽엔 글자가 10px 옆에 있어 파고들면 부딪히고,
+      왼쪽은 버튼 안쪽에 여유가 있다. 첫 화면 사과(homeAppleWobble)와 같은 짜임이다.
+   ⚠️ transform 이라 자리를 안 차지한다 → 글자 위치·버튼 크기·높이 전부 그대로. */
+@keyframes mbtnFloat{ from{transform:translateX(0)} to{transform:translateX(calc(-1 * var(--mbtn-float,0px)))} }
+@media (max-height:700px){ .ms-buttons .mbtn .mbtn-ic{width:52px;height:52px} }
+
+/* ── 버튼을 누르고 소리가 나는 동안의 '눌린 톤' (2026-09-15 15차) ──
+   소리가 끝날 때까지 화면이 안 넘어가므로, 그 사이 **눌린 게 눈에 보여야** 아이가 또 안 누른다.
+   ⚠️ :active 는 손을 떼면 바로 풀린다 → 소리 도는 내내 붙어 있는 클래스를 따로 쓴다.
+   밝기만 올리면 색이 바래 보여 채도도 같이 올리고, 눌린 느낌으로 3px 내린다. */
+.game-card.menu-snd-on,.mbtn.menu-snd-on{
+  filter:brightness(1.22) saturate(1.15);
+  transform:translateY(3px);
+  box-shadow:0 2px 0 rgba(0,0,0,.2),0 4px 10px rgba(0,0,0,.3);
+}
+
+/* ── 퍼즐(Word) 메뉴 Animal 카드 (2026-09-14 6차) — 발자국 → 동물 얼굴 3종 룰렛 ──
+   기존 발자국(.wc-card .ic-mask)은 32px 이었는데 **44px 로 올렸다** — 32px 에서는 셋 다 알아보기
+   어렵고 특히 코끼리 코가 안 보였다. 44px = **Dino 카드(.dino-sil-ic)와 같은 크기**라 새로 만드는
+   크기가 아니고, 카드 높이는 글자가 정하므로 카드는 안 커진다(72px 유지 — 실측).
+   ⚠️ .wc-card .card-icon 은 width:auto(style.css:202) 라 그림에 크기를 직접 줘야 한다
+      (안 주면 style.css:135 의 img{width:100%} 가 0 이 되어 안 보인다).
+   ⚠️ Fruit·Dino·잠긴 카드는 이 규칙에 안 걸린다(.wc-animal 아래로만 건다).
+   🚩 그냥 44px 로 키웠더니 **Animal 카드만 72→84px 로 높아졌다**(다른 카드 68). 실측으로 잡았다.
+      → 아이콘이 차지하는 '자리'는 옛 발자국과 같은 32px 로 고정하고, **그림만 44px 로 넘치게** 한다.
+      카드 높이를 정하는 건 자리(.card-icon)라서 카드는 그대로 72px 이고, 그림은 위아래로 6px 씩
+      넘치지만 잘리지 않는다(.wc-card 에 overflow 가 없다 — 첫 화면 파리와 같은 방식). */
+.wc-animal .card-icon{width:44px;height:32px;display:flex;align-items:center;justify-content:center}
+.wc-animal .card-icon .menu-anim-ic{width:44px;height:44px;flex:0 0 auto;object-fit:contain;display:block;
+  filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
+
+/* ── Dino 카드 입에서 불꽃 (2026-09-14 7차) ──
+   공룡은 그림이 아니라 '마스크로 딴 실루엣'(style.css:219)이라 갈아끼울 장면이 없다 →
+   불꽃 도형을 하나 더 얹고 켜졌다 꺼졌다 한다(파닉스 입이 방긋거리는 것과 같은 방식).
+   ⚠️ 공룡이 **왼쪽을 보고** 있다 — 불꽃도 왼쪽으로 뻗는다.
+   🔴 **입 높이 = y 10** (2026-09-15 재실측). `dino_silhouette.png` 를 44px 로 줄여 세로줄마다 재보니
+      주둥이 끝이 **x=3, y 7~13(가운데 10.0)** 이다. 머리 덩어리는 y 5~14 이고,
+      그 아래 y 20~24 는 **턱이 아니라 앞발**이다.
+      ⛔ 처음엔 `top:9px` + 높이 11px 이라 불꽃 중심이 **y 14.5 = 턱 밑**이었다.
+      ⛔ 눈(style.css:227)이 `left:10px top:7px` 인데 그건 **눈**이지 입이 아니다. 헷갈리지 말 것.
+   📏 **크기 = 처음 13×11px 의 1.5배 → 20×17px** (2026-09-15 9차. 2배(26×22)는 너무 컸다).
+   ↔️ **입에서 살짝 띄운다**(2026-09-15 12차) — 딱 붙여 놨더니 **입이 뜨거워 보였다.**
+      ⚠️ 크기를 바꾸면 **위치 두 값을 같이 고쳐야** 입에서 안 벗어난다 —
+         `top = 10 − 높이/2` (세로 중심을 입 y10 에)
+         `left = 3 − 폭 − 띄울칸` (오른쪽 끝을 주둥이 끝 x=3 에서 그만큼 왼쪽에)
+         지금 = 높이 17 → `top:1.5px` / 폭 20 → **`left:-18px`**.
+      🚩 **띄우는 정도는 −20(틈 3.8px)까지 봤다가 사장님이 −18(틈 1.8px)을 골랐다.**
+         네 값(−15/−18/−19/−20)을 **실제 44px 크기로 나란히 띄워 놓고** 정했다 —
+         이런 한두 픽셀은 **확대하면 다 떨어져 보여** 실제 크기로만 갈린다.
+   ⚠️ .wc-dino .card-icon 에 position:relative 가 이미 있고(style.css:218), ::after 는 '눈'이
+      쓰고 있어 못 쓴다 → 진짜 요소를 하나 넣는다.
+   ⚠️ 켜고 끌 때 뚝 끊기지 않게 0.14초 사이로 부드럽게(어린아이용) — 커졌다 작아지며 나온다. */
+.wc-dino .card-icon .dino-flame{position:absolute;left:-18px;top:1.5px;width:20px;height:17px;
+  opacity:0;transform:scale(.55);transform-origin:100% 50%;
+  transition:opacity .14s ease,transform .14s ease;pointer-events:none;
+  filter:drop-shadow(0 1px 1.5px rgba(0,0,0,.28))}
+.wc-dino .card-icon .dino-flame.on{opacity:1;transform:scale(1)}
+.wc-dino .card-icon .dino-flame svg{width:100%;height:100%;display:block}
+
+/* ── 파닉스 세트 카드: 아이콘이 주인공 (2026-09-14 2차) ──
+   [문제] 폰에서 보니 ①아이콘이 글자에 눌렸다 ②글자가 먼저 눈에 들어온다 — 글 못 읽는 아이용인데 거꾸로였다.
+   [원인] 라이브 style.css:379 의 `.ps-card .card-icon{width:30px;height:30px}` 안에 44px 그림을 넣고 있었다.
+          박스가 30px 이라 그림이 눌려 있었고, 옆 글자는 28px 이라 아이콘과 크기가 비슷했다.
+   [고침] 아이콘 30→84px(2.8배) · 이름 28→20px · 글자목록(s a t p i n)은 15px 그대로(부모가 본다).
+   ⚠️ 잠긴 3·4 카드도 같은 84px 박스를 쓴다 — 1·2 만 키우면 카드 높이가 어긋나 메뉴가 망가져 보인다.
+      잠긴 모양(회색 실루엣 + 🔒)은 그대로다. 그 안의 SVG 만 같이 커진다.
+   ⚠️ 폭을 244→264px 로 넓혔다 — 84px 아이콘 + 'Phonics 3' + 🔒 가 244 에 안 들어간다.
+      .ps-card 에만 걸어 퍼즐(Word) 메뉴 카드는 244px 그대로다. */
+.ps-card{width:272px;gap:10px;padding-top:14px;padding-bottom:14px}
+.ps-card .card-icon{width:80px;height:80px;flex:0 0 auto}
+.ps-card .card-label{font-size:20px}
+.ps-card .card-icon .menu-anim-ic{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+/* 잠긴 3·4 카드의 SVG 는 박스를 꽉 채우지 않는다(62%). 라이브 style.css:380 이 100% 라 그냥 두면
+   옛 30px 짜리가 70px 로 부풀어 조잡해 보인다. 박스는 같은 크기라 카드 높이는 1·2 와 맞는다. */
+.ps-card .card-icon svg{width:62%;height:62%}
+
+/* ── 첫 화면 카드 3장 (2026-09-14 3차) ──
+   🔴 파닉스와 똑같은 함정이 여기에도 있었다 — 라이브 style.css:324
+      `.mode-buttons .game-card .card-icon{width:34px;height:34px}`.
+      아이콘 34px 옆에 글자가 28px 이라 글자가 먼저 눈에 들어왔다.
+   파닉스 세트 카드와 같은 크기·같은 방식으로 맞춘다. */
+/* ★ 아이콘 왼쪽 정렬 (2026-09-16)
+   [문제] 아이콘과 글자가 **한 덩어리로 가운데** 정렬돼 있었다(라이브 style.css:323 `justify-content:center`).
+     그래서 **글자가 길수록 아이콘이 왼쪽으로 밀린다.** 실측 = 파리 25.9 · 사과 39.0 · 입 61.7px
+     (카드 왼쪽 끝에서). **36px 이나 들쭉날쭉**했고 글자를 Alphabet Game 으로 바꾸며 더 벌어졌다.
+   [고침] **`justify-content:flex-start` 한 줄.** 아이콘이 카드 안쪽 여백(테두리 4 + 패딩 16 = 20px)에
+     붙어 셋 다 **같은 자리**가 되고, 글자도 그 오른쪽 같은 자리에서 시작한다.
+   ⚠️ 카드 폭(272px)·높이·아이콘 크기·움직임은 **한 값도 안 바꿨다.** 정렬만 바꾼다.
+   ⚠️ 글자가 쓸 수 있는 폭은 그대로다(안쪽폭 − 아이콘 − 사이간격). fitHomeLabel() 계산도 그대로.
+   📌 [2026-09-16 정정] 퍼즐(Word) 메뉴는 그 뒤에 줄을 맞췄다 — 다만 CSS 가 아니라
+      script.js 의 `alignPuzzleIcons()` 가 **Animal 을 재서 거기에 맞춘다**(Animal 을 건드리면
+      안 된다는 조건 때문. CSS `flex-start` 로 바꾸면 기준인 Animal 도 같이 움직인다).
+      **아직 가운데 정렬로 남은 것은 파닉스 세트 메뉴(.ps-card) 하나뿐이다**(사장님 판단 대기). */
+/* ★★★ 아이콘을 왼쪽 벽에서 얼마나 띄울지 (2026-09-16). 이 한 숫자만 고치면 된다. ★★★
+   왼쪽 벽까지가 20px(테두리 4 + 패딩 16)이라 5px 를 더하면 **25px** 이 된다.
+   [왜 5px 인가] 파리 그림은 상자보다 1.344배 커서 상자 왼쪽으로 12px 더 나간다 →
+     정렬만 했을 때 파리가 카드 테두리에서 **8px** 까지 다가왔다. 5px 밀어 **13px** 로 띄운다.
+   🔴 **`margin-left` 로 민다 — `transform` 으로 밀면 안 된다.**
+     transform 은 자리를 안 차지해서 글자가 제자리에 남는다 → 아이콘과 글자 틈이 10 → 5px 로 좁아지고,
+     상자 밖으로 12px 나와 있는 파리가 글자를 파고든다. margin 은 글자도 같이 5px 밀어 **틈 10px 를 지킨다.**
+   ⚠️ 글자 몫이 5px 줄어든다. fitHomeLabel() 이 재서 줄이므로 넘치지는 않는다(실측 확인). */
+.mode-buttons .game-card .card-icon{margin-left:5px}
+.mode-buttons .game-card{width:272px;gap:10px;justify-content:flex-start}
+.mode-buttons .game-card .card-icon{width:80px;height:80px}
+.mode-buttons .game-card .card-label{font-size:20px}
+.mode-buttons .game-card .card-icon .menu-anim-ic{width:100%;height:100%;object-fit:contain;display:block}
+/* 라이브 style.css:137 의 `.card-abc .card-icon img{transform:scale(1.3)}` 는 34px 시절 값이다.
+   80px 에서 1.3 배면 104px 이 되어 박스를 12px 씩 넘어 글자를 친다 → 1.12 로 낮췄었다.
+   2026-09-14 4차: 파리가 작아 보여 **그림만 20% 더** 키웠다 → 1.12 × 1.2 = 1.344.
+   ⚠️ 박스(.card-icon)는 그대로 70px 이고 그림만 커진다. 박스 밖으로 나가지만 잘리지 않는다 —
+      .card-icon·.game-card 에 overflow 가 없고, 자르는 조상은 화면 전체(#gc) 뿐이다.
+   ⚠️ 한 <img> 의 src 만 갈아끼우므로 두 장에 **똑같은 배율**이 걸린다(한쪽만 커질 수 없다). */
+.card-abc .card-icon .menu-anim-ic{transform:scale(1.344)}
+/* 입 도형은 여백이 없어 박스를 꽉 채우면 파리·사과보다 혼자 커 보인다(그 둘은 그림에 투명 여백이 있다).
+   라이브 style.css:328 이 svg{width:100%} 라 여기서만 88% 로 낮춘다. */
+.mode-buttons .game-card .card-icon svg{width:88%;height:88%}
+/* 사과 흔들기 — 회전은 CSS 가 부드럽게, 속도·시작시점은 script 의 HOME_ICON_MS/DELAY 가 넣는다 */
+@keyframes homeAppleWobble{ from{transform:rotate(-7deg)} to{transform:rotate(7deg)} }
+.mode-buttons .game-card .card-icon .home-apple-ic{transform-origin:50% 88%}
+/* 🚩 첫 화면은 파닉스 메뉴보다 위쪽이 무겁다(개구리 + 큰 제목 'ABC Frog' + 'I'm hungry~').
+      그래서 파닉스와 같은 단계(58px)를 쓰면 360×640 에서 마지막 카드가 6px 잘렸다 — 실측으로 잡았다.
+      같은 화면 크기라도 화면마다 위에 실린 것이 달라 단계를 따로 잡아야 한다. */
+@media (max-height:860px){ .mode-buttons .game-card .card-icon{width:70px;height:70px} }
+@media (max-height:760px){ .mode-buttons .game-card .card-icon{width:62px;height:62px} .mode-buttons{gap:14px} }
+@media (max-height:700px){ .mode-buttons .game-card .card-icon{width:52px;height:52px} .mode-buttons{gap:12px} }
+#ps .wc-cards{gap:14px}
+/* 짧은 화면에서 아이콘부터 줄인다 — 라이브의 @media(max-height) 들보다 뒤에 있어야 이깁니다.
+   ⚠️ 카드 높이는 글자가 아니라 '아이콘'이 정한다(글자칸 20+3+15=38px < 아이콘 80px).
+      그래서 폰 글자확대 130% 로 글자가 26px 이 돼도 카드가 안 높아진다 — 잘림은 폭에서만 생길 수 있다.
+   🔴 **[2026-09-16 정정] 위 문장은 이 파닉스 카드와 시작 화면에만 맞다.**
+      **퍼즐(Word) 메뉴 `.wc-card` 는 반대다 — 거기선 글자가 카드 높이를 정한다**
+      (아이콘 32~44px < 글자 28px + 여백). 그래서 글자확대 130% 면 카드가 높아지고,
+      320×568 에서 잘림이 3.5 → **46.1px** 로 벌어진다(실측).
+      ⚠️ "아이콘이 높이를 정한다"를 네 화면에 두루 쓰지 말 것 — 화면마다 다르다.
+   📌 이제 **높이 부족은 @media 가 아니라 `fitMenuScreen()` 이 재서 맞춘다**(script-menuicon.js).
+      아래 단계들은 그대로 두되(첫 손질), 못 맞춘 나머지를 그 장치가 마저 줄인다. */
+/* 🚩 기준선을 800 이 아니라 860 으로 잡았다 — 실측으로 정한 값이다.
+      아이콘 80px 이면 카드 4장이 506px 인데 805px 화면에서 카드가 302px 부터 시작해 3px 넘쳤다.
+      "800 이하만 줄이면 되겠지"로 두면 801~860 짜리 폰에서만 마지막 카드가 잘린다. */
+@media (max-height:860px){ .ps-card .card-icon{width:70px;height:70px} .ps-card{padding-top:12px;padding-bottom:12px} #ps .wc-cards{gap:12px} }
+@media (max-height:720px){ .ps-card .card-icon{width:58px;height:58px} .ps-card{padding-top:10px;padding-bottom:10px} #ps .wc-cards{gap:10px} }

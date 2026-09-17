@@ -194,6 +194,823 @@ const DRAGONFLY_IMGS={
 const SPIDER_IMGS=["assets/bugs/images/spider1.webp","assets/bugs/images/spider1-1.webp"];
 const DIRS=['left','right','front'];
 
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 메뉴 버튼 소리 (2026-09-15 15차)
+//   누르면 → 버튼이 눌린 톤으로 바뀌고 소리가 나고 → 소리가 끝나면 그때 화면이 넘어간다.
+//
+// 🔴 **상한이 핵심이다.** 소리가 안 나는 폰(브라우저가 소리를 막았거나 파일을 못 받았거나)에서
+//    '소리가 끝나면'을 기다리면 **버튼이 영영 안 먹는다.** 답답함이 아니라 멈춤이다.
+//    그래서 ①소리가 실패하면 즉시 넘어가고 ②그마저 조용히 멎을 때를 대비해 상한을 둔다.
+// ★★★ 기다리는 시간(밀리초). 답답하면 이 숫자만 줄이면 된다. ★★★
+//    2200 = 가장 긴 소리(menu_catchdragonfly 2.04초)보다 조금 위. 평소엔 안 쓰이고
+//    **소리가 조용히 멎을 때만** 도는 마지막 안전장치다.
+var MENU_SND_MAX_MS=2200;
+// ⚠️ 소리도 그림과 같다 — 같은 이름으로 갈아끼우면 폰이 옛것을 쓴다. 음량을 다시 맞추면 날짜를 올릴 것.
+//    2026-09-16 — menu_abc("ABC"→"Alphabet Game")·menu_word("Word"→"Word Puzzle") 를
+//    **같은 이름으로** 갈아끼웠다. 이름이 같으므로 이 날짜를 안 올리면 폰에서 옛 소리가 그대로 난다.
+var MENU_SND_VER='?v=20260916';
+// 어느 화면의 어느 버튼이 어떤 소리를 쓰는가.
+// ⚠️ 'ABC' 가 두 화면에 있다(첫 화면=알파벳 고르기 / 모드=파리잡기) → **화면으로 먼저 가른다.**
+// 🔴 첫 화면(home)만 열쇠가 **글자가 아니라 homeCardKey() 가 돌려주는 이름**이다(2026-09-16).
+//    글자를 "Alphabet Game"·"Word Puzzle" 로 바꿨기 때문에 글자로 찾으면 소리를 못 찾는다.
+var MENU_SNDS={
+  home  :{ 'abc':'menu_abc', 'word':'menu_word', 'phonics':'menu_phonics' },
+  mode  :{ 'ABC':'menu_catchfly', 'abc':'menu_catchdragonfly', 'ABc':'menu_catchspider' },
+  puzzle:{ 'fruit':'menu_fruit', 'animal':'menu_animal', 'dino':'menu_dino' },
+  phset :{ 'phonics 1':'menu_phonicsone', 'phonics 2':'menu_phonicstwo' }
+};
+var _menuSndCache={}, _menuSndBusy=false;
+function _menuSndGet(name){
+  try{
+    if(_menuSndCache[name]) return _menuSndCache[name];
+    // ⚠️ new Audio() 직접 호출 금지 — 실패해도 앱이 안 죽는 safeAudio() 를 쓴다(CLAUDE.md 안정성 규칙 2번)
+    var a=safeAudio('assets/game/sounds/'+name+'.mp3'+MENU_SND_VER);
+    try{ a.preload='auto'; }catch(e){}
+    _menuSndCache[name]=a; return a;
+  }catch(e){ return null; }
+}
+function _menuBtnFrom(t){
+  try{ return (t && t.closest) ? t.closest('.game-card,.mbtn') : null; }catch(e){ return null; }
+}
+function _menuSndKeyFor(btn){
+  try{
+    var inside=function(sel){ try{ return !!btn.closest(sel); }catch(e){ return false; } };
+    if(inside('#ms')){                                   // 파리잡기 모드 고르기
+      var m=(btn.getAttribute('onclick')||'').match(/goMode\('([^']+)'\)/);
+      return m ? MENU_SNDS.mode[m[1]] : null;            // 대소문자를 가리는 자리(ABC/abc/ABc)
+    }
+    // 🔴 첫 화면만 먼저 가른다 — 글자가 바뀌었으므로 글자로 찾으면 안 된다(2026-09-16).
+    if(inside('.mode-buttons')) return MENU_SNDS.home[homeCardKey(btn)]||null;
+    var lbl=btn.querySelector('.card-label,.mbtn-label');
+    var name=lbl ? (lbl.textContent||'').trim().toLowerCase() : '';
+    if(!name) return null;
+    if(inside('#ps'))            return MENU_SNDS.phset[name]||null;    // 파닉스 세트
+    if(inside('.wc'))            return MENU_SNDS.puzzle[name]||null;   // 퍼즐 메뉴
+    return null;
+  }catch(e){ return null; }
+}
+// 누르기 직전(pointerdown)에 파일을 미리 받기 시작한다 — 첫 누름이 느리지 않게.
+// ⚠️ 화면이 뜰 때 미리 받지 않는다. 첫 화면을 '소리 0바이트'로 지켜 온 것을 깨지 않으려고(2026-08-15).
+try{
+  document.addEventListener('pointerdown',function(e){
+    try{ var b=_menuBtnFrom(e.target); if(!b) return;
+         var k=_menuSndKeyFor(b); if(k) _menuSndGet(k); }catch(_){}
+  },true);
+}catch(e){}
+
+// ── 예약된 것을 '한 곳에서' 거둔다 (2026-09-15 16차) ──────────────────────────
+// 🔴 [고친 문제] 소리가 끝나기를 기다리는 사이에 **화면이 달라질 수 있다.** 그런데 예약해 둔
+//    넘김(setTimeout)과 소리를 안 거두면:
+//      ① 뒤로가기로 취소했는데 **음성이 끝나는 순간 그 게임이 뒤늦게 열린다**
+//      ② 상한(2.2초)에 걸려 게임으로 넘어가도 **메뉴 음성이 계속 흘러 게임 소리와 겹친다**
+//    둘은 증상이 다를 뿐 **원인이 하나다 — 떠날 때 예약을 안 거둔다.**
+// ⚠️ 그래서 '예약한 것'을 전부 한 군데(아래 변수들)에 두고 _menuSndClear() 하나로만 거둔다.
+//    새로 예약하는 것이 생기면 **반드시 여기에 같이 넣을 것.** 흩어놓으면 또 샌다.
+//    (파닉스의 _pauseAllSound() 가 new Audio() 로 만든 발음과 예약된 다음 발음을 못 잡는 것이
+//     같은 계통이다 — 그건 별건이라 이번에 안 건드렸다.)
+// 🔴 [3번째 · 2026-09-15 17차] **누름마다 번호를 매긴다.**
+//    앞의 둘을 고치고도 한 군데가 남았다 — `play()` 가 돌려주는 '약속(Promise)'의 실패 알림은
+//    **떼어낼 수가 없다.** `onended`·`onerror` 는 null 로 떼면 그만이고 타이머는 지우면 그만인데,
+//    이미 만들어진 약속의 `.catch` 는 취소할 방법이 없다.
+//    그래서 A 를 눌렀다 취소하고 B 를 누른 뒤 **A 의 실패 알림이 늦게 도착하면**
+//    그게 B 의 차례에 끼어들어 **B 의 음성을 끊고 게임을 바로 시작**시킨다.
+//    → 떼어낼 수 없으면 **무시할 수 있게** 만든다. 누름마다 번호를 주고, 늦게 온 알림은
+//      자기 번호가 지금 번호와 다르면 아무 일도 안 한다. (지나간 일이 현재에 못 끼어든다.)
+//    ⚠️ 새로 '나중에 오는 알림'을 만들면 **반드시 번호를 같이 실어 보낼 것.**
+var _menuSndCur=null, _menuSndTimer=0, _menuSndBtn=null, _menuSndAct=null, _menuSndDone=true, _menuSndSeq=0;
+function _menuSndClear(){                    // 소리·타이머·눌린 톤을 거둔다 (화면은 안 넘긴다)
+  _menuSndSeq++;                             // ← 번호를 올려 '지금까지 예약된 알림'을 전부 지난 것으로 만든다
+  try{ clearTimeout(_menuSndTimer); }catch(e){}
+  _menuSndTimer=0;
+  var a=_menuSndCur; _menuSndCur=null;
+  if(a){
+    try{ a.onended=null; a.onerror=null; }catch(e){}
+    try{ a.pause(); }catch(e){}
+    try{ a.currentTime=0; }catch(e){}        // ← ②를 막는 자리: 넘어갈 때 음성을 실제로 멈춘다
+  }
+  if(_menuSndBtn){ try{ _menuSndBtn.classList.remove('menu-snd-on'); }catch(e){} }
+  _menuSndBtn=null; _menuSndAct=null; _menuSndBusy=false; _menuSndDone=true;
+}
+// 바깥에서 부르는 '취소' — 화면을 안 넘긴다. 뒤로가기·화면 숨김에서 쓴다.
+function menuSndCancel(){ if(!_menuSndDone) _menuSndClear(); else _menuSndSeq++; }
+// 소리가 끝났거나 실패했거나 상한에 걸렸을 때 — **거두고 나서** 원래 하던 일을 한다.
+// seq = 그 알림이 '어느 누름'에서 온 것인지. 지금 번호와 다르면 지나간 알림이므로 버린다.
+function _menuSndFire(seq){
+  if(seq!==undefined && seq!==_menuSndSeq) return;   // ← 지나간 알림이 현재에 끼어드는 것을 막는 자리
+  if(_menuSndDone) return;
+  var act=_menuSndAct, b=_menuSndBtn;
+  _menuSndClear();                           // ← 먼저 거둔다(소리 정지 포함). 순서가 중요하다.
+  try{ if(typeof act==='function') act.call(b); }catch(e){}
+}
+
+// ⚠️ **붙잡기(capture) 단계**에서 가로챈다 — 그래야 index.html 의 onclick 이 먼저 돌지 않는다.
+//    index.html 은 한 글자도 안 건드린다(캐시버스터가 없어 옛 판이 폰에 남는다).
+try{
+  document.addEventListener('click',function(e){
+    var btn=null;
+    try{
+      // 🔴 ①을 막는 자리 — 뒤로 버튼을 누르면 **예약을 먼저 거둔다.**
+      //    안 거두면 음성이 끝나는 순간 방금 취소한 게임이 열린다.
+      //    뒤로 버튼 자체는 막지 않는다(그대로 눌려야 한다).
+      try{ var bk=(e.target&&e.target.closest)?e.target.closest('.gbk,.wc-back,.ms-back,.wp-back'):null;
+           if(bk){ menuSndCancel(); return; } }catch(_){}
+      btn=_menuBtnFrom(e.target); if(!btn) return;
+      if((btn.className||'').indexOf('wc-locked')>=0) return;   // 잠긴 카드는 그대로(흔들림+토스트)
+      var key=_menuSndKeyFor(btn); if(!key) return;             // 소리 없는 버튼은 그대로
+      // 아이는 여러 번 누른다 → 도는 동안 눌린 것은 **전부 무시**한다(같은 버튼이든 다른 버튼이든).
+      // 안 막으면 소리가 겹치고 화면이 두 번 넘어간다.
+      if(_menuSndBusy){ e.preventDefault(); e.stopPropagation(); return; }
+      var act=btn.onclick;
+      if(typeof act!=='function') return;                       // 할 일을 모르면 아예 안 건드린다
+      e.preventDefault(); e.stopPropagation();
+      _menuSndBusy=true; _menuSndDone=false; _menuSndBtn=btn; _menuSndAct=act;
+      var my=++_menuSndSeq;                                     // ← 이번 누름의 번호
+      try{ btn.classList.add('menu-snd-on'); }catch(_){}
+      _menuSndTimer=setTimeout(function(){ _menuSndFire(my); },MENU_SND_MAX_MS);  // ← 마지막 안전장치
+      var a=_menuSndGet(key);
+      if(!a){ _menuSndFire(my); return; }                       // 소리를 못 만들면 즉시 넘어간다
+      _menuSndCur=a;
+      try{ a.onended=function(){ _menuSndFire(my); };
+           a.onerror=function(){ _menuSndFire(my); };
+           a.currentTime=0; }catch(_){}
+      var p=null;
+      try{ p=a.play(); }catch(_){ _menuSndFire(my); return; }    // 재생 자체가 터지면 즉시
+      // ⚠️ 이 `.catch` 는 떼어낼 수 없다 — 늦게 도착해도 자기 번호(my)가 안 맞으면 스스로 물러난다.
+      if(p && p.catch) p.catch(function(){ _menuSndFire(my); }); // 브라우저가 소리를 막으면 즉시
+    }catch(err){
+      // 무슨 일이 나도 버튼은 먹어야 한다
+      try{ var b2=_menuSndBtn||btn; _menuSndClear();
+           if(b2 && typeof b2.onclick==='function') b2.onclick.call(b2); }catch(_){}
+    }
+  },true);
+}catch(e){}
+// 🔴 물리 뒤로가기 — script.js 의 뒤로가기 보호가 popstate 로 화면을 닫는다.
+//    화면이 닫히는 순간 예약도 같이 거둔다(위 ①과 같은 이유, 경로만 다르다).
+try{ window.addEventListener('popstate',menuSndCancel); }catch(e){}
+// 🔴 앱을 백그라운드로 보낼 때 — 돌아왔더니 게임이 혼자 열려 있는 일을 막는다.
+//    ⚠️ 기존 _pauseAllSound() 는 sndOf() 로 만든 소리만 잡는다. 메뉴 소리는 우리가 따로 들고
+//       있으므로 여기서 직접 거둔다(파닉스가 겪은 것과 같은 함정을 안 밟으려고).
+try{ document.addEventListener('visibilitychange',function(){ if(document.hidden) menuSndCancel(); }); }catch(e){}
+try{ window.addEventListener('pagehide',menuSndCancel); }catch(e){}
+// ────────────────────────────────────────────────────────────────────────────
+
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 메뉴 아이콘 — 두 장을 번갈아 보여주는 그림 (2026-09-14 추가)
+//
+// [왜] 글 못 읽는 아이가 메뉴에서 게임을 못 고른다. 파닉스 카드 4장은 전부 같은 SVG 를 쓰고,
+//   파리잡기 모드(ABC/abc/ABc)는 글자밖에 없다. 움직이는 그림을 얹어 눈으로 고르게 한다.
+//
+// ⚠️ 모드 버튼 그림을 index.html 에 직접 넣지 않고 여기서 얹는 이유 —
+//   index.html 은 캐시버스터가 없어 이미 깔린 폰에 옛 판이 며칠 남는다(2026-08-12 파닉스 잠김 사고).
+//   script.js 는 always-fresh 라 푸시 즉시 전원에게 간다. 파닉스 세트 메뉴를 _buildPhonicsMenu() 가
+//   만드는 것과 같은 이유다. ⛔ 이걸 index.html 로 옮기지 말 것.
+// ────────────────────────────────────────────────────────────────────────────
+
+// ★★★ 번갈아 보여주는 간격(밀리초). 속도를 바꾸려면 여기 숫자 하나만 고친다. ★★★
+//   게임 안 벌레는 120ms(script.js 의 setInterval) — 날갯짓이라 그렇게 빠르다.
+//   메뉴는 그 4분의 1 속도. 펭귄·두더지는 날개가 아니라 몸 전체 동작이라 120ms 면 "떠는" 것으로 보이고,
+//   여러 개가 한 화면에서 동시에 파닥이면 정신없다.
+//   너무 느림(슬라이드쇼처럼 끊겨 보임) → 350, 너무 빠름(벌레가 떨려 보임) → 700.
+var MENU_ICON_MS=500;
+
+// 모드 버튼(파리잡기 글자 고르기) 3종이 쓸 그림. 위 벌레 목록을 그대로 재사용한다(주소 중복 0).
+var MODE_ICONS={ 'ABC':FLY_IMGS.front, 'abc':DRAGONFLY_IMGS.left, 'ABc':SPIDER_IMGS };
+
+// ★★★ 모드 버튼 3종의 박자(밀리초). 셋이 같은 박자면 기계처럼 보인다 — 주기도 시작도 어긋낸다. ★★★
+//   벌레는 날갯짓이라 첫 화면 사과(700ms)보다 빠르다. 거미는 날개가 아니라 다리라 셋 중 제일 느리다.
+//   ⚠️ 2026-09-14 4차 전까지는 이 셋이 공용 타이머(MENU_ICON_MS=500)를 타서 **셋이 똑같이** 움직였다.
+var MODE_ICON_MS   ={ 'ABC':380, 'abc':440, 'ABc':560 };
+var MODE_ICON_DELAY={ 'ABC':0,   'abc':140, 'ABc':280 };
+
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 모드 버튼 아이콘이 좌우로 떠다니게 (2026-09-16)
+//
+// [왜] 날갯짓만 하고 제자리에 붙어 있으면 '그림'이지 '날아다니는 벌레'로 안 보인다.
+//   거미도 게임에서 거미줄에 매달려 날아다니므로 셋 다 준다.
+//
+// 🔴 **왼쪽으로만 떠다닌다.** 버튼 안에서 그림·글자가 가운데로 모여 있어 **왼쪽에 여유가 있고**,
+//    오른쪽으로 가면 글자(.mbtn-label)와의 사이(10px)를 파고들어 부딪힌다.
+//    그래서 '왼쪽 끝 ↔ 제자리' 사이를 오간다 — 글자 쪽으로는 한 번도 안 넘어온다.
+// 🔴 **날갯짓(MODE_ICON_MS)과 박자가 겹치면 안 된다.** 겹치면 "왼쪽 갈 때 늘 같은 날개 모양"이
+//    되어 두 움직임이 한 덩어리로 보인다 → 아래 표는 날갯짓의 **배수가 아닌** 값으로 골랐다.
+//      ABC 1310÷380=3.45 · abc 1070÷440=2.43 · ABc 1630÷560=2.91  (셋 다 정수가 아니다)
+//    셋끼리도 배수가 아니다(1310:1070:1630 → 1.22 · 1.24 · 1.52배).
+// ⚠️ 움직임은 transform 이라 **자리를 차지하지 않는다** — 글자 위치는 1px 도 안 움직이고
+//    버튼 크기·높이도 그대로다. 커지는 게 아니라 옮겨지는 것이라 버튼 밖으로도 안 나간다
+//    (아래 PX 가 '아이콘 왼쪽 ~ 버튼 안쪽 왼쪽 여백'보다 작으면 된다. 실측 여유 46px).
+// ⚠️ 날갯짓(setInterval, img.src 갈아끼우기)은 한 글자도 안 건드렸다 — 여기서는 **자리만** 더한다.
+//    움직이는 대상도 다르다: 날갯짓은 <img>, 떠다니기는 그 바깥 상자(.mbtn-ic).
+//    같은 것에 둘 다 걸면 .mbtn-abc 의 transform:scale(1.344) 와 서로 지운다.
+//
+// ★★★ 아래 3줄만 고치면 된다. PX=떠다니는 폭 · MS=한 번 가는 데 걸리는 시간 · DELAY=시작 시점 ★★★
+var MODE_FLOAT_PX   ={ 'ABC':14,   'abc':11,   'ABc':8   };   // 파리가 제일 활발 · 거미는 매달려 있어 조금만
+var MODE_FLOAT_MS   ={ 'ABC':1310, 'abc':1070, 'ABc':1630 };
+var MODE_FLOAT_DELAY={ 'ABC':0,    'abc':230,  'ABc':470 };
+
+// 두 장짜리 아이콘 <img> 한 장을 만든다. 처음엔 a 를 보여주고, b 가 다 받아지면 그때부터 번갈아 바뀐다.
+//   fb='svg' → 그림을 못 받으면 기존 파닉스 SVG 로 되돌린다(카드가 지금과 똑같아진다)
+//   fb 없음  → 그림을 못 받으면 아이콘을 지운다(모드 버튼이 지금처럼 글자만 남는다)
+//   ms/delay 를 주면 그 아이콘만 '자기 박자'로 돈다(첫 화면 3장). 안 주면 아래 공용 타이머(MENU_ICON_MS)를 탄다.
+function menuIconHTML(a,b,alt,fb,ms,delay){
+  return '<img class="menu-anim-ic" src="'+a+'" data-a="'+a+'" data-b="'+b+'" alt="'+(alt||'')+'"'+
+         (fb?' data-fb="'+fb+'"':'')+(ms?' data-ms="'+ms+'" data-delay="'+(delay||0)+'"':'')+
+         ' onerror="menuIconFail(this)">';
+}
+// ★ 세 장 이상을 '룰렛처럼' 돌리는 아이콘 (2026-09-14 6차, 동물 퍼즐 카드용).
+//   두 장짜리(menuIconHTML)는 a↔b 왕복이라 3장을 넣을 자리가 없다. 목록을 통째로 싣는다.
+//   ⚠️ 두 장짜리 구조는 그대로 둔다 — 파닉스·첫 화면·모드 버튼이 이미 그걸로 돌고 있다.
+function menuIconFramesHTML(list,alt,ms,delay,fb){
+  return '<img class="menu-anim-ic" src="'+list[0]+'" data-frames="'+list.join(',')+'" alt="'+(alt||'')+'"'+
+         (fb?' data-fb="'+fb+'"':'')+' data-ms="'+ms+'" data-delay="'+(delay||0)+'"'+
+         ' onerror="menuIconFail(this)">';
+}
+// ① 그림 실패 대비 — 과일 퍼즐에는 있고(_im.onerror) 동물·공룡엔 없던 그것.
+//    메뉴 아이콘에도 원래 없었다(index.html 의 ABC 카드 파리 그림은 실패하면 깨진 그림이 뜬다).
+function menuIconFail(img){
+  try{
+    var p=img.parentNode; if(!p) return;
+    if(img.getAttribute('data-fb')==='svg'){ p.innerHTML=_phIconHTML(); }   // 파닉스 카드 → 옛 SVG
+    else { p.removeChild(img); }                                           // 모드 버튼 → 글자만
+  }catch(e){}
+}
+// ② 두 번째 그림 미리 받기 — 안 받아두면 처음 바뀌는 순간 한 번 깜빡인다.
+//    ⚠️ 다 받아진 뒤에야 data-ready 를 세우고, 아래 타이머는 ready 인 것만 바꾼다.
+//       그래서 "아직 안 온 그림으로 갈아끼워 빈칸이 보이는" 일이 구조적으로 안 생긴다.
+//    b 를 끝내 못 받으면 ready 가 영영 안 서고, 아이콘은 a 한 장으로 가만히 있는다(그림은 제대로 보인다).
+function menuIconArm(root){
+  try{
+    var list=(root||document).querySelectorAll('.menu-anim-ic:not([data-armed])');
+    for(var i=0;i<list.length;i++){
+      (function(img){
+        img.setAttribute('data-armed','1');
+        // ── 세 장 이상(룰렛) ──
+        var fr=img.getAttribute('data-frames');
+        if(fr){
+          // got[i]=true 인 것만 **원래 순서대로** 돈다(받아진 순서가 아니라 — 순서가 뒤죽박죽이면 어색하다)
+          var all=fr.split(','), got=[true], pending=all.length-1, ok=[];
+          var start=function(){
+            ok=[]; for(var q=0;q<all.length;q++) if(got[q]) ok.push(all[q]);
+            if(ok.length<2) return;                  // 한 장밖에 못 받았으면 그냥 그 한 장으로 가만히
+            img.setAttribute('data-ready','1');
+            var ms=parseInt(img.getAttribute('data-ms')||'1000',10),
+                dly=parseInt(img.getAttribute('data-delay')||'0',10), k=0;
+            setTimeout(function(){
+              setInterval(function(){
+                if(_vzHidden) return;                // 화면 안 보이면 쉰다
+                k=(k+1)%ok.length;
+                try{ img.src=ok[k]; }catch(e){}
+              },ms);
+            },dly);
+          };
+          if(pending<=0){ start(); return; }
+          for(var j=1;j<all.length;j++){
+            (function(src,idx){
+              var p=new Image();
+              // ⚠️ 못 받은 장은 목록에서 빼고 **받은 것끼리만** 돈다 — 한 장이 없다고 전부 멈추지 않는다.
+              p.onload =function(){ got[idx]=true;  if(--pending===0) start(); };
+              p.onerror=function(){ got[idx]=false; if(--pending===0) start(); };
+              p.src=src;
+            })(all[j],j);
+          }
+          return;
+        }
+        // ── 두 장(왕복) ── 파닉스·첫 화면·모드 버튼이 쓰는 기존 길
+        var b=img.getAttribute('data-b'); if(!b) return;
+        var pre=new Image();
+        pre.onload=function(){
+          try{
+            img.setAttribute('data-ready','1');
+            // 자기 박자를 가진 아이콘(첫 화면 3장)은 개별 타이머로 돈다.
+            // 공용 타이머는 data-ms 없는 것만 돌리므로 두 번 바뀌지 않는다.
+            var ms=parseInt(img.getAttribute('data-ms')||'0',10);
+            if(ms>0){
+              var dly=parseInt(img.getAttribute('data-delay')||'0',10), on=false;
+              setTimeout(function(){
+                setInterval(function(){
+                  if(_vzHidden) return;
+                  on=!on;
+                  try{ img.src= on ? img.getAttribute('data-b') : img.getAttribute('data-a'); }catch(e){}
+                },ms);
+              },dly);
+            }
+          }catch(e){}
+        };
+        pre.onerror=function(){};                       // 못 받으면 a 로 가만히 — 아무 일도 안 한다
+        pre.src=b;
+      })(list[i]);
+    }
+  }catch(e){}
+}
+// ③ 번갈아 보여주기. 게임 벌레와 같은 방식(시계 기준 setInterval)이라 폰 주사율과 무관하다.
+//    화면이 안 보이면(_vzHidden) 쉰다 — 다른 타이머들과 같은 규칙.
+var _miPhase=0;
+setInterval(function(){
+  if(_vzHidden) return;
+  try{
+    // :not([data-ms]) — 자기 박자를 가진 첫 화면 아이콘은 여기서 건드리지 않는다(이중 구동 방지)
+    var list=document.querySelectorAll('.menu-anim-ic[data-ready="1"]:not([data-ms])');
+    if(!list.length) return;
+    _miPhase=_miPhase?0:1;
+    for(var i=0;i<list.length;i++){
+      var img=list[i], a=img.getAttribute('data-a'), b=img.getAttribute('data-b');
+      if(!a){ a=img.getAttribute('src'); img.setAttribute('data-a',a); }   // 첫 회에 원래 주소 기억
+      img.src=_miPhase?b:a;
+    }
+  }catch(e){}
+},MENU_ICON_MS);
+
+// 모드 버튼 3개에 그림을 얹는다. index.html 은 한 글자도 안 건드린다.
+// 두 번 불려도 안전하다(이미 얹혔으면 그냥 나간다).
+function buildModeIcons(){
+  try{
+    var box=document.getElementById('ms'); if(!box) return;
+    var btns=box.querySelectorAll('.mbtn');
+    for(var i=0;i<btns.length;i++){
+      var btn=btns[i];
+      if(btn.querySelector('.mbtn-ic')) continue;                 // 이미 얹힘
+      var oc=btn.getAttribute('onclick')||'';
+      var m=oc.match(/goMode\('([^']+)'\)/); if(!m) continue;      // 어느 모드인지는 onclick 에서 읽는다
+      var pair=MODE_ICONS[m[1]]; if(!pair) continue;
+      var sp=document.createElement('span');
+      sp.className='mbtn-ic';
+      // fb 없음 → 실패하면 글자만 남음. ms/delay 를 주므로 공용 타이머가 아니라 자기 박자로 돈다.
+      sp.innerHTML=menuIconHTML(pair[0],pair[1],m[1],null,MODE_ICON_MS[m[1]],MODE_ICON_DELAY[m[1]]);
+      // ★ 좌우로 떠다니기 (2026-09-16) — 움직임은 CSS(mbtnFloat)가, 폭·박자·시작시점은 여기서.
+      //   숫자가 위 한 곳(MODE_FLOAT_*)에 모인다. 첫 화면 사과(homeAppleWobble)와 같은 방식이다.
+      //   ⚠️ <img> 가 아니라 이 바깥 상자에 건다 — img 에는 scale(1.344) 이 이미 걸려 있다.
+      var fpx=MODE_FLOAT_PX[m[1]];
+      if(fpx){
+        sp.style.setProperty('--mbtn-float',fpx+'px');
+        sp.style.animation='mbtnFloat '+MODE_FLOAT_MS[m[1]]+'ms ease-in-out '+
+                           (MODE_FLOAT_DELAY[m[1]]||0)+'ms infinite alternate';
+      }
+      btn.insertBefore(sp,btn.firstChild);
+      // ⚠️ CSS 의 :has() 를 쓰지 않고 여기서 클래스를 붙인다 — :has() 는 옛 WebView 에서 안 먹어
+      //    그런 폰에서만 그림이 글자 위로 올라가 버튼 모양이 달라진다.
+      btn.classList.add('mbtn-has-ic');
+    }
+    menuIconArm(box);
+  }catch(e){}
+}
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 첫 화면 카드 3장(ABC · Word · Phonics) — 아이콘 키우고 움직이게 (2026-09-14 3차)
+//
+// ⛔ index.html:119~145 에 있는 카드지만 **그 파일은 안 건드린다** — 캐시버스터가 없어
+//    이미 깔린 폰에 옛 판이 며칠 남는다(2026-08-12 파닉스 잠김 사고). 여기서 얹는다.
+//
+// 🔴 셋이 같은 박자로 움직이면 기계처럼 보인다 → 주기도 시작 시점도 어긋나게 둔다.
+// ★★★ 아래 6개 숫자만 고치면 된다. 파닉스 세트 카드의 MENU_ICON_MS(500) 와는 별개다. ★★★
+var HOME_ICON_MS   ={ fly:400, mouth:550, apple:700 };   // 파리=원래 빠른 것 · 입 · 사과=무거운 것
+var HOME_ICON_DELAY={ fly:0,   mouth:200, apple:400 };   // 시작 시점 어긋내기
+// ────────────────────────────────────────────────────────────────────────────
+
+// 파닉스 입 모양 두 가지. 원본(index.html·_phIconHTML)과 같은 그림인데 **입 벌린 각도만** 다르다.
+// ⚠️ 눈동자 #7F5BC2 는 카드 그라데이션의 '눈 높이' 실측값 — 원본 그대로 둔다.
+var PH_MOUTH_OPEN='M42 52 L67 37 A28 28 0 1 0 67 67 Z';   // 방긋 벌린 입
+var PH_MOUTH_SHUT='M42 52 L67 48 A28 28 0 1 0 67 56 Z';   // 거의 다문 입
+function _phMouthSVG(){
+  return '<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Phonics">'+
+    '<path class="ph-mouth" d="'+PH_MOUTH_SHUT+'" fill="#fff"/>'+
+    '<circle cx="32" cy="30" r="10" fill="#fff"/>'+
+    '<circle cx="32" cy="28" r="4" fill="#7F5BC2"/>'+
+    '<path d="M76 44 Q80 52 76 60" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+    '<path d="M86 39 Q92 52 86 65" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>';
+}
+function _homeMouthStart(path){
+  try{
+    var open=false;
+    setTimeout(function(){
+      setInterval(function(){
+        if(_vzHidden) return;                         // 화면 안 보이면 쉰다(다른 타이머와 같은 규칙)
+        open=!open;
+        try{ path.setAttribute('d', open?PH_MOUTH_OPEN:PH_MOUTH_SHUT); }catch(e){}
+      },HOME_ICON_MS.mouth);
+    },HOME_ICON_DELAY.mouth);
+  }catch(e){}
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 첫 화면 카드 글자 바꾸기 — ABC → Alphabet Game · Word → Word Puzzle (2026-09-16)
+//
+// ⛔ index.html 은 안 건드린다 — 캐시버스터가 없어 이미 깔린 폰에 옛 판이 며칠 남는다
+//    (2026-08-12 파닉스 잠김 사고). script.js 가 얹어야 푸시 즉시 전원에게 간다.
+//
+// 🔴 [함정] 지금까지 카드를 **글자로** 찾고 있었다(아래 buildHomeIcons · _menuSndKeyFor).
+//    글자를 바꾸면 그 코드가 카드를 못 찾아 **소리가 안 나고 아이콘이 안 움직인다.**
+//    → 찾는 열쇠를 글자에서 **바뀌지 않는 표시(card-abc / card-word / card-phonics)** 로 옮겼다.
+//      그 표시는 index.html:119·123·134 에 2026-08-05 부터 붙어 있다.
+//    ⚠️ 옛 index.html 이 캐시된 폰은 표시가 없을 수 있다 → **옛 글자도 그대로 받아준다**(아래 표).
+//    ⚠️ Phonics 는 글자를 안 바꾼다. _unlockPhonicsCard() 가 'phonics' 라는 글자로 찾고 있어서
+//       바꾸면 잠금해제가 깨진다. 이번 지시에도 "Phonics 카드 건드리지 말 것"이 있다.
+// ────────────────────────────────────────────────────────────────────────────
+
+// ★★★ 새 글자. 여기만 고치면 된다. Phonics 는 일부러 목록에 없다(= 안 건드림). ★★★
+var HOME_CARD_TEXT={ abc:'Alphabet Game', word:'Word Puzzle' };
+// 옛 글자 → 이름. 표시가 없는 옛 index.html 폰을 위한 뒷길이다. 새 글자도 같이 받아 둔다
+// (두 번 불려도, 이미 바뀐 뒤에 불려도 같은 이름이 나오게).
+var _HOME_ALIAS={ 'abc':'abc', 'word':'word', 'phonics':'phonics',
+                  'alphabet game':'abc', 'word puzzle':'word' };
+function homeCardKey(c){
+  try{
+    if(!c) return '';
+    var cl=' '+(c.className||'')+' ';
+    if(cl.indexOf(' card-abc ')>=0)     return 'abc';
+    if(cl.indexOf(' card-word ')>=0)    return 'word';
+    if(cl.indexOf(' card-phonics ')>=0) return 'phonics';
+    var lbl=c.querySelector('.card-label');
+    return _HOME_ALIAS[lbl ? (lbl.textContent||'').trim().toLowerCase() : '']||'';
+  }catch(e){ return ''; }
+}
+
+// ★★★ 글자 크기의 위·아래 한계(px). ★★★
+//   위 = style.css 의 20px(.mode-buttons .game-card .card-label). 짧은 글자는 여기서 안 내려간다.
+//   아래 = 이보다 작아지면 안 읽힌다. 여기에 닿으면 글자가 넘치므로 카드를 넓히거나 글자를 줄여야 한다.
+var HOME_LABEL_MIN=12;
+// 🔴 **공식으로 정하지 않는다 — 실제로 그려진 폭을 잰다**(CLAUDE.md 안정성 규칙 8번).
+//    폰 글자확대(WebView 는 웹 글자에 폰 설정을 곱한다)·폰트 늦게 오기·좁은 폰에서
+//    "글자수 × 추정폭" 공식은 반드시 어긋난다. 재서 줄이면 무엇이 곱해지든 알아서 맞는다.
+// ⚠️ 카드 **높이는 안 바뀐다** — 높이는 아이콘(80/70/62px)이 정하고 글자(최대 20px)는 그보다 작다.
+//    글자를 줄이는 쪽이라 높이에 닿을 일이 구조적으로 없다.
+function fitHomeLabel(card){
+  try{
+    var lbl=card.querySelector('.card-label'); if(!lbl) return;
+    var ic=card.querySelector('.card-icon');
+    lbl.style.whiteSpace='nowrap';
+    lbl.style.fontSize='';                       // CSS 값으로 되돌리고 시작 → 두 번 불려도 안전
+    var cs=getComputedStyle(card);
+    var gap=parseFloat(cs.columnGap)||parseFloat(cs.gap)||0;
+    // 🔴 아이콘이 차지하는 폭 = 그림 상자 + **바깥 여백(margin)**.
+    //    ⚠️ 2026-09-16: 아이콘을 오른쪽으로 5px 미느라 `margin-left:5px` 를 줬는데 여기서 그걸 안 세어
+    //       글자 몫을 5px 크게 봤다 → 390×920·글자확대 130% 에서 **2.7px 넘쳤다**(실측으로 잡았다).
+    //       아이콘 여백을 바꾸면 이 줄이 자동으로 따라간다 — 숫자를 두 곳에 적지 않는다.
+    var icm=ic?getComputedStyle(ic):null;
+    var icW=ic ? ic.getBoundingClientRect().width
+                 +(parseFloat(icm.marginLeft)||0)+(parseFloat(icm.marginRight)||0) : 0;
+    // clientWidth = 테두리를 뺀 폭(안쪽 여백은 포함) → 여백과 아이콘·사이간격을 뺀 나머지가 글자 몫
+    var avail=card.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)
+              -icW-gap-2;   // 2 = 반올림 여유
+    if(!(avail>0)) return;
+    var wid=function(){ return Math.max(lbl.scrollWidth, lbl.getBoundingClientRect().width); };
+    var fs=parseFloat(getComputedStyle(lbl).fontSize)||20;
+    for(var n=0; n<40 && wid()>avail && fs>HOME_LABEL_MIN; n++){
+      fs-=0.5; lbl.style.fontSize=fs+'px';
+    }
+  }catch(e){}
+}
+// 글자를 바꾸고 크기를 맞춘다. 두 번 불려도 안전하다(같은 글자면 안 건드리고, 크기는 다시 잰다).
+function renameHomeCards(){
+  try{
+    var wrap=document.querySelector('.mode-buttons'); if(!wrap) return;
+    var cards=wrap.querySelectorAll('.game-card');
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i], want=HOME_CARD_TEXT[homeCardKey(c)];
+      if(!want) continue;                                    // Phonics 등 → 손대지 않는다
+      var lbl=c.querySelector('.card-label'); if(!lbl) continue;
+      if((lbl.textContent||'').trim()!==want) lbl.textContent=want;
+      fitHomeLabel(c);
+    }
+  }catch(e){}
+}
+// 🔴 **세 번 부른다** — 한 번만 부르면 잘린 채로 남는 경우가 있다.
+//    ① 바로   = 첫 화면이 이미 그려져 있으면 곧장 바꾼다(옛 글자가 한 번도 안 보이게)
+//    ② load   = 아이콘이 얹힌 뒤 아이콘 폭이 확정된 상태로 다시 잰다
+//    ③ 폰트   = 웹폰트(Fredoka)가 늦게 오면 **글자 폭이 달라진다.** 안 다시 재면 그때 넘친다
+//               (퍼즐 제목이 같은 이유로 fonts.ready 를 쓰고 있다 — 2026-08-20)
+//    ④ 회전·크기변경 = 가로/세로가 바뀌면 카드 폭·아이콘 크기(@media max-height)가 달라진다
+try{ renameHomeCards(); }catch(e){}
+try{ document.addEventListener('DOMContentLoaded',renameHomeCards); }catch(e){}
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ renameHomeCards(); }); }catch(e){}
+(function(){
+  try{
+    var t=0, fire=function(){ clearTimeout(t); t=setTimeout(renameHomeCards,200); };
+    window.addEventListener('resize',fire);
+    window.addEventListener('orientationchange',fire);
+  }catch(e){}
+})();
+
+// 카드를 찾는다 — homeCardKey() 가 '바뀌지 않는 표시'로, 없으면 옛 글자로 찾아준다(위 참고).
+// (표시가 없는 옛 폰까지 덮는 것은 _unlockPhonicsCard 가 쓰던 생각 그대로다.) 두 번 불려도 안전하다.
+function buildHomeIcons(){
+  try{
+    var wrap=document.querySelector('.mode-buttons'); if(!wrap) return;
+    var cards=wrap.querySelectorAll('.game-card');
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i];
+      if(c.getAttribute('data-homeic')) continue;                    // 이미 얹힘
+      var lbl=c.querySelector('.card-label'), ic=c.querySelector('.card-icon');
+      if(!lbl||!ic) continue;
+      var name=homeCardKey(c);
+      if(name==='abc'){
+        // 파리 두 장 번갈아. 지금까지는 fly_front 한 장으로 정지해 있었다.
+        ic.innerHTML=menuIconHTML(FLY_IMGS.front[0],FLY_IMGS.front[1],'ABC',null,
+                                  HOME_ICON_MS.fly,HOME_ICON_DELAY.fly);
+        c.setAttribute('data-homeic','1');
+      } else if(name==='word'){
+        // 사과는 그림이 한 장뿐 → 코드로 좌우로 기울인다(그림 추가 0장).
+        // 회전은 CSS 가 맡고(부드럽게), 속도·시작시점만 여기서 넣는다 → 숫자가 위 한 곳에 모인다.
+        var im=ic.querySelector('img');
+        if(im){
+          im.classList.add('home-apple-ic');
+          im.style.animation='homeAppleWobble '+HOME_ICON_MS.apple+'ms ease-in-out '+
+                             HOME_ICON_DELAY.apple+'ms infinite alternate';
+        }
+        c.setAttribute('data-homeic','1');
+      } else if(name==='phonics'){
+        // 입이 방긋방긋 — 도형의 '입' 한 군데만 두 모양으로 갈아끼운다.
+        ic.innerHTML=_phMouthSVG();
+        var m=ic.querySelector('.ph-mouth'); if(m) _homeMouthStart(m);
+        c.setAttribute('data-homeic','1');
+      }
+    }
+    menuIconArm(wrap);
+  }catch(e){}
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 퍼즐(Word) 메뉴 Animal 카드 — 발자국 실루엣 → 동물 얼굴 3종 룰렛 (2026-09-14 6차)
+//
+// [왜] 발자국(🐾)만으론 무슨 퍼즐인지 애매하다. 그렇다고 얼굴 하나만 세우면
+//   동물이 11가지인데 "강아지 나오는 데"로 오해한다 → 셋을 돌려 '여러 동물'임을 보인다.
+// ⚠️ 두 장 왕복이 아니라 **세 장 돌리기**라 menuIconFramesHTML 을 새로 만들었다(위 참고).
+// ⚠️ Fruit·Dino·잠긴 카드(Vegetable·Insect)는 손대지 않는다. 카드·아이콘 크기도 그대로다.
+// ★★★ 퍼즐 메뉴 세 카드의 박자(밀리초). 셋이 같으면 기계처럼 보인다 — 주기도 시작도 어긋낸다. ★★★
+//   animal = 얼굴 3종 룰렛(각 얼굴이 충분히 머물러야 알아본다 → 가장 느리다)
+//   fruit  = 사과 흔들기. ⚠️ **첫 화면 Word 카드의 사과(HOME_ICON_MS.apple=700)와 달라야 한다** —
+//            같은 박자면 화면을 옮겨도 같은 것이 흔들려 어색하다
+//   dino   = 입에서 불꽃 (셋 중 가장 빠르다 — 불은 짧게 확 나왔다 들어가야 불 같다)
+var PUZZLE_ICON_MS   ={ animal:1000, fruit:820, dino:620 };
+var PUZZLE_ICON_DELAY={ animal:0,    fruit:150, dino:320 };
+// 🔴 ?v= 는 지우지 말 것 — **그림은 이름이 같으면 폰이 옛것을 계속 쓴다.**
+//    코드(js/css)는 index.html 의 always-fresh 로더가 매번 새로 받지만 **그림·소리는 안 덮인다**
+//    (CLAUDE.md '배포/캐시 규칙' 2번). 2026-09-15 고양이를 새로 그려 넣었는데 폰에 옛 고양이가
+//    그대로 보인 것이 이것이었다. 서버 파일은 이미 새것이었다(지문 대조로 확인).
+//    ⚠️ **그림을 같은 이름으로 갈아끼울 때마다 이 날짜를 올릴 것.**
+var ANIMAL_ICON_VER='?v=20260915';
+var ANIMAL_ICONS=['assets/animal/icons/animal_a.webp'+ANIMAL_ICON_VER,    // 강아지
+                  'assets/animal/icons/animal_b.webp'+ANIMAL_ICON_VER,    // 고양이
+                  'assets/animal/icons/animal_c.webp'+ANIMAL_ICON_VER];   // 코끼리
+// 공룡 불꽃 — 그림 파일 없이 도형으로 그린다. 공룡이 **왼쪽을 보고** 있어 불꽃도 왼쪽으로 뻗는다.
+// ⚠️ **두 색**(겉 #FF6E40 주황 + 속 #FFD740 노랑). 2026-09-15 9차에 오렌지 단색에서 되돌렸다 —
+//    단색은 밋밋해 '주황 덩어리'로 보이고, 속에 밝은 심지가 있어야 불처럼 읽힌다(사장님 판단).
+//    카드(청록 #4DD0E1→#00ACC1)·몸통(짙은 파랑 #01579B)과 안 묻힌다.
+// ⚠️ 오른쪽 끝(x=23)이 입에 붙는 자리다 — 붙이는 위치는 CSS 의 left/top 이 정한다.
+function _dinoFlameHTML(){
+  return '<span class="dino-flame" aria-hidden="true">'+
+    '<svg viewBox="0 0 24 20" xmlns="http://www.w3.org/2000/svg">'+
+      '<path d="M23 10 C17 2, 9 3.5, 2 10 C9 16.5, 17 18, 23 10 Z" fill="#FF6E40"/>'+
+      '<path d="M23 10 C18.5 5.8, 13 6.4, 9 10 C13 13.6, 18.5 14.2, 23 10 Z" fill="#FFD740"/>'+
+    '</svg></span>';
+}
+function buildPuzzleIcons(){
+  try{
+    var cards=document.querySelectorAll('.wc-card');
+    for(var i=0;i<cards.length;i++){
+      var c=cards[i], lbl=c.querySelector('.card-label'), ic=c.querySelector('.card-icon');
+      if(!lbl||!ic) continue;
+      var name=(lbl.textContent||'').trim().toLowerCase();
+      if(c.getAttribute('data-puzic')) continue;                 // 이미 얹힘
+      // ⚠️ 잠긴 카드(Vegetable·Insect)는 손대지 않는다. Animal·Dino 도 옛 index.html 이 캐시된 폰에서
+      //    잠금해제(_unlockAnimalCard)보다 먼저 돌 수 있는데, 그때는 잠금 회색이 남는 게 맞다.
+      if(c.className.indexOf('wc-locked')>=0) continue;
+
+      if(name==='animal'){
+        // fb 없음 → 첫 장을 못 받으면 아이콘이 사라지고 'Animal' 글자만 남는다(카드는 그대로 눌린다)
+        ic.innerHTML=menuIconFramesHTML(ANIMAL_ICONS,'Animal',PUZZLE_ICON_MS.animal,PUZZLE_ICON_DELAY.animal);
+        c.setAttribute('data-puzic','1');
+        menuIconArm(ic);
+
+      } else if(name==='fruit'){
+        // 사과는 이모지 글자 한 개(index.html 의 🍎)라 바꿀 그림이 없다 → 첫 화면 Word 카드와 같이 기울인다.
+        // 회전은 CSS(homeAppleWobble)가, 속도·시작시점은 여기서 — 숫자가 위 한 곳에 모인다.
+        ic.style.transformOrigin='50% 85%';
+        ic.style.animation='homeAppleWobble '+PUZZLE_ICON_MS.fruit+'ms ease-in-out '+
+                           PUZZLE_ICON_DELAY.fruit+'ms infinite alternate';
+        c.setAttribute('data-puzic','1');
+
+      } else if(name==='dino'){
+        // 공룡은 그림이 아니라 '마스크로 딴 실루엣'이라 갈아끼울 장면이 없다 →
+        // 불꽃 도형을 하나 더 얹고 **켜졌다 꺼졌다** 한다(파닉스 입이 방긋거리는 것과 같은 방식).
+        if(!ic.querySelector('.dino-flame')) ic.insertAdjacentHTML('beforeend',_dinoFlameHTML());
+        var fl=ic.querySelector('.dino-flame');
+        if(fl){
+          var on=false;
+          setTimeout(function(){
+            setInterval(function(){
+              if(_vzHidden) return;                              // 화면 안 보이면 쉰다
+              on=!on;
+              try{ fl.classList.toggle('on',on); }catch(e){}
+            },PUZZLE_ICON_MS.dino);
+          },PUZZLE_ICON_DELAY.dino);
+        }
+        c.setAttribute('data-puzic','1');
+      }
+    }
+  }catch(e){}
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 퍼즐(Word) 메뉴 아이콘 줄 맞추기 — 기준은 Animal (2026-09-16)
+//
+// [문제] `.wc-card` 는 아이콘+글자를 **한 덩어리로 가운데**(`style.css:201` justify-content:center)
+//   놓는다 → **글자가 길수록 아이콘이 왼쪽으로 밀린다.** 실측(390×844) = 과일 68.4 · 동물 51.6 ·
+//   공룡 67.5px. 셋이 제각각이라 눈이 아이콘을 따라가지 못한다.
+//
+// [왜 CSS 한 줄이 아니라 재서 맞추나] 첫 화면은 `justify-content:flex-start` 한 줄로 끝났다.
+//   여기는 **Animal 을 건드리면 안 된다**(기준이라는 지시). flex-start 로 바꾸면 Animal 도 움직인다.
+//   게다가 맞출 자리(51.6px)는 **'Animal' 이라는 글자 폭에서 나온 값**이라 폰 글자확대·폰트가
+//   달라지면 같이 움직인다. 숫자를 박아 두면 그때 어긋난다 → **매번 Animal 을 재서 거기에 맞춘다.**
+//
+// [어떻게] 가운데 정렬에서는 덩어리에 붙인 여백의 **절반**만 자리가 움직인다
+//   (여백 m 을 주면 남는 자리가 m 만큼 줄어 양쪽에 m/2 씩 나뉜다) → 한 번에 안 맞으므로
+//   **재고 고치고 다시 재기**를 반복한다. 보통 2번이면 0.5px 안으로 들어온다.
+//
+// 🔴 **공룡은 불꽃이 아니라 공룡 그림 기준이다.** 불꽃(`.dino-flame`)은 `position:absolute` 라
+//    `.card-icon` 의 상자에도, `offsetLeft`·`offsetWidth` 에도 **안 들어간다.** 상자를 재면
+//    불꽃은 저절로 빠진다. (불꽃을 기준 삼으면 공룡이 18px 오른쪽으로 밀려 버린다.)
+// 🔴 **자리는 `offsetLeft` 로 잰다 — `getBoundingClientRect()` 로 재면 안 된다.**
+//    과일 아이콘은 `homeAppleWobble` 로 계속 기울어져 있어(±7°) 화면상 상자가 매 프레임 달라진다.
+//    `offsetLeft` 는 **기울이기 전 자리**라 흔들리지 않는다. (CLAUDE.md 안정성 규칙 8번과 같은 이유)
+// ⚠️ 잠긴 카드(Vegetable·Insect)는 **아래 목록에 없다 = 안 건드린다.**
+// ⚠️ 아이콘 크기·움직임·불꽃·카드 크기는 한 값도 안 바꾼다. **자리만** 옮긴다.
+// ────────────────────────────────────────────────────────────────────────────
+// ★★★ 기준 카드와 맞출 카드. 기준을 바꾸려면 여기만 고친다. ★★★
+var PUZZLE_ALIGN_BASE='.wc-animal';
+var PUZZLE_ALIGN_TARGETS=['.wc-fruit','.wc-dino'];
+function alignPuzzleIcons(){
+  try{
+    var wc=document.getElementById('wc'); if(!wc) return;
+    var base=wc.querySelector(PUZZLE_ALIGN_BASE); if(!base) return;
+    var bi=base.querySelector('.card-icon'); if(!bi) return;
+    // 화면이 안 떠 있으면(display:none) 전부 0 이라 잴 수가 없다 → 아무것도 안 한다.
+    if(!bi.offsetWidth) return;
+    var goal=bi.offsetLeft;                                  // 기준 = Animal 아이콘 자리
+    for(var t=0;t<PUZZLE_ALIGN_TARGETS.length;t++){
+      var card=wc.querySelector(PUZZLE_ALIGN_TARGETS[t]); if(!card) continue;
+      var ic=card.querySelector('.card-icon'); if(!ic||!ic.offsetWidth) continue;
+      ic.style.marginLeft='';                                // 지우고 다시 — 두 번 불려도 안전
+      var m=0;
+      for(var n=0;n<6;n++){
+        var d=goal-ic.offsetLeft;
+        if(Math.abs(d)<0.5) break;
+        m+=2*d;                                              // 가운데 정렬 → 여백의 절반만 움직인다
+        ic.style.marginLeft=m.toFixed(2)+'px';
+      }
+    }
+  }catch(e){}
+}
+// 🔴 **퍼즐 메뉴가 열릴 때 불러야 한다** — 닫혀 있으면(display:none) 잴 수가 없다.
+//    goWordCat() 안에서 한 번, 그리고 한 박자 뒤에 한 번 더(그림·폰트가 늦게 오는 경우).
+// ⚠️ 웹폰트(Fredoka)가 늦게 오면 글자 폭이 달라져 가운데 자리가 통째로 움직인다 → 다시 맞춘다.
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ alignPuzzleIcons(); }); }catch(e){}
+(function(){
+  try{
+    var t=0, fire=function(){ clearTimeout(t); t=setTimeout(alignPuzzleIcons,200); };
+    window.addEventListener('resize',fire);
+    window.addEventListener('orientationchange',fire);
+  }catch(e){}
+})();
+
+// ────────────────────────────────────────────────────────────────────────────
+// ★ 메뉴 화면이 짧은 폰에서 잘리는 것 — 재서 맞춘다 (2026-09-16)
+//
+// [문제] 네 화면(시작·모드·퍼즐·파닉스) 모두 내용을 **가운데 정렬**하고 스크롤이 없다
+//   (`justify-content:center`). 내용이 화면보다 크면 **위아래가 같이 잘린다.**
+//   실측(320×568·글자 100%) = 시작 27.5 · 모드 3.2 · 퍼즐 3.5 · 파닉스 10.5px 잘림.
+//
+// 🔴 [왜 @media 단계를 더 놓지 않았나 — 원리적으로 못 잡는다]
+//   ① **높이만 보는 규칙은 폰 글자확대를 못 본다.** 같은 360×640 인데 글자 100% 면 8.5px 남고
+//      130% 면 1.5px 잘린다. 퍼즐 메뉴는 320×568 에서 3.5 → **46.1px** 로 벌어진다.
+//      `@media (max-height:…)` 에는 글자 배율이 안 들어오므로 이 차이를 볼 수가 없다.
+//   ② **사다리는 칸 사이가 빈다.** 시작 화면은 이미 860/760/700 3단인데 568 에서 27.5px,
+//      600 에서도 11.5px 잘렸다. 모드·파닉스에 같은 걸 놓으면 같은 일이 반복된다.
+//   → 그래서 **화면 크기가 아니라 '잘리는지'를 직접 재서** 들어갈 때까지 줄인다.
+//
+// ★★★ 줄이는 순서. 들어가는 순간 멈춘다. 숫자 넷만 고치면 된다. ★★★
+//   ① 카드 사이 간격 → ② 개구리·제목(장식) → ③ 아이콘 → ④ 그래도 안 되면 그대로
+//   🔴 **아이콘은 마지막이고 52px 이 바닥이다.** 그 아래로는 절대 안 내려간다 —
+//      작아지면 글 못 읽는 아이가 무슨 게임인지 못 알아본다(2026-09-14 교훈).
+//   ⚠️ **여유가 있으면 첫 줄에서 그냥 나간다 → 넉넉한 폰은 한 픽셀도 안 바뀐다.**
+//      390×844 는 47~89px, 412×915 는 52~110px 남아 아예 이 아래로 안 내려온다.
+// ────────────────────────────────────────────────────────────────────────────
+var FIT_GAP_MIN   = 8;      // 카드 사이 간격은 여기까지만
+var FIT_DECOR_MIN = 0.70;   // 개구리·제목은 70% 까지만 (더 줄이면 허전해 보인다)
+var FIT_DECOR_STEP= 0.04;   // 장식을 줄이는 한 걸음
+var FIT_ICON_MIN  = 52;     // 🔴 아이콘 바닥 — 사장님 기준. 건드리지 말 것
+// 위아래로 이만큼은 남기고 멈춘다. 0 으로 두면 '딱 맞음'에서 멈추는데, 실제 폰은
+// 반올림·시스템 막대 때문에 1~2px 이 달라져 그 자리가 다시 잘릴 수 있다.
+var FIT_SAFE      = 3;
+
+// 화면마다 '무엇을 줄일 수 있는가'. 퍼즐 메뉴만 icon 이 없다 —
+// 아이콘이 이미 32~44px 이라 바닥(52) 아래이고, 그 화면은 **글자가 카드 높이를 정한다**(아래 주석 참고).
+var FIT_SCREENS=[
+  {root:'.ss',  list:'.mode-buttons', icon:'.mode-buttons .game-card .card-icon',
+   decor:[['.ss .sf','w'],['.ss h1','f'],['.ss .sub','f']], after:'home'},
+  {root:'#ms',  list:'.ms-buttons',   icon:'.ms-buttons .mbtn .mbtn-ic',
+   decor:[['#ms .ms-frog','w'],['#ms .ms-title','f']]},
+  {root:'#wc',  list:'#wc .wc-cards', icon:null,
+   decor:[['#wc .wc-frog','w'],['#wc .wc-title','f']], after:'puzzle'},
+  {root:'#ps',  list:'#ps .wc-cards', icon:'#ps .ps-card .card-icon',
+   decor:[['#ps .wc-frog','w'],['#ps .wc-title','f']]}
+];
+
+// 얼마나 모자라는가(px). 0 이면 다 들어간다.
+// ⚠️ 가운데 정렬이라 **위아래가 같이 넘친다** → 둘 다 더한다.
+// ⚠️ 뒤로 화살표처럼 `position:absolute` 인 것은 자리를 안 차지하므로 뺀다.
+function _fitNeed(root){
+  try{
+    var r=root.getBoundingClientRect(), top=1e9, bot=-1e9, any=false, k=root.children;
+    for(var i=0;i<k.length;i++){
+      var e=k[i];
+      if(!e.offsetWidth && !e.offsetHeight) continue;
+      var p=getComputedStyle(e).position;
+      if(p==='absolute'||p==='fixed') continue;
+      var b=e.getBoundingClientRect();
+      if(!b.height) continue;
+      top=Math.min(top,b.top); bot=Math.max(bot,b.bottom); any=true;
+    }
+    if(!any) return 0;
+    return Math.max(0,bot-(r.bottom-FIT_SAFE))+Math.max(0,(r.top+FIT_SAFE)-top);
+  }catch(e){ return 0; }
+}
+// 손댄 것을 전부 원래대로. 두 번 불려도 안전하고, 화면이 커지면 원래 크기로 되돌아온다.
+function _fitReset(sc){
+  try{
+    var L=document.querySelector(sc.list); if(L) L.style.rowGap='';
+    for(var i=0;i<sc.decor.length;i++){
+      var e=document.querySelector(sc.decor[i][0]); if(!e) continue;
+      if(sc.decor[i][1]==='w') e.style.width=''; else e.style.fontSize='';
+    }
+    if(sc.icon){ var ic=document.querySelectorAll(sc.icon);
+      for(var j=0;j<ic.length;j++){ ic[j].style.width=''; ic[j].style.height=''; } }
+  }catch(e){}
+}
+function fitMenuScreen(sc){
+  try{
+    var root=document.querySelector(sc.root); if(!root||!root.offsetHeight) return;  // 안 떠 있으면 못 잰다
+    _fitReset(sc);
+    if(_fitNeed(root)<=0) return;              // ⭐ 여유가 있으면 여기서 끝 — 아무것도 안 바꾼다
+
+    // ① 카드 사이 간격
+    var L=document.querySelector(sc.list);
+    if(L){
+      var g=parseFloat(getComputedStyle(L).rowGap)||0;
+      if(g>FIT_GAP_MIN){ L.style.rowGap=FIT_GAP_MIN+'px'; if(_fitNeed(root)<=0) return; }
+    }
+    // ② 개구리·제목 — 장식이다. 아이가 누르는 것이 아니라 먼저 양보한다.
+    var base=[];
+    for(var i=0;i<sc.decor.length;i++){
+      var e=document.querySelector(sc.decor[i][0]); if(!e) continue;
+      var cs=getComputedStyle(e), isW=sc.decor[i][1]==='w';
+      var v=parseFloat(isW?cs.width:cs.fontSize)||0;
+      if(v) base.push({e:e,w:isW,v:v});
+    }
+    for(var k=1-FIT_DECOR_STEP; k>=FIT_DECOR_MIN-0.001; k-=FIT_DECOR_STEP){
+      for(var b=0;b<base.length;b++){
+        if(base[b].w) base[b].e.style.width=(base[b].v*k).toFixed(1)+'px';
+        else          base[b].e.style.fontSize=(base[b].v*k).toFixed(1)+'px';
+      }
+      if(_fitNeed(root)<=0) return;
+    }
+    // ③ 아이콘 — 마지막 수단. 🔴 FIT_ICON_MIN(52px) 아래로는 절대 안 내려간다.
+    if(sc.icon){
+      var ic=document.querySelectorAll(sc.icon); if(!ic.length) return;
+      var cur=Math.round(parseFloat(getComputedStyle(ic[0]).width)||0);
+      if(cur<=FIT_ICON_MIN) return;            // 이미 바닥이거나 더 작다 → 안 건드린다
+      for(var s=cur-2; s>=FIT_ICON_MIN; s-=2){
+        for(var j=0;j<ic.length;j++){ ic[j].style.width=s+'px'; ic[j].style.height=s+'px'; }
+        if(_fitNeed(root)<=0) return;
+      }
+    }
+    // ④ 여기까지 와도 안 들어가면 **그대로 둔다** — 지금보다 나빠지지 않는다.
+  }catch(e){}
+}
+// 지금 떠 있는 화면만 맞춘다(나머지는 display:none 이라 첫 줄에서 나간다).
+function fitMenus(){
+  try{
+    for(var i=0;i<FIT_SCREENS.length;i++){
+      var sc=FIT_SCREENS[i];
+      fitMenuScreen(sc);
+      // 줄인 뒤에 딸려서 다시 재야 하는 것들
+      if(sc.after==='home')   { try{ renameHomeCards(); }catch(e){} }    // 아이콘이 작아지면 글자 몫이 늘어난다
+      if(sc.after==='puzzle') { try{ alignPuzzleIcons(); }catch(e){} }   // 카드가 다시 그려지면 줄도 다시 맞춘다
+    }
+  }catch(e){}
+}
+// ⚠️ 폰트가 늦게 오면 제목·글자 폭이 달라져 높이가 바뀐다 → 다시 잰다.
+try{ if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){ fitMenus(); }); }catch(e){}
+(function(){
+  try{
+    var t=0, fire=function(){ clearTimeout(t); t=setTimeout(fitMenus,200); };
+    window.addEventListener('resize',fire);
+    window.addEventListener('orientationchange',fire);
+  }catch(e){}
+})();
+
+// ⚠️ renameHomeCards() 를 buildHomeIcons() **뒤에** 부른다 — 아이콘이 얹힌 뒤라야 아이콘 폭이
+//    확정되고, 글자가 쓸 수 있는 폭을 제대로 잴 수 있다(2026-09-16).
+// ⚠️ fitMenus() 는 **맨 마지막** — 아이콘·글자가 다 얹힌 뒤라야 진짜 높이를 잴 수 있다.
+try{ window.addEventListener('load',function(){ buildModeIcons(); buildHomeIcons(); buildPuzzleIcons(); renameHomeCards(); alignPuzzleIcons(); fitMenus(); }); }catch(e){}
+
 const PHRASES=[
   {text:'I wanna eat {L}',vk:'i_wanna_eat'},
   {text:'Give me {L}',vk:'give_me'},
@@ -2127,7 +2944,15 @@ function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이�
   document.getElementById('wp').classList.remove('show'); try{var _b=sndMade('bgm'); if(_b)_b.pause();}catch(e){} syncBackGuard(); }
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
-function goWordCat(){ try{document.getElementById('wc').classList.add('show');}catch(e){} syncBackGuard(); }
+function goWordCat(){
+  try{document.getElementById('wc').classList.add('show');}catch(e){}
+  // ★ 2026-09-16 — 줄 맞추기·화면 맞추기는 **화면이 뜬 뒤**라야 잴 수 있다(닫혀 있으면 전부 0).
+  //   한 박자 뒤에 한 번 더 부르는 것은 그림·폰트가 늦게 와서 글자 폭이 달라지는 경우 때문이다.
+  //   ⚠️ 순서 = 화면 맞추기(높이) 먼저, 줄 맞추기(가로) 나중. 카드가 줄어들면 줄도 다시 잡아야 한다.
+  try{ fitMenuScreen(FIT_SCREENS[2]); alignPuzzleIcons();
+       setTimeout(function(){ fitMenuScreen(FIT_SCREENS[2]); alignPuzzleIcons(); },120); }catch(e){}
+  syncBackGuard();
+}
 function wcBack(){ try{document.getElementById('wc').classList.remove('show');}catch(e){} syncBackGuard(); }
 var _wcToastT=null;
 function wcLocked(el){
@@ -2262,9 +3087,13 @@ var _phOverlay=null;
 //    에셋 영상 18편 + 화질 티어 36개 + 통발음 6종 음량 레벨링까지 끝난 뒤 열었다.
 //    ※ 잠금 시절의 "라이브는 반드시 false" 메모는 **이때 지웠다** — 다 끝난 조건을 보고
 //      다시 잠그는 일이 없게 하려고. 3·4 는 에셋이 없어 잠긴 상태 그대로다.
+// ⚠️ icon = assets/phonics/icons/{icon}_a.webp · {icon}_b.webp 두 장의 앞이름(2026-09-14 추가).
+//    세트에만 나오는 동물로 골랐다 — 강아지·고양이는 1·2세트에 다 있어서 구분이 안 된다.
+//    icon 을 안 적으면 지금까지처럼 _phIconHTML() SVG 가 나온다(세트 3·4).
+//    ⭐ 세트 3·4 를 열 때 이 목록에 icon 한 줄만 더하면 된다 — 아래 코드는 손댈 게 없다.
 var PH_SETS=[
-  {n:1, id:'satpin', label:'Phonics 1', letters:'s a t p i n',  open:true },
-  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:true },   // 2026-09-07 공개
+  {n:1, id:'satpin', label:'Phonics 1', letters:'s a t p i n',  open:true,  icon:'set1'},   // 펭귄(sip)
+  {n:2, id:'set2',   label:'Phonics 2', letters:'m d g o c k',  open:true,  icon:'set2'},   // 두더지(dig) · 2026-09-07 공개
   {n:3, id:'set3',   label:'Phonics 3', letters:'ck e u r h b', open:false},
   {n:4, id:'set4',   label:'Phonics 4', letters:'f l s j v …',  open:false}
 ];
@@ -2295,7 +3124,13 @@ function _buildPhonicsMenu(){
       // 흔들림과 "곧 나와요" 토스트가 기존 함수 그대로 재사용된다(새 함수 0개).
       h+='<button class="game-card wc-card ps-card '+(s.open?'card-phonics':'wc-locked')+'" '+
            (s.open ? 'onclick="goPhonicsSet('+s.n+')"' : 'onclick="wcLocked(this)"')+'>'+
-           '<span class="card-icon">'+_phIconHTML()+'</span>'+
+           // 아이콘이 지정된 세트만 그림 2장, 나머지는 지금까지의 SVG 그대로(세트 3·4).
+           // 그림을 못 받으면 menuIconFail 이 이 SVG 로 되돌린다(data-fb="svg").
+           '<span class="card-icon">'+
+             (s.icon ? menuIconHTML('assets/phonics/icons/'+s.icon+'_a.webp',
+                                    'assets/phonics/icons/'+s.icon+'_b.webp', s.label, 'svg')
+                     : _phIconHTML())+
+           '</span>'+
            '<span class="ps-text">'+
              '<span class="card-label">'+s.label+'</span>'+
              '<span class="ps-sub">'+s.letters+'</span>'+
@@ -2306,6 +3141,7 @@ function _buildPhonicsMenu(){
     h+='</div>';
     d.innerHTML=h;
     host.appendChild(d);
+    menuIconArm(d);            // 2번째 그림 미리 받기 시작(다 받은 뒤에야 번갈아 바뀐다)
     return d;
   }catch(e){ return null; }
 }
@@ -2319,6 +3155,8 @@ function goPhonics(){                              // Phonics 버튼 → 세트 
     // (frog-reactions.js 가 goPhonics 를 감싸 cancelGreeting 도 부르지만, 그 파일이 로드 실패해도
     //  안전하도록 여기서도 한 번 세워둔다. 두 번 불려도 문제 없는 함수다.)
     try{ if(window.__frogreact && window.__frogreact.stop) window.__frogreact.stop(); }catch(e){}
+    // ★ 2026-09-16 — 짧은 폰에서 마지막 카드가 잘리는 것. 메뉴를 만든 직후·그림이 온 뒤 두 번 잰다.
+    try{ fitMenuScreen(FIT_SCREENS[3]); setTimeout(function(){ fitMenuScreen(FIT_SCREENS[3]); },120); }catch(e){}
     syncBackGuard();                                // 세트 메뉴 진입 → 뒤로가기 보호 켜기
     try{gtag('event','phonics_menu_open',{});}catch(e){}
   }catch(e){}
@@ -2504,7 +3342,10 @@ try{ document.addEventListener('DOMContentLoaded',_ensureInsectCard); }catch(e){
 // === ABC 모드 선택 화면 ===
 // 개구리 그림 미리 받기를 여기서 시작한다 — 모드 선택은 실제 게임 시작보다 한 탭 앞이라
 // 아이가 ABC/abc/ABc 를 고르는 동안 1단계 그림이 도착할 여유가 생긴다.
-function goModeSelect(){ try{preloadFrogImgs();}catch(e){} try{document.getElementById('ms').classList.add('show');}catch(e){} syncBackGuard(); }
+function goModeSelect(){ try{preloadFrogImgs();}catch(e){} try{document.getElementById('ms').classList.add('show');}catch(e){}
+  // ★ 2026-09-16 — 짧은 폰에서 마지막 버튼이 잘리는 것. 화면이 뜬 뒤라야 잴 수 있다.
+  try{ fitMenuScreen(FIT_SCREENS[1]); setTimeout(function(){ fitMenuScreen(FIT_SCREENS[1]); },120); }catch(e){}
+  syncBackGuard(); }
 function msBack(){ try{document.getElementById('ms').classList.remove('show');}catch(e){} syncBackGuard(); }
 // ※ 여기선 syncBackGuard()를 부르지 않는다: 모드선택을 닫은 뒤 실제 게임 화면이 뜨기까지 0.5초 걸리는데,
 //    그 사이엔 '시작 화면'으로 판정돼 보호가 잠깐 풀린다. 모드선택에서 켠 보호를 그대로 게임까지 이어간다.
