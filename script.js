@@ -2945,7 +2945,18 @@ function wpBack(){ if(_wpEndingStop) _wpEndingStop();   // 엔딩 음성/타이�
 
 // === 단어 퍼즐 카테고리 선택 (과일 / 동물·채소는 예고) ===
 function goWordCat(){
-  try{document.getElementById('wc').classList.add('show');}catch(e){}
+  /* ★ 2026-09-28 — 퍼즐 메뉴 진입 계측(word_menu_open) 추가.
+     [왜] 파닉스는 phonics_menu_open(메뉴) + phonics_open(게임) 둘 다 있는데 퍼즐은 word_puzzle_open
+       하나뿐이었다 → **메뉴까지 왔다가 아무것도 안 고르고 나간 아이**를 한 명도 못 보고 있었다.
+     [보내는 시점] 메뉴가 실제로 '떠 있게 되는' 그 순간. 화면(#wc)이 없으면 안 보낸다
+       (열리지도 않은 메뉴를 열렸다고 세지 않는다).
+     [한 번만] 이미 떠 있으면 안 보낸다 — 연타나 부팅가드(__bootFlush)의 재실행으로 두 번 세는 것 방지.
+       뒤로 나가면 wcBack() 이 show 를 떼므로, 다시 열 때는 **새 진입으로 한 번 더** 보낸다.
+     ⚠️ GA4 맞춤 측정기준 등록은 필요 없다 — 매개변수가 없다(phonics_menu_open 과 같은 모양). */
+  var _wcOpened=false;
+  try{ var _wc=document.getElementById('wc');
+       if(_wc){ _wcOpened=!_wc.classList.contains('show'); _wc.classList.add('show'); } }catch(e){}
+  try{ if(_wcOpened) gtag('event','word_menu_open',{}); }catch(e){}
   // ★ 2026-09-16 — 줄 맞추기·화면 맞추기는 **화면이 뜬 뒤**라야 잴 수 있다(닫혀 있으면 전부 0).
   //   한 박자 뒤에 한 번 더 부르는 것은 그림·폰트가 늦게 와서 글자 폭이 달라지는 경우 때문이다.
   //   ⚠️ 순서 = 화면 맞추기(높이) 먼저, 줄 맞추기(가로) 나중. 카드가 줄어들면 줄도 다시 잡아야 한다.
