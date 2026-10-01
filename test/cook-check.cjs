@@ -44,7 +44,12 @@ async function run(){
       if(scroll>client+1||bottom>limit-3)throw Error(id+' text clipped: '+JSON.stringify(o));
     }
   };
+  const assertCue=async expected=>{
+    const cues=await evaluate('Array.from(document.querySelectorAll(".cue")).map(e=>e.id||(e.dataset&&e.dataset.key)||e.className)');
+    if(cues.length!==1||cues[0]!==expected)throw Error('wrong guidance cue: '+JSON.stringify(cues)+' expected '+expected);
+  };
   await assertText();
+  await assertCue('tomato');
   await call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:270,y:430,id:1}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:210,y:430,id:1}]});
   await call('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:140,y:430,id:1}]});
@@ -61,22 +66,47 @@ async function run(){
   await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:work[0],y:work[1],button:'left',clickCount:1});
   await delay(100);
   if(await evaluate('document.querySelector("#action").disabled'))throw Error('drag did not place tomato');
-  const tap=async selector=>{await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);await delay(700);await assertText()};
+  await assertCue('action');
+  const tap=async selector=>{await evaluate(`document.querySelector(${JSON.stringify(selector)}).click()`);await delay(selector==='#action'?1150:120);await assertText()};
   await tap('#action');
+  await assertCue('onion');
   await tap('[data-key="onion"]');
+  await assertCue('peeler');
   await tap('[data-key="peeler"]');
+  await assertCue('action');
   await tap('#action');
+  await assertCue('carrot');
   await tap('[data-key="carrot"]');
+  await assertCue('knife');
   await tap('[data-key="knife"]');
+  await assertCue('action');
   await tap('#action');
+  await assertCue('action');
   await tap('#action');
+  await assertCue('spoon');
   await tap('[data-key="spoon"]');
+  await assertCue('action');
   await tap('#action');
   await tap('#action');
   await tap('#action');
+  await assertCue('surface serve-cue cue');
   await tap('#action');
+  const finalCues=await evaluate('document.querySelectorAll(".cue").length');
+  if(finalCues!==0)throw Error('guidance still animating after finish');
   const result=await evaluate('({step:document.querySelector("#stepLabel").textContent,speech:document.querySelector("#speech").textContent})');
   console.log('flow',result);
   if(result.step!=='SOUP COMPLETE')throw Error('flow incomplete');
+  const spoken=await evaluate(`(() => {
+    const synth=window.speechSynthesis;
+    if(!synth)return 'TTS_UNAVAILABLE';
+    let heard='';
+    const original=synth.speak;
+    synth.speak=function(u){heard=u.text};
+    CookVoice.play('peel');
+    synth.speak=original;
+    return heard;
+  })()`);
+  if(spoken!=='Peel the onion.')throw Error('device-voice fallback failed: '+spoken);
+  console.log('fallback voice',spoken);
 }
 run().then(()=>{ws.close();browser.kill()}).catch(e=>{console.error(e);if(ws)ws.close();browser.kill();process.exitCode=1});

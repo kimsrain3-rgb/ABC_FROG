@@ -12,7 +12,7 @@
   <main class="app" id="app">
     <header class="frog-table">
       <div class="brand"><span class="test-tag">TEST</span><span>FROG'S LITTLE KITCHEN</span></div>
-      <div class="frog-row"><div class="speech" id="speech" aria-live="polite"></div><div class="frog-art" id="frogArt" aria-label="Frog sitting at the table"></div></div>
+      <div class="frog-row"><div class="speech" id="speech"><button type="button" id="voiceReplay" class="voice-replay" aria-label="Hear the frog again">🔊</button><span id="speechText"></span></div><div class="frog-art" id="frogArt" aria-label="Frog sitting at the table"></div></div>
     </header>
     <section class="lesson" aria-label="Cooking instruction">
       <div class="step-top"><span id="stepLabel"></span><span id="stepDots" class="step-dots" aria-label="Progress"></span></div>
@@ -38,6 +38,7 @@
   <script>
     var cookBust = Date.now();
     document.write('<script src="cook-art.js?b='+cookBust+'"><\/script>');
+    document.write('<script src="cook-voice.js?b='+cookBust+'"><\/script>');
     document.write('<script src="cook.js?b='+cookBust+'"><\/script>');
   </script>
 </body>
